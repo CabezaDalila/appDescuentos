@@ -1,5 +1,4 @@
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +9,14 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Mail } from "lucide-react"
 import { register, login, loginWithGoogle } from "@/lib/firebase-auth"
-
+import { useRouter } from "next/router"
+import { useAuth } from "@/pages/shared/hook/useAuth"
 export default function AuthForm() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  if (user) {
+    router.push("/home")
+  }
   const [mode, setMode] = useState<"login" | "register">("login")
   const [formData, setFormData] = useState({
     firstName: "",
@@ -66,6 +71,7 @@ export default function AuthForm() {
         }
         await login(formData.email, formData.password)
         setSuccess("¡Inicio de sesión exitoso!")
+        router.push("/home")
       } else {
         if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.confirmPassword) {
           setError("Por favor completa todos los campos")
@@ -93,6 +99,7 @@ export default function AuthForm() {
         }
         await register(formData.email, formData.password)
         setSuccess("¡Cuenta creada exitosamente! Bienvenido a la plataforma")
+        router.push("/home")
         setFormData({ firstName: "", lastName: "", email: "", phone: "", password: "", confirmPassword: "" })
         setAcceptTerms(false)
         setAcceptMarketing(false)
