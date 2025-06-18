@@ -28,7 +28,6 @@ export default function AuthForm() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
 
-  // Validaciones
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
