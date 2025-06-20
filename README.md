@@ -97,4 +97,4 @@ El proyecto sigue una estructura organizada para separar responsabilidades:
 -   **Tailwind CSS**: El proyecto está estilizado principalmente con clases de utilidad de Tailwind CSS.
 -   **shadcn/ui**: Se utilizan componentes base de esta librería, que son personalizables y accesibles. La función `cn` en `lib/utils.ts` ayuda a gestionar las clases de estos componentes de forma eficiente.
 
-¡Espero que esta documentación sea de gran ayuda para tu compañero!
+
