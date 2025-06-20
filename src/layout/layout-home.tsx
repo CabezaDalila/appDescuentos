@@ -1,6 +1,7 @@
 import { Header } from "@/components/ui/header"
 import { NavigationBar } from "@/components/ui/navigation-bar"
-import { Home, Search, Heart, User } from "lucide-react"
+import { Home, Search, User,Bell } from "lucide-react"
+
 import { useRouter } from 'next/router';
 
 interface LayoutHomeProps {
@@ -11,8 +12,9 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     const tabs = [
         { id: "home", label: "Inicio", icon: Home, path: "/home" },
         { id: "search", label: "Buscar", icon: Search, path: "/search" },
-        { id: "favorites", label: "Favoritos", icon: Heart, path: "/favorites" },
+        { id: "notifications", label: "Notificaciones", icon: Bell, path: "/notifications" },
         { id: "profile", label: "Perfil", icon: User, path: "/profile" },
+
     ]
     const router = useRouter();
     const getActiveTab = () => {
@@ -24,6 +26,8 @@ export function LayoutHome({ children }: LayoutHomeProps) {
             return "favorites";
         } else if (router.pathname === "/profile") {
             return "profile";
+        }else if (router.pathname === "/notifications") {
+            return "notifications";
         }
         return "home";
     }
@@ -35,7 +39,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     }
   return (
     <div>
-      <Header notificationCount={3} />
+      <Header notificationCount={0}/>
       {children}
       <NavigationBar tabs={tabs} activeTab={getActiveTab()} onTabsChange={handleTabsChange} />
     </div>

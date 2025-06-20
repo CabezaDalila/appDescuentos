@@ -11,6 +11,7 @@ import { Loader2, Mail } from "lucide-react"
 import { register, login, loginWithGoogle } from "@/lib/firebase-auth"
 import { useRouter } from "next/router"
 import { useAuth } from "@/pages/shared/hook/useAuth"
+
 export default function AuthForm() {
   const { user, loading } = useAuth();
   const router = useRouter();
