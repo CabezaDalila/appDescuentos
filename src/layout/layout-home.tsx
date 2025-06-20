@@ -1,4 +1,4 @@
-import { HomeHeader } from "@/components/ui/home-header"
+import { Header } from "@/components/ui/header"
 import { NavigationBar } from "@/components/ui/navigation-bar"
 import { Home, Search, Heart, User } from "lucide-react"
 import { useRouter } from 'next/router';
@@ -35,7 +35,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     }
   return (
     <div>
-      <HomeHeader />
+      <Header notificationCount={3} />
       {children}
       <NavigationBar tabs={tabs} activeTab={getActiveTab()} onTabsChange={handleTabsChange} />
     </div>

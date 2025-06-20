@@ -1,41 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# App de Descuentos
 
-## Getting Started
+Este es un proyecto de Next.js diseñado para ser una aplicación de descuentos y fidelización de clientes. Utiliza Firebase para la autenticación y está construido con componentes de shadcn/ui y Tailwind CSS para el diseño.
 
-First, run the development server:
+## 🚀 Cómo empezar
+
+Sigue estos pasos para levantar el proyecto en tu entorno local.
+
+### 1. Prerrequisitos
+
+-   Node.js (versión 18 o superior)
+-   npm, yarn o pnpm
+
+### 2. Instalación
+
+1.  **Clona el repositorio:**
+    ```bash
+    git clone <URL_DEL_REPOSITORIO>
+    cd <NOMBRE_DEL_PROYECTO>
+    ```
+
+2.  **Instala las dependencias:**
+    ```bash
+    npm install
+    ```
+
+### 3. Configuración de Variables de Entorno
+
+Para que la autenticación con Firebase funcione, necesitas crear un archivo `.env.local` en la raíz del proyecto y añadir tus credenciales de Firebase.
+
+Crea el archivo `.env.local`:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=AIza...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_FIREBASE_MEASUREMENTID=...
+```
+
+> **Importante:** Puedes encontrar estas claves en la configuración de tu proyecto de Firebase.
+
+### 4. Ejecutar el Proyecto
+
+Una vez instaladas las dependencias y configuradas las variables de entorno, inicia el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+---
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+## 🏗️ Estructura del Proyecto
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+El proyecto sigue una estructura organizada para separar responsabilidades:
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+-   **/src/components**: Contiene componentes de React reutilizables.
+    -   **/ui**: Componentes base de la UI (Button, Card, etc.), muchos de ellos basados en shadcn/ui.
+    -   `AuthForm.tsx`: El formulario de login y registro.
+-   **/src/layout**: Contiene los layouts o plantillas de página.
+    -   `layout-home.tsx`: El layout principal para usuarios autenticados, que incluye el header y la barra de navegación.
+-   **/src/lib**: Módulos y utilidades auxiliares.
+    -   `firebase.js`: Inicialización y configuración de Firebase.
+    -   `firebase-auth.js`: Funciones para interactuar con Firebase Auth (login, register, logout).
+    -   `utils.ts`: Funciones de utilidad, como `cn` para fusionar clases de Tailwind.
+-   **/src/pages**: Contiene las páginas y las rutas de la aplicación.
+    -   `_app.tsx`: El componente raíz de la aplicación. Aquí se controla qué layout mostrar según el estado de autenticación.
+    -   `/login/index.tsx`: La página de inicio de sesión.
+    -   `/home/index.tsx`: La página principal para usuarios logueados.
+    -   `/shared/hook/useAuth.tsx`: Hook personalizado para gestionar el estado de autenticación.
+-   **/styles**: Archivos de estilos globales.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## ✨ Flujos y Conceptos Clave
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+### Autenticación
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+-   **Firebase Auth**: La autenticación de usuarios se gestiona completamente con Firebase (email/contraseña y Google).
+-   **Hook `useAuth`**: Este hook (`src/pages/shared/hook/useAuth.tsx`) es el núcleo del sistema de autenticación en el frontend. Escucha los cambios de estado de Firebase y devuelve el usuario actual y un estado de carga.
+-   **Rutas Protegidas**: La lógica de rutas protegidas se encuentra en `_app.tsx`. Si el hook `useAuth` no devuelve un usuario, el usuario es redirigido a `/login`. Las páginas públicas como `/login` se renderizan sin el layout principal.
 
-## Deploy on Vercel
+### Layouts y Navegación
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+-   **Layout Condicional**: `_app.tsx` decide si envuelve la página actual con `LayoutHome`. Las páginas que no requieren autenticación se muestran sin este layout.
+-   **Layout Principal (`LayoutHome`)**: Este componente (`src/layout/layout-home.tsx`) define la estructura visual para usuarios autenticados. Incluye:
+    -   `HomeHeader`: El encabezado superior.
+    -   `NavigationBar`: La barra de navegación inferior.
+-   **Navegación**: La `NavigationBar` utiliza el router de Next.js para cambiar de página y resaltar el ícono activo según la ruta actual.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
-# appDescuentos
+### UI y Estilos
+
+-   **Tailwind CSS**: El proyecto está estilizado principalmente con clases de utilidad de Tailwind CSS.
+-   **shadcn/ui**: Se utilizan componentes base de esta librería, que son personalizables y accesibles. La función `cn` en `lib/utils.ts` ayuda a gestionar las clases de estos componentes de forma eficiente.
+
+¡Espero que esta documentación sea de gran ayuda para tu compañero!

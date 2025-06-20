@@ -2,11 +2,11 @@ import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-interface HomeHeaderProps {
+interface HeaderProps {
   notificationCount?: number
 }
 
-export function HomeHeader({ notificationCount = 0 }: HomeHeaderProps) {
+export function Header({ notificationCount = 0 }: HeaderProps) {
   return (
     <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">

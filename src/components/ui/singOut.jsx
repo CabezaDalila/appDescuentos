@@ -1,4 +1,4 @@
-import { logout } from "../src/lib/firebase-auth";
+import { logout } from "../../lib/firebase-auth";
 import { Button } from "@/components/ui/button"
 export default function SignOut() {
   const handleLogout = async () => {
