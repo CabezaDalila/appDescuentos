@@ -8,9 +8,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Mail } from "lucide-react"
-import { register, login, loginWithGoogle } from "@/lib/firebase-auth"
+import { register, login, loginWithGoogle, loginWithGoogleNative } from "@/lib/firebase-auth"
 import { useRouter } from "next/router"
-import { useAuth } from "@/pages/shared/hook/useAuth"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function AuthForm() {
   const { user, loading } = useAuth();
@@ -120,9 +120,21 @@ export default function AuthForm() {
     clearMessages()
     setIsGoogleLoading(true)
     try {
-      await loginWithGoogle()
+      // Detectar si estamos en una plataforma nativa (Capacitor)
+      const isNative = typeof window !== 'undefined' && 'Capacitor' in window;
+      
+      if (isNative) {
+        // Usar login nativo para Android/iOS
+        await loginWithGoogleNative()
+      } else {
+        // Usar login web para navegador
+        await loginWithGoogle()
+      }
+      
       setSuccess(mode === "login" ? "¡Inicio de sesión con Google exitoso!" : "¡Cuenta creada con Google exitosamente!")
+      router.push("/home")
     } catch (error) {
+      console.error('Error en login de Google:', error);
       if (error instanceof Error) {
         setError(error.message)
       } else {

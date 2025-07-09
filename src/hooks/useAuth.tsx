@@ -33,4 +33,4 @@ export function useAuth(): UseAuthResult {
   };
 
   return { user, loading, logout: handleLogout };
-}
+} 

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "531405194203",
+    "project_id": "app-descuentos-9b546",
+    "storage_bucket": "app-descuentos-9b546.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:531405194203:android:ebe7ef915d768c88fcddfe",
+        "android_client_info": {
+          "package_name": "com.tesis.descuentos.test"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "531405194203-qo0ahg2kb4ss4a1p1dd4a580keate0fu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tesis.descuentos.test",
+            "certificate_hash": "c8215937030cc029ae971fad94024a3e08346491"
+          }
+        },
+        {
+          "client_id": "531405194203-glhnqh09v0tgs10ljgaabb4339usjhsq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEgeKRBJwzxtxoVMNCtRnQCLnyUyAgQZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "531405194203-glhnqh09v0tgs10ljgaabb4339usjhsq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

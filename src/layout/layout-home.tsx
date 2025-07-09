@@ -24,9 +24,9 @@ export function LayoutHome({ children }: LayoutHomeProps) {
             return "search";
         } else if (router.pathname === "/favorites") {
             return "favorites";
-        } else if (router.pathname === "/profile") {
+        } else if (router.pathname === "/profile" || router.pathname.startsWith("/memberships")) {
             return "profile";
-        }else if (router.pathname === "/notifications") {
+        } else if (router.pathname === "/notifications") {
             return "notifications";
         }
         return "home";
@@ -39,7 +39,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     }
   return (
     <div>
-      <Header notificationCount={0}/>
+      {router.pathname !== "/profile" && router.pathname !== "/memberships" && <Header notificationCount={0}/>} 
       {children}
       <NavigationBar tabs={tabs} activeTab={getActiveTab()} onTabsChange={handleTabsChange} />
     </div>

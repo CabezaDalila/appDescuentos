@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '@/pages/shared/hook/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { updateUserPreferences, getUserPreferences } from '@/lib/firebase/user';
 import { UserPreferences } from '@/types/user';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import toast from 'react-hot-toast';
-import { Info } from 'lucide-react';
+import { Info, Globe } from 'lucide-react';
 
 interface UserSettingsModalProps {
   isOpen: boolean;
@@ -141,9 +142,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(function 
     setIsSaving(true);
     try {
       await updateUserPreferences(user.uid, formData);
-      // Guardar también en localStorage como backup
       localStorage.setItem(`user-prefs-${user.uid}`, JSON.stringify(formData));
-      // Solicitar permisos de ubicación si está habilitado
       if (formData.useLocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -156,12 +155,9 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(function 
           }
         );
       }
-      toast.success('Preferencias actualizadas con éxito');
-      // Actualizar initialPrefs para que el botón se deshabilite tras guardar
       setInitialPrefs(formData);
       onClose();
     } catch (error) {
-      // Fallback: guardar en localStorage si falla Firestore
       localStorage.setItem(`user-prefs-${user.uid}`, JSON.stringify(formData));
       toast.error('No se pudo guardar en la nube, pero tus preferencias se guardaron localmente.');
       setInitialPrefs(formData);
@@ -201,6 +197,9 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(function 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Configuración de Usuario</DialogTitle>
+          <DialogDescription className="sr-only">
+            Personaliza tus preferencias de idioma, región y ubicación.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Tabs */}
@@ -270,17 +269,10 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(function 
 
               {/* Ubicación */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="useLocation">Usar ubicación actual</Label>
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm text-muted-foreground">
-                        Permite a la app acceder a tu ubicación para mejorar las recomendaciones
-                      </p>
-                      <span tabIndex={0} aria-label="¿Por qué?" title="Tu ubicación solo se usará para mostrarte mejores recomendaciones. No se comparte con terceros.">
-                        <Info className="w-4 h-4 text-muted-foreground cursor-pointer" />
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <Label htmlFor="useLocation" className="mb-0">Usar ubicación actual</Label>
                   </div>
                   <Switch
                     id="useLocation"
@@ -306,14 +298,15 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(function 
         <Separator />
 
         {/* Footer con botones */}
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
+        <DialogFooter className="flex flex-row justify-end gap-2 pt-6">
+          <Button variant="outline" onClick={handleCancel} className="px-6 py-2">
             Cancelar
           </Button>
           <Button 
             onClick={handleSave} 
             disabled={isSaving || !initialPrefs || !hasChanges || !!regionError}
             aria-disabled={isSaving || !initialPrefs || !hasChanges || !!regionError}
+            className="px-6 py-2 bg-primary text-white hover:bg-primary/90"
           >
             {isSaving ? 'Guardando...' : 'Guardar cambios'}
           </Button>
