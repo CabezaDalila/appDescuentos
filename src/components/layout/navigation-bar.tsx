@@ -1,5 +1,4 @@
 import { LucideIcon } from "lucide-react"
-import { Button } from "@/components/Share/button"
 
 interface NavigationBarProps {
   activeTab?: string,
@@ -12,18 +11,20 @@ export function NavigationBar({ tabs, activeTab, onTabsChange }: NavigationBarPr
     <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-2 safe-area-pb">
       <div className="flex justify-around">
         {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
           return (
-            <Button
+            <button
               key={tab.id}
-              variant="ghost"
-              className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+              className={`flex flex-col items-center gap-1 h-auto py-2 px-3 rounded-md transition-colors ${
+                isActive 
+                  ? "text-primary bg-primary/10" 
+                  : "text-muted-foreground hover:text-accent-foreground hover:bg-accent/50"
               }`}
               onClick={() => onTabsChange(tab.id)}
             >
               <tab.icon className="h-5 w-5" />
               <span className="text-xs font-medium">{tab.label}</span>
-            </Button>
+            </button>
           )
         })}
       </div>
