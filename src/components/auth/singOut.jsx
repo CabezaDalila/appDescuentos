@@ -1,5 +1,5 @@
 import { logout } from "../../lib/firebase-auth";
-import { Button } from "@/components/shadcn/button"
+import { Button } from "@/components/Share/button"
 export default function SignOut() {
   const handleLogout = async () => {
     try {

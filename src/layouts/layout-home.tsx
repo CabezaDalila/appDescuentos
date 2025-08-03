@@ -38,9 +38,11 @@ export function LayoutHome({ children }: LayoutHomeProps) {
         }
     }
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       {router.pathname !== "/profile" && router.pathname !== "/memberships" && <Header notificationCount={0}/>} 
-      {children}
+      <main className="container mx-auto px-4 py-8 max-w-2xl">
+        {children}
+      </main>
       <NavigationBar tabs={tabs} activeTab={getActiveTab()} onTabsChange={handleTabsChange} />
     </div>
   )
