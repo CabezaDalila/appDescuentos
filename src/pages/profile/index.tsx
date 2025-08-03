@@ -1,18 +1,18 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/Share/button";
+import { Card, CardContent, CardHeader } from "@/components/Share/card";
 import { useState, useEffect } from "react";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
-import { ProfileAppBar } from "@/components/ui/profile-app-bar";
+import { ProfileAppBar } from "@/components/layout/profile-app-bar";
 import { Pencil } from "lucide-react";
 import MembershipCard from "@/components/memberships/MembershipCard";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { useRouter } from "next/router";
 import { Membership } from "@/types/membership";
+import Image from "next/image";
+import { User } from "firebase/auth";
 
-function getInitial(user: any) {
+function getInitial(user: User) {
   // Usar displayName si existe y no es vacío
   if (user?.displayName && typeof user.displayName === 'string' && user.displayName.trim() !== '') {
     const firstName = user.displayName.trim().split(' ')[0];
@@ -25,7 +25,7 @@ function getInitial(user: any) {
   return "U";
 }
 
-function getMemberSince(user: any) {
+function getMemberSince(user: User) {
   if (user?.metadata?.creationTime) {
     const year = new Date(user.metadata.creationTime).getFullYear();
     return year;
@@ -73,11 +73,13 @@ export default function Profile() {
               <div className="relative w-20 h-20 flex-shrink-0">
                 {/* Foto o inicial */}
                 {typeof user.photoURL === 'string' && user.photoURL.trim().length > 0 ? (
-                  <img
+                  <Image
                     src={user.photoURL}
-                    alt=" "
-                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-                  />
+                    alt="Foto de perfil"
+                    width={80}
+                    height={80}
+                    className="rounded-full object-cover border-2 border-gray-200"
+                  /> 
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold select-none">
                     {getInitial(user)}

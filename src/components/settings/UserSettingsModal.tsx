@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { updateUserPreferences, getUserPreferences } from '@/lib/firebase/user';
 import { UserPreferences } from '@/types/user';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/Share/button';
+import { Input } from '@/components/Share/input';
+import { Label } from '@/components/Share/label';
+import { Switch } from '@/components/Share/switch';
 import {
   Dialog,
   DialogContent,
@@ -13,15 +13,15 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '@/components/Share/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+} from '@/components/Share/select';
+import { Separator } from '@/components/Share/separator';
 import toast from 'react-hot-toast';
 import { Info, Globe } from 'lucide-react';
 

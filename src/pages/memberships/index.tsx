@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/Share/button";
+import { Card, CardContent } from "@/components/Share/card";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Plus, Filter, Search, SortAsc } from "lucide-react";
@@ -19,8 +19,8 @@ import {
 } from "@/lib/firebase/memberships";
 import { Membership, CreateMembershipData, MEMBERSHIP_CATEGORIES } from "@/types/membership";
 import toast from "react-hot-toast";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/Share/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Share/select";
 
 export default function Memberships() {
   const { user, loading: authLoading } = useAuth();

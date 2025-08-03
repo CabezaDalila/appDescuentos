@@ -1,5 +1,5 @@
-import { Header } from "@/components/ui/header"
-import { NavigationBar } from "@/components/ui/navigation-bar"
+import { Header } from "@/components/layout/header"
+import { NavigationBar } from "@/components/layout/navigation-bar"
 import { Home, Search, User,Bell } from "lucide-react"
 
 import { useRouter } from 'next/router';

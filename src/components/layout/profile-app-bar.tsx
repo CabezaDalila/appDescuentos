@@ -1,5 +1,5 @@
 import { Settings, LogOut, ArrowLeft } from 'lucide-react';
-import { Button } from './button';
+import { Button } from '@/components/Share/button';
 import { useRouter } from 'next/router';
 import React from 'react';
 

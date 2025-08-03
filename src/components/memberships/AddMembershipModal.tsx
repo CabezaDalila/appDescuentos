@@ -5,12 +5,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
+} from '../Share/dialog';
+import { Button } from '../Share/button';
+import { Input } from '../Share/input';
+import { Label } from '../Share/label';
+import { Separator } from '../Share/separator';
 import { 
   Search, 
   Building2, 
@@ -100,7 +99,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       setIsCreating(true);
       await onCreate({
         name: customName.trim(),
-        category: selectedCategory as any,
+        category: selectedCategory as 'banco' | 'club' | 'salud' | 'educacion' | 'seguro' | 'telecomunicacion',
         color: categoryColors[selectedCategory as keyof typeof categoryColors] || '#6366f1',
         ...(logoUrl ? { logoUrl } : {}),
         ...(gradient ? { gradient } : {})

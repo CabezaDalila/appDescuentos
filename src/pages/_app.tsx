@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import type { AppProps } from 'next/app'; 
-import { LayoutHome } from "@/layout/layout-home";  
+import { LayoutHome } from "@/layouts/layout-home";  
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/router";
 import { useEffect } from "react";

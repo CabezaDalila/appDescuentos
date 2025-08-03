@@ -5,13 +5,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Switch } from '../ui/switch';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
+} from '../Share/dialog';
+import { Button } from '../Share/button';
+import { Input } from '../Share/input';
+import { Label } from '../Share/label';
+import { Switch } from '../Share/switch';
+import { Badge } from '../Share/badge';
+import { Separator } from '../Share/separator';
 import { 
   Edit, 
   Trash2, 

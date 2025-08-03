@@ -1,8 +1,9 @@
 import React from 'react';
-import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent } from '../Share/card';
+import { Badge } from '../Share/badge';
 import { Membership } from '../../types/membership';
-import { CreditCard, Wifi, Star, MapPin, ChevronRight, Building2 } from 'lucide-react';
+import { CreditCard, Wifi, Star, MapPin, ChevronRight} from 'lucide-react';
+import Image from 'next/image';
 
 interface MembershipCardProps {
   membership: Membership;
@@ -61,23 +62,23 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
   const initials = getInitials(membership.name);
 
   // Footer para bancos
-  const renderBankFooter = () => (
-    <div className="flex items-center justify-between mt-6">
-      <div className="flex items-center gap-2 text-white/80">
-        <Wifi className="w-5 h-5" />
-        <span className="tracking-widest">**** **** **** ****</span>
-      </div>
-      <ChevronRight className="w-5 h-5 text-white/60" />
-    </div>
-  );
+  // const renderBankFooter = () => (
+  //   <div className="flex items-center justify-between mt-6">
+  //     <div className="flex items-center gap-2 text-white/80">
+  //       <Wifi className="w-5 h-5" />
+  //       <span className="tracking-widest">**** **** **** ****</span>
+  //     </div>
+  //     <ChevronRight className="w-5 h-5 text-white/60" />
+  //   </div>
+  // );
 
   // Footer para otros
-  const renderOtherFooter = () => (
-    <div className="flex items-center justify-between mt-6">
-      <span className="text-xs text-white/70">Miembro desde {membership.createdAt instanceof Date ? membership.createdAt.getFullYear() : new Date(membership.createdAt).getFullYear()}</span>
-      <ChevronRight className="w-5 h-5 text-white/60" />
-    </div>
-  );
+  // const renderOtherFooter = () => (
+  //   <div className="flex items-center justify-between mt-6">
+  //     <span className="text-xs text-white/70">Miembro desde {membership.createdAt instanceof Date ? membership.createdAt.getFullYear() : new Date(membership.createdAt).getFullYear()}</span>
+  //     <ChevronRight className="w-5 h-5 text-white/60" />
+  //   </div>
+  // );
 
   // Beneficios destacados por tipo
   const BENEFITS: Record<string, { icon: React.ReactNode; text: string }[]> = {
@@ -111,9 +112,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
         <div className="absolute right-0 top-0 w-1/2 h-1/2 bg-white/10 rounded-full blur-2xl z-0" />
         {/* Logo de fondo tenue si existe */}
         {membership.logoUrl && (
-          <img
+          <Image
             src={membership.logoUrl}
             alt={membership.name + ' logo'}
+            width={24}
+            height={24}
             className="absolute inset-0 w-full h-full object-contain opacity-10 pointer-events-none select-none"
             style={{ zIndex: 0 }}
           />
@@ -123,7 +126,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-white/30 shadow-sm">
                 {membership.logoUrl ? (
-                  <img src={membership.logoUrl} alt={membership.name + ' logo'} className="w-6 h-6 object-contain" />
+                  <Image src={membership.logoUrl} alt={membership.name + ' logo'} width={24} height={24} className="w-6 h-6 object-contain" />
                 ) : (
                   <span className="text-lg font-semibold text-white/80">{initials}</span>
                 )}
@@ -184,7 +187,7 @@ return (
     }
   >
     {membership.logoUrl && (
-      <img
+      <Image
         src={membership.logoUrl}
         alt={`${membership.name} logo`}
         className="absolute inset-0 w-full h-full object-contain opacity-10 pointer-events-none select-none"
@@ -197,9 +200,11 @@ return (
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-lg flex items-center justify-center bg-white/30 shadow-sm">
             {membership.logoUrl ? (
-              <img
+              <Image
                 src={membership.logoUrl}
                 alt={`${membership.name} logo`}
+                width={24}
+                height={24}
                 className="w-6 h-6 object-contain opacity-90"
               />
             ) : (
