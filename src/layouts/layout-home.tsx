@@ -1,8 +1,8 @@
 import { Header } from "@/components/layout/header"
 import { NavigationBar } from "@/components/layout/navigation-bar"
 import { Home, Search, User,Bell } from "lucide-react"
-
 import { useRouter } from 'next/router';
+import { ScrollArea } from "@/components/Share/scroll-area"
 
 interface LayoutHomeProps {
   children: React.ReactNode
@@ -39,9 +39,11 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     }
   return (
     <div className="min-h-screen bg-gray-50">
-      {router.pathname !== "/profile" && router.pathname !== "/memberships" && <Header notificationCount={0}/>} 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
-        {children}
+      {router.pathname !== "/profile" && router.pathname !== "/memberships" && <Header />} 
+      <main className="container mx-auto px-4 py-1 max-w-2xl">
+        <ScrollArea className="h-[calc(100vh-100px)]">
+          {children}
+        </ScrollArea>
       </main>
       <NavigationBar tabs={tabs} activeTab={getActiveTab()} onTabsChange={handleTabsChange} />
     </div>

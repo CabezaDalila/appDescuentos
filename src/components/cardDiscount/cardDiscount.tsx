@@ -36,11 +36,10 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   return (
     <div className="flex justify-start flex-col bg-white rounded-lg p-2 gap-3">
         <div className="flex items-center justify-center h-70 w-full relative">
-            {/* Botones en la esquina superior derecha */}
             <div className="absolute top-2 right-2 z-10 flex items-center">
                 <Button 
                     variant="ghost" 
-                    className="flex items-center focus:outline-none"
+                    className="flex items-center focus:outline-none hover:bg-transparent active:bg-transparent transition-none" 
                     onClick={() => {
                         if (navigator.share) {
                             navigator.share({
@@ -60,8 +59,7 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
                 
                 <Button 
                     variant="ghost" 
-                    className="flex items-center focus:outline-none 
-                    " 
+                    className="flex items-center focus:outline-none hover:bg-transparent active:bg-transparent transition-none" 
                     onClick={handleLike}
                 >
                     <Image 
