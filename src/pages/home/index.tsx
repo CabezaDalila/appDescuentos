@@ -14,5 +14,5 @@ export default function Home() {
         expiration="10/10/2025"
       /> */}
     </div>
-  )
+  );
 }
