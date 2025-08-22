@@ -1,7 +1,7 @@
-import { Settings, LogOut, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/Share/button';
-import { useRouter } from 'next/router';
-import React from 'react';
+import { Button } from "@/components/Share/button";
+import { ArrowLeft, LogOut, Settings } from "lucide-react";
+import { useRouter } from "next/router";
+import React from "react";
 
 interface ProfileAppBarProps {
   onSettings: () => void;
@@ -9,7 +9,11 @@ interface ProfileAppBarProps {
   title?: string;
 }
 
-export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({ onSettings, onLogout, title = 'Mi Perfil' }) => {
+export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({
+  onSettings,
+  onLogout,
+  title = "Mi Perfil",
+}) => {
   const router = useRouter();
   return (
     <header className="sticky top-0 z-30 bg-white shadow-sm flex items-center justify-between h-14 px-4 border-b">
@@ -18,13 +22,13 @@ export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({ onSettings, onLogo
         variant="ghost"
         size="icon"
         aria-label="Volver a inicio"
-        onClick={() => router.push('/')}
-        className="mr-2"
+        onClick={() => router.push("/")}
+        className="mr-2 text-gray-600"
       >
         <ArrowLeft className="w-6 h-6" />
       </Button>
       {/* Título */}
-      <h1 className="flex-1 text-center text-lg font-semibold select-none">
+      <h1 className="flex-1 text-center text-lg font-semibold select-none text-gray-600">
         {title}
       </h1>
       {/* Acciones */}
@@ -34,6 +38,7 @@ export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({ onSettings, onLogo
           size="icon"
           aria-label="Configuración"
           onClick={onSettings}
+          className="text-gray-600"
         >
           <Settings className="w-6 h-6" />
         </Button>
@@ -42,10 +47,11 @@ export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({ onSettings, onLogo
           size="icon"
           aria-label="Cerrar sesión"
           onClick={onLogout}
+          className="text-gray-600"
         >
           <LogOut className="w-6 h-6" />
         </Button>
       </div>
     </header>
   );
-}; 
+};
