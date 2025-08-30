@@ -49,9 +49,11 @@ export function LayoutHome({ children }: LayoutHomeProps) {
         }
     }
   return (
-    <div>
-      {router.pathname !== "/profile" && router.pathname !== "/memberships" && <Header notificationCount={0}/>} 
-      {children}
+    <div className="h-screen flex flex-col">
+      {router.pathname !== "/profile" && router.pathname !== "/memberships" && router.pathname !== "/notifications" && <Header notificationCount={0}/>} 
+      <div className="flex-1 overflow-hidden">
+        {children}
+      </div>
       <NavigationBar tabs={tabs} activeTab={activeTab} onTabsChange={handleTabsChange} />
     </div>
   )
