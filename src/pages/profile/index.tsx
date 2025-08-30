@@ -1,25 +1,33 @@
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/Share/button";
-import { Card, CardContent, CardHeader } from "@/components/Share/card";
-import { useState, useEffect } from "react";
-import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { ProfileAppBar } from "@/components/layout/profile-app-bar";
-import { Pencil } from "lucide-react";
 import MembershipCard from "@/components/memberships/MembershipCard";
+import UserSettingsModal from "@/components/settings/UserSettingsModal";
+import { Button } from "@/components/Share/button";
+import { Card, CardContent } from "@/components/Share/card";
+import { useAuth } from "@/hooks/useAuth";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
-import { useRouter } from "next/router";
 import { Membership } from "@/types/membership";
-import Image from "next/image";
 import { User } from "firebase/auth";
+import { Pencil } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 function getInitial(user: User) {
   // Usar displayName si existe y no es vacío
-  if (user?.displayName && typeof user.displayName === 'string' && user.displayName.trim() !== '') {
-    const firstName = user.displayName.trim().split(' ')[0];
+  if (
+    user?.displayName &&
+    typeof user.displayName === "string" &&
+    user.displayName.trim() !== ""
+  ) {
+    const firstName = user.displayName.trim().split(" ")[0];
     return firstName.charAt(0).toUpperCase();
   }
   // Si no, usar email
-  if (user?.email && typeof user.email === 'string' && user.email.trim() !== '') {
+  if (
+    user?.email &&
+    typeof user.email === "string" &&
+    user.email.trim() !== ""
+  ) {
     return user.email.charAt(0).toUpperCase();
   }
   return "U";
@@ -49,11 +57,19 @@ export default function Profile() {
   }, [user, loading]);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-40 text-gray-500">Cargando usuario...</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500">
+        Cargando usuario...
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="flex justify-center items-center h-40 text-gray-500">Usuario no autenticado</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500">
+        Usuario no autenticado
+      </div>
+    );
   }
 
   return (
@@ -62,37 +78,39 @@ export default function Profile() {
         onSettings={() => setSettingsOpen(true)}
         onLogout={logout}
       />
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 max-w-2xl overflow-hidden">
         <Card>
-          <CardHeader>
-            {/* Título y descripción eliminados para respetar el diseño */}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Información del usuario - DISEÑO FINAL (alineado a la izquierda) */}
+          <CardContent className="space-y-6 mt-4">
             <div className="flex items-center gap-4 pb-2">
               <div className="relative w-20 h-20 flex-shrink-0">
-                {/* Foto o inicial */}
-                {typeof user.photoURL === 'string' && user.photoURL.trim().length > 0 ? (
+                {typeof user.photoURL === "string" &&
+                user.photoURL.trim().length > 0 ? (
                   <Image
                     src={user.photoURL}
                     alt="Foto de perfil"
                     width={80}
                     height={80}
                     className="rounded-full object-cover border-2 border-gray-200"
-                  /> 
+                  />
                 ) : (
                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold select-none">
                     {getInitial(user)}
                   </div>
                 )}
-                {/* Ícono de editar */}
-                <span className="absolute bottom-1 left-1 bg-white rounded-full p-1 shadow border cursor-pointer" title="Editar foto de perfil">
+                <span
+                  className="absolute bottom-1 left-1 bg-white rounded-full p-1 shadow border cursor-pointer"
+                  title="Editar foto de perfil"
+                >
                   <Pencil className="w-5 h-5 text-gray-500" />
                 </span>
               </div>
               <div className="flex flex-col items-start justify-center">
-                <span className="text-xl font-bold leading-tight">{user.displayName || "Usuario"}</span>
-                <span className="text-gray-600 text-sm leading-tight">{user.email}</span>
+                <span className="text-xl font-bold leading-tight">
+                  {user.displayName || "Usuario"}
+                </span>
+                <span className="text-gray-600 text-sm leading-tight">
+                  {user.email}
+                </span>
                 {getMemberSince(user) && (
                   <span className="mt-2 px-3 py-1 rounded-full bg-white border text-gray-700 text-xs font-medium shadow-sm inline-block">
                     Miembro desde {getMemberSince(user)}
@@ -103,7 +121,9 @@ export default function Profile() {
             {/* Carrousel de membresías activas */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-base">Membresías activas</span>
+                <span className="font-semibold text-base">
+                  Membresías activas
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -114,14 +134,21 @@ export default function Profile() {
                 </Button>
               </div>
               {loadingMemberships ? (
-                <div className="text-gray-400 text-sm py-6">Cargando membresías...</div>
+                <div className="text-gray-400 text-sm py-6">
+                  Cargando membresías...
+                </div>
               ) : memberships.length === 0 ? (
-                <div className="text-gray-400 text-sm py-6">No tienes membresías activas</div>
+                <div className="text-gray-400 text-sm py-6">
+                  No tienes membresías activas
+                </div>
               ) : (
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent px-0 -mx-4">
                   {memberships.slice(0, 12).map((membership) => (
                     <div key={membership.id} className="flex-shrink-0">
-                      <MembershipCard membership={membership} variant="carousel" />
+                      <MembershipCard
+                        membership={membership}
+                        variant="carousel"
+                      />
                     </div>
                   ))}
                 </div>
