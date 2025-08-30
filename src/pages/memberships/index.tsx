@@ -196,63 +196,63 @@ export default function Memberships() {
             <Plus className="h-5 w-5 mr-1" /> Añadir
           </Button>
         </div>
-        {/* Filtros y buscador en una sola fila */}
-        <div className="flex flex-wrap gap-2 items-center mb-4">
-          {/* Buscador */}
+        {/* Filtros y buscador */}
+        <div className="space-y-3 mb-4">
+          {/* Buscador arriba */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Buscar membresías..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 rounded-full bg-white border border-gray-200 focus:ring-2 focus:ring-violet-200"
-              style={{ minWidth: 200 }}
+              className="pl-10 rounded-full bg-white border border-gray-200 focus:ring-2 focus:ring-violet-200 w-full"
             />
           </div>
-          {/* Filtro por categoría */}
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="rounded-full bg-white border border-gray-200 px-4">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue>
-                {categoryFilter === "all"
-                  ? "Todos"
-                  : MEMBERSHIP_CATEGORIES.find(
-                      (c) => c.value === categoryFilter
-                    )?.label || "Todos"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {MEMBERSHIP_CATEGORIES.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* Ordenamiento */}
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-            <SelectTrigger className="rounded-full bg-white border border-gray-200 px-4">
-              <SortAsc className="h-4 w-4 mr-2" />
-              <SelectValue>
-                {sortBy === "name-asc"
-                  ? "A-Z"
-                  : sortBy === "name-desc"
-                  ? "Z-A"
-                  : sortBy === "recent"
-                  ? "Más recientes"
-                  : sortBy === "oldest"
-                  ? "Más antiguas"
-                  : "Ordenar por"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">A-Z</SelectItem>
-              <SelectItem value="name-desc">Z-A</SelectItem>
-              <SelectItem value="recent">Más recientes</SelectItem>
-              <SelectItem value="oldest">Más antiguas</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filtros abajo en la misma línea */}
+          <div className="flex gap-2 items-center">
+            {/* Filtro por categoría */}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="rounded-full bg-white border border-gray-200 px-2 flex-1">
+                <Filter className="h-4 w-4 mr-1" />
+                <SelectValue>
+                  {categoryFilter === "all"
+                    ? "Todos"
+                    : MEMBERSHIP_CATEGORIES.find(c => c.value === categoryFilter)?.label || "Todos"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {MEMBERSHIP_CATEGORIES.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Ordenamiento */}
+            <Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
+              <SelectTrigger className="rounded-full bg-white border border-gray-200 px-2 flex-1">
+                <SortAsc className="h-4 w-4 mr-1" />
+                <SelectValue>
+                  {sortBy === "name-asc"
+                    ? "A-Z"
+                    : sortBy === "name-desc"
+                    ? "Z-A"
+                    : sortBy === "recent"
+                    ? "Más recientes"
+                    : sortBy === "oldest"
+                    ? "Más antiguas"
+                    : "Ordenar por"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name-asc">A-Z</SelectItem>
+                <SelectItem value="name-desc">Z-A</SelectItem>
+                <SelectItem value="recent">Más recientes</SelectItem>
+                <SelectItem value="oldest">Más antiguas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       {/* Contenido principal */}
