@@ -50,9 +50,22 @@ export function LayoutHome({ children }: LayoutHomeProps) {
         }
     }
 
+    // Para páginas que tienen su propio layout (perfil, membresías, notificaciones)
+    if (router.pathname === "/profile" || router.pathname.startsWith("/memberships") || router.pathname === "/notifications") {
+        return (
+            <div className="h-screen flex flex-col">
+                <div className="flex-1 overflow-hidden">
+                    {children}
+                </div>
+                <NavigationBar tabs={tabs} activeTab={activeTab} onTabsChange={handleTabsChange} />
+            </div>
+        )
+    }
+
+    // Para páginas que necesitan el layout con ScrollArea (home, search, etc.)
     return (
         <div className="h-screen flex flex-col">
-            {router.pathname !== "/profile" && router.pathname !== "/memberships" && router.pathname !== "/notifications" && <Header />}
+            <Header />
             <div className="flex-1 overflow-hidden">
                 <main className="container mx-auto px-4 py-1 max-w-2xl">
                     <ScrollArea className="h-[calc(100vh-100px)]">
