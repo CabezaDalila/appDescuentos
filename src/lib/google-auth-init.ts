@@ -11,7 +11,7 @@ export const initializeGoogleAuth = async () => {
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });
-      console.log('Google Auth inicializado correctamente');
+      // Log removido por seguridad
     }
   } catch (error) {
     console.error('Error al inicializar Google Auth:', error);
