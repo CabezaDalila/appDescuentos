@@ -15,27 +15,16 @@ export function NavigationBar({ tabs, activeTab, onTabsChange }: NavigationBarPr
           return (
             <button
               key={tab.id}
-
               className={`flex flex-col items-center gap-1 h-auto py-2 px-3 rounded-md transition-colors ${
                 isActive 
                   ? "text-primary bg-primary/10" 
                   : "text-muted-foreground hover:text-accent-foreground hover:bg-accent/50"
-
-              variant="ghost"
-              className={`flex flex-col items-center gap-1 h-auto py-2 px-3 ${
-                activeTab === tab.id ? "text-blue-600" : "text-gray-500"
-
               }`}
               onClick={() => onTabsChange(tab.id)}
             >
               <tab.icon className="h-5 w-5" />
-
               <span className="text-xs font-medium">{tab.label}</span>
             </button>
-
-              {/* <span className="text-xs font-medium">{tab.label}</span> */}
-            </Button>
-
           )
         })}
       </div>
