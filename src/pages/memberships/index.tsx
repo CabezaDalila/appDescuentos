@@ -1,38 +1,50 @@
-import { useAuth } from "@/hooks/useAuth";
+import AddMembershipModal from "@/components/memberships/AddMembershipModal";
+import MembershipDetailModal from "@/components/memberships/MembershipDetailModal";
+import MembershipList from "@/components/memberships/MembershipList";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { Plus, Filter, Search, SortAsc } from "lucide-react";
-import MembershipList from "@/components/memberships/MembershipList";
-import MembershipDetailModal from "@/components/memberships/MembershipDetailModal";
-import AddMembershipModal from "@/components/memberships/AddMembershipModal";
-import { 
-  getUserMemberships, 
-  createMembership, 
-  updateMembership, 
-  deleteMembership,
-  addCardToMembership,
-  updateCardInMembership,
-  deleteCardFromMembership,
-  checkMembershipExists
-} from "@/lib/firebase/memberships";
-import { Membership, CreateMembershipData, MEMBERSHIP_CATEGORIES } from "@/types/membership";
-import toast from "react-hot-toast";
 import { Input } from "@/components/Share/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Share/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  addCardToMembership,
+  checkMembershipExists,
+  createMembership,
+  deleteCardFromMembership,
+  deleteMembership,
+  getUserMemberships,
+  updateCardInMembership,
+  updateMembership,
+} from "@/lib/firebase/memberships";
+import {
+  CreateMembershipData,
+  Membership,
+  MEMBERSHIP_CATEGORIES,
+} from "@/types/membership";
+import { Filter, Plus, Search, SortAsc } from "lucide-react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 export default function Memberships() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loadingMemberships, setLoadingMemberships] = useState(true);
-  const [selectedMembership, setSelectedMembership] = useState<Membership | null>(null);
+  const [selectedMembership, setSelectedMembership] =
+    useState<Membership | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"name-asc" | "name-desc" | "recent" | "oldest">("name-asc");
+  const [sortBy, setSortBy] = useState<
+    "name-asc" | "name-desc" | "recent" | "oldest"
+  >("name-asc");
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -51,9 +63,14 @@ export default function Memberships() {
     }
   };
 
-  const handleCreateMembership = async (membershipData: CreateMembershipData) => {
+  const handleCreateMembership = async (
+    membershipData: CreateMembershipData
+  ) => {
     try {
-      const exists = await checkMembershipExists(membershipData.name, membershipData.category);
+      const exists = await checkMembershipExists(
+        membershipData.name,
+        membershipData.category
+      );
       if (exists) {
         // toast.error('Ya tienes una membresía con ese nombre en esa categoría');
         return;
@@ -66,7 +83,10 @@ export default function Memberships() {
     }
   };
 
-  const handleUpdateMembership = async (membershipId: string, updateData: any) => {
+  const handleUpdateMembership = async (
+    membershipId: string,
+    updateData: any
+  ) => {
     try {
       await updateMembership(membershipId, updateData);
       // toast.success('Membresía actualizada exitosamente');
@@ -91,15 +111,20 @@ export default function Memberships() {
     setShowDetailModal(true);
   };
 
-  const handleDeleteCardFromMembership = async (membershipId: string, cardId: string) => {
+  const handleDeleteCardFromMembership = async (
+    membershipId: string,
+    cardId: string
+  ) => {
     await deleteCardFromMembership(membershipId, cardId);
   };
 
   // Filtrar y ordenar membresías
   const filteredAndSortedMemberships = memberships
-    .filter(m =>
-      (!searchTerm || m.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (categoryFilter === "all" || m.category === categoryFilter)
+    .filter(
+      (m) =>
+        (!searchTerm ||
+          m.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (categoryFilter === "all" || m.category === categoryFilter)
     )
     .sort((a, b) => {
       switch (sortBy) {
@@ -108,20 +133,32 @@ export default function Memberships() {
         case "name-desc":
           return b.name.localeCompare(a.name);
         case "recent":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
         default:
           return 0;
       }
     });
 
   if (authLoading) {
-    return <div className="flex justify-center items-center h-40 text-gray-500">Cargando usuario...</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500">
+        Cargando usuario...
+      </div>
+    );
   }
 
   if (!user) {
-    return <div className="flex justify-center items-center h-40 text-gray-500">Usuario no autenticado</div>;
+    return (
+      <div className="flex justify-center items-center h-40 text-gray-500">
+        Usuario no autenticado
+      </div>
+    );
   }
 
   return (
@@ -131,12 +168,26 @@ export default function Memberships() {
         <div className="flex items-center justify-between gap-2 mb-4">
           <button
             onClick={() => router.back()}
-            className="p-2 rounded hover:bg-gray-100 focus:outline-none"
+            className="p-2 rounded hover:bg-gray-100 focus:outline-none text-gray-600"
             aria-label="Volver"
           >
-            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left w-5 h-5"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <svg
+              width="24"
+              height="24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-arrow-left w-5 h-5"
+            >
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
           </button>
-          <h1 className="text-2xl font-bold flex-1 ml-2">Mis Membresías</h1>
+          <h1 className="text-2xl text-gray-700 font-bold flex-1 ml-2">
+            Mis Membresías
+          </h1>
           <Button
             onClick={() => setShowAddModal(true)}
             className="rounded-full px-5 py-2 font-semibold text-white bg-violet-600 hover:bg-violet-700 shadow-none"
@@ -153,7 +204,7 @@ export default function Memberships() {
             <Input
               placeholder="Buscar membresías..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 rounded-full bg-white border border-gray-200 focus:ring-2 focus:ring-violet-200 w-full"
             />
           </div>
@@ -247,4 +298,4 @@ export default function Memberships() {
       />
     </div>
   );
-} 
+}

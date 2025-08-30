@@ -1,8 +1,10 @@
 import { Header } from "@/components/layout/header"
 import { NavigationBar } from "@/components/layout/navigation-bar"
-import { Home, Search, User,Bell } from "lucide-react"
+import { Home, Search, User, Bell } from "lucide-react"
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router';
+import { ScrollArea } from "@/components/Share/scroll-area"
 
 interface LayoutHomeProps {
   children: React.ReactNode
@@ -15,7 +17,6 @@ export function LayoutHome({ children }: LayoutHomeProps) {
         { id: "search", label: "Buscar", icon: Search, path: "/search" },
         { id: "notifications", label: "Notificaciones", icon: Bell, path: "/notifications" },
         { id: "profile", label: "Perfil", icon: User, path: "/profile" },
-
     ]
     const router = useRouter();
     
@@ -48,13 +49,18 @@ export function LayoutHome({ children }: LayoutHomeProps) {
           router.push(tab.path);
         }
     }
-  return (
-    <div className="h-screen flex flex-col">
-      {router.pathname !== "/profile" && router.pathname !== "/memberships" && router.pathname !== "/notifications" && <Header notificationCount={0}/>} 
-      <div className="flex-1 overflow-hidden">
-        {children}
-      </div>
-      <NavigationBar tabs={tabs} activeTab={activeTab} onTabsChange={handleTabsChange} />
-    </div>
-  )
+
+    return (
+        <div className="h-screen flex flex-col">
+            {router.pathname !== "/profile" && router.pathname !== "/memberships" && router.pathname !== "/notifications" && <Header />}
+            <div className="flex-1 overflow-hidden">
+                <main className="container mx-auto px-4 py-1 max-w-2xl">
+                    <ScrollArea className="h-[calc(100vh-100px)]">
+                        {children}
+                    </ScrollArea>
+                </main>
+            </div>
+            <NavigationBar tabs={tabs} activeTab={activeTab} onTabsChange={handleTabsChange} />
+        </div>
+    )
 }

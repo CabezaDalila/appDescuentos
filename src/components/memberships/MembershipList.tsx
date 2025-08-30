@@ -1,10 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { Input } from '../Share/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../Share/select';
-import { Button } from '../Share/button';
-import { Search, Filter, SortAsc} from 'lucide-react';
-import MembershipCard from './MembershipCard';
-import { Membership, MEMBERSHIP_CATEGORIES } from '../../types/membership';
+import { Filter, Search, SortAsc } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Membership, MEMBERSHIP_CATEGORIES } from "../../types/membership";
+import { Button } from "../Share/button";
+import { Input } from "../Share/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../Share/select";
+import MembershipCard from "./MembershipCard";
 
 interface MembershipListProps {
   memberships: Membership[];
@@ -16,7 +22,7 @@ interface MembershipListProps {
   showStats?: boolean;
 }
 
-type SortOption = 'name-asc' | 'name-desc' | 'recent' | 'oldest';
+type SortOption = "name-asc" | "name-desc" | "recent" | "oldest";
 
 const MembershipList: React.FC<MembershipListProps> = ({
   memberships,
@@ -25,11 +31,11 @@ const MembershipList: React.FC<MembershipListProps> = ({
   showAddButton = true,
   showHeader = true,
   showFilters = true,
-  showStats = true
+  showStats = true,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("recent");
 
   // Filtrar y ordenar membresías
   const filteredAndSortedMemberships = useMemo(() => {
@@ -37,31 +43,37 @@ const MembershipList: React.FC<MembershipListProps> = ({
 
     // Filtrar por búsqueda
     if (searchTerm) {
-      filtered = filtered.filter(membership =>
+      filtered = filtered.filter((membership) =>
         membership.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Filtrar por categoría
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(membership =>
-        membership.category === categoryFilter
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(
+        (membership) => membership.category === categoryFilter
       );
     }
 
     // Ordenar
     switch (sortBy) {
-      case 'name-asc':
+      case "name-asc":
         filtered.sort((a, b) => a.name.localeCompare(b.name));
         break;
-      case 'name-desc':
+      case "name-desc":
         filtered.sort((a, b) => b.name.localeCompare(a.name));
         break;
-      case 'recent':
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case "recent":
+        filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case "oldest":
+        filtered.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
         break;
     }
 
@@ -75,10 +87,7 @@ const MembershipList: React.FC<MembershipListProps> = ({
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <h2 className="text-xl font-semibold">Mis Membresías</h2>
           {showAddButton && onAddMembership && (
-            <Button 
-              onClick={onAddMembership}
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={onAddMembership} className="w-full sm:w-auto">
               + Añadir Membresía
             </Button>
           )}
@@ -113,7 +122,10 @@ const MembershipList: React.FC<MembershipListProps> = ({
             </SelectContent>
           </Select>
           {/* Ordenamiento */}
-          <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+          <Select
+            value={sortBy}
+            onValueChange={(value: SortOption) => setSortBy(value)}
+          >
             <SelectTrigger>
               <SortAsc className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Ordenar por" />
@@ -131,10 +143,11 @@ const MembershipList: React.FC<MembershipListProps> = ({
       {showStats && (
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>
-            {filteredAndSortedMemberships.length} de {memberships.length} membresías
+            {filteredAndSortedMemberships.length} de {memberships.length}{" "}
+            membresías
           </span>
           <span>
-            {memberships.filter(m => m.status === 'active').length} activas
+            {memberships.filter((m) => m.status === "active").length} activas
           </span>
         </div>
       )}
@@ -142,9 +155,11 @@ const MembershipList: React.FC<MembershipListProps> = ({
       {filteredAndSortedMemberships.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
-            {searchTerm || categoryFilter !== 'all' ? (
+            {searchTerm || categoryFilter !== "all" ? (
               <>
-                <p className="text-lg font-medium mb-2">No se encontraron membresías</p>
+                <p className="text-lg font-medium mb-2">
+                  No se encontraron membresías
+                </p>
                 <p className="text-sm">
                   Intenta ajustar los filtros o términos de búsqueda
                 </p>
@@ -180,4 +195,4 @@ const MembershipList: React.FC<MembershipListProps> = ({
   );
 };
 
-export default MembershipList; 
+export default MembershipList;
