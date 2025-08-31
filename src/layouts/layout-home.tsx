@@ -62,6 +62,18 @@ export function LayoutHome({ children }: LayoutHomeProps) {
         )
     }
 
+    // Para la página de home - sin Header, sin ScrollArea, layout completo
+    if (router.pathname === "/home") {
+        return (
+            <div className="h-screen flex flex-col">
+                <div className="flex-1 overflow-hidden">
+                    {children}
+                </div>
+                <NavigationBar tabs={tabs} activeTab={activeTab} onTabsChange={handleTabsChange} />
+            </div>
+        )
+    }
+
     // Para páginas que necesitan el layout con ScrollArea (home, search, etc.)
     return (
         <div className="h-screen flex flex-col">
