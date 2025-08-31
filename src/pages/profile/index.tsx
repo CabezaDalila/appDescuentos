@@ -4,10 +4,11 @@ import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { useAuth } from "@/hooks/useAuth";
+import { checkAdminRole } from "@/lib/firebase/admin";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Membership } from "@/types/membership";
 import { User } from "firebase/auth";
-import { Pencil } from "lucide-react";
+import { Pencil, Shield } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -46,6 +47,7 @@ export default function Profile() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loadingMemberships, setLoadingMemberships] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -54,6 +56,22 @@ export default function Profile() {
     getActiveMemberships()
       .then(setMemberships)
       .finally(() => setLoadingMemberships(false));
+  }, [user, loading]);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user && !loading) {
+        try {
+          const adminStatus = await checkAdminRole(user.uid);
+          setIsAdmin(adminStatus);
+        } catch (error) {
+          console.error("Error verificando rol de admin:", error);
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    checkAdmin();
   }, [user, loading]);
 
   if (loading) {
@@ -118,6 +136,19 @@ export default function Profile() {
                 )}
               </div>
             </div>
+            {/* Botón de Administración para Admins */}
+            {isAdmin && (
+              <div className="pb-4 border-b border-gray-200">
+                <Button
+                  onClick={() => router.push("/admin")}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Panel de Administración
+                </Button>
+              </div>
+            )}
+
             {/* Carrousel de membresías activas */}
             <div>
               <div className="flex items-center justify-between mb-2">

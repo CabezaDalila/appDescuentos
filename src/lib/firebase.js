@@ -1,8 +1,22 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, doc, updateDoc, getDoc, setDoc, getDocs } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 
-console.log(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)
+console.log(process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,11 +25,26 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENTID
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENTID,
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { auth, db, collection, doc, updateDoc, getDoc, setDoc, getDocs };
+export {
+  addDoc,
+  auth,
+  collection,
+  db,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  where,
+};

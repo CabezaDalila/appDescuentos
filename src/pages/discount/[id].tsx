@@ -1,26 +1,50 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
 import { BackButton } from "@/components/Share/back-button";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { getDiscounts } from "@/lib/firebase/discounts";
+import { getImageByCategory } from "@/lib/image-categories";
+import { Discount } from "@/types/discount";
 
 export default function DiscountDetail() {
-  // Get a firebase para obtener los datos del descuento por ID
-  //Datos de ejemplo
-  const discountData = {
-    title: "20% de descuento en celulares seleccionados",
-    image: "/primary_image.jpg",
-    description:
-      "20% de descuento exclusivo en celulares seleccionados de última generación.",
-    applyWith: [
-      "Bancos participantes",
-      "Bancos participantes",
-      "Bancos participantes",
-    ],
-    category: "Celulares",
-    points: 6,
-    countComments: 10,
-    distance: "1.2km",
-    expiration: "10/10/2025",
-    discountPercentage: "20%",
-  };
+  const router = useRouter();
+  const { id } = router.query;
+  const [discountData, setDiscountData] = useState<Discount | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadDiscount = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        const allDiscounts = await getDiscounts();
+        const discount = allDiscounts.find(d => d.id === id);
+        
+        if (discount) {
+          // Usar el mismo sistema de imágenes por categoría
+          const image = discount.imageUrl || getImageByCategory(discount.category);
+          
+          setDiscountData({
+            ...discount,
+            image: image
+          });
+        } else {
+          // Si no se encuentra, redirigir a 404 o mostrar error
+          router.push('/404');
+        }
+      } catch (error) {
+        console.error("Error cargando descuento:", error);
+        router.push('/404');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadDiscount();
+    }
+  }, [id, router]);
 
   return (
     <div className="min-h-screen">
@@ -36,18 +60,29 @@ export default function DiscountDetail() {
 
       {/* Contenido principal */}
       <div className="p-4">
-        <CardDiscount
-          title={discountData.title}
-          image={discountData.image}
-          description={discountData.description}
-          applyWith={discountData.applyWith}
-          category={discountData.category}
-          points={discountData.points}
-          countComments={discountData.countComments}
-          distance={discountData.distance}
-          expiration={discountData.expiration}
-          discountPercentage={discountData.discountPercentage}
-        />
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando descuento...</p>
+          </div>
+        ) : discountData ? (
+          <CardDiscount
+            title={discountData.title || discountData.name || "Sin título"}
+            image={discountData.image || "/primary_image.jpg"}
+            description={discountData.description || "Sin descripción"}
+            applyWith={discountData.membershipRequired || ["Sin requisitos"]}
+            category={discountData.category || "Sin categoría"}
+            points={6} // Valor por defecto
+            countComments={0} // Valor por defecto
+            distance="1.2km" // Valor por defecto
+            expiration={discountData.validUntil?.toLocaleDateString("es-ES") || "Sin fecha"}
+            discountPercentage={discountData.discountPercentage ? `${discountData.discountPercentage}%` : "Sin descuento"}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Descuento no encontrado</p>
+          </div>
+        )}
       </div>
     </div>
   );
