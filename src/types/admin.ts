@@ -2,6 +2,7 @@ export interface ScrapingScript {
   id: string;
   siteName: string;
   script: string;
+  frequency: "manual" | "hourly" | "daily" | "weekly";
   isActive: boolean;
   lastExecuted?: Date;
   createdAt: Date;

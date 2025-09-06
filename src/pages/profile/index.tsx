@@ -1,9 +1,10 @@
-import { ProfileAppBar } from "@/components/layout/profile-app-bar";
+import { ProfileAppBar } from "@/components/home/profile-app-bar";
 import MembershipCard from "@/components/memberships/MembershipCard";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { checkAdminRole } from "@/lib/firebase/admin";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Membership } from "@/types/membership";
@@ -44,6 +45,7 @@ function getMemberSince(user: User) {
 
 export default function Profile() {
   const { user, logout, loading } = useAuth();
+  const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loadingMemberships, setLoadingMemberships] = useState(true);
@@ -136,8 +138,8 @@ export default function Profile() {
                 )}
               </div>
             </div>
-            {/* Botón de Administración para Admins */}
-            {isAdmin && (
+            {/* Botón de Administración para Admins (solo en desktop) */}
+            {isAdmin && !isMobile && (
               <div className="pb-4 border-b border-gray-200">
                 <Button
                   onClick={() => router.push("/admin")}

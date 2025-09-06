@@ -17,6 +17,13 @@ import {
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import {
@@ -51,6 +58,7 @@ export function ScrapingScriptsManager() {
   const [formData, setFormData] = useState({
     siteName: "",
     script: "",
+    frequency: "daily",
     isActive: true,
   });
 
@@ -102,6 +110,7 @@ export function ScrapingScriptsManager() {
     setFormData({
       siteName: script.siteName,
       script: script.script,
+      frequency: script.frequency || "daily",
       isActive: script.isActive,
     });
     setIsDialogOpen(true);
@@ -148,6 +157,7 @@ export function ScrapingScriptsManager() {
     setFormData({
       siteName: "",
       script: "",
+      frequency: "daily",
       isActive: true,
     });
     setEditingScript(null);
@@ -222,6 +232,12 @@ export function ScrapingScriptsManager() {
                         <Calendar className="h-3 w-3" />
                         Creado: {script.createdAt.toLocaleDateString()}
                       </span>
+                      {script.frequency && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Frecuencia: {script.frequency}
+                        </span>
+                      )}
                       {script.lastExecuted && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -303,6 +319,29 @@ export function ScrapingScriptsManager() {
                 placeholder="Ej: Amazon, Mercado Libre, etc."
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="frequency">Frecuencia de Ejecución *</Label>
+              <Select
+                value={formData.frequency}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, frequency: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona la frecuencia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Solo Manual</SelectItem>
+                  <SelectItem value="hourly">Cada Hora</SelectItem>
+                  <SelectItem value="daily">Diario</SelectItem>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define con qué frecuencia se ejecutará automáticamente el script
+              </p>
             </div>
 
             <div className="space-y-2">
