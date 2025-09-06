@@ -1,33 +1,68 @@
-import "@/styles/globals.css";
-import type { AppProps } from 'next/app'; 
-import { LayoutHome } from "@/layouts/layout-home";  
+import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
+import { LayoutHome } from "@/layouts/layout-home";
+import { initializeGoogleAuth } from "@/lib/google-auth-init";
+import "@/styles/globals.css";
+import type { AppProps } from "next/app";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
-import { initializeGoogleAuth } from "@/lib/google-auth-init";
-import Head from "next/head";
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { user, loading } = useAuth();
+  const { isAdmin, adminLoading } = useAdmin();
+  const isMobile = useIsMobile();
   const router = useRouter();
 
   useEffect(() => {
     // Inicializar Google Auth para Capacitor
     initializeGoogleAuth();
-    
-    if (!loading && !user) {
+
+    if (
+      !loading &&
+      !user &&
+      !["/login", "/setup-admin"].includes(router.pathname)
+    ) {
       router.push("/login");
     }
-  }, [user, loading, router]);
-  
-  if (!user && router.pathname === "/login") {
+    if (user && !loading && !adminLoading && router.pathname === "/login") {
+      if (isAdmin && !isMobile) {
+        return;
+      } else {
+        router.push("/home");
+      }
+    }
+  }, [user, loading, adminLoading, isAdmin, isMobile, router]);
+
+  if (
+    (!user || (user && router.pathname === "/login")) &&
+    ["/login", "/setup-admin"].includes(router.pathname)
+  ) {
     return (
       <>
         <Head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          />
         </Head>
         <Component {...pageProps} />
+      </>
+    );
+  }
+  if (router.pathname.startsWith("/admin")) {
+    return (
+      <>
+        <Head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+          />
+        </Head>
+        <Component {...pageProps} />
+        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </>
     );
   }
@@ -35,7 +70,10 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
       </Head>
       <LayoutHome>
         <Component {...pageProps} />

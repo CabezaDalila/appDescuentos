@@ -1,45 +1,142 @@
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signInWithCredential, signOut } from "firebase/auth";
-import { auth } from "./firebase";
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  increment,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 // Registro
 export const register = async (email, password) => {
-  return createUserWithEmailAndPassword(auth, email, password);
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  await saveUserToFirestore(result.user);
+  return result;
 };
 
-// Login
 export const login = async (email, password) => {
-  return signInWithEmailAndPassword(auth, email, password);
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  await saveUserToFirestore(result.user);
+  return result;
 };
 
-// Logout
 export const logout = async () => {
   return signOut(auth);
 };
 
-// Login con Google (Web - navegador)
-export const loginWithGoogle = async () => {
-  return signInWithPopup(auth, new GoogleAuthProvider());
+const saveUserToFirestore = async (user) => {
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
+    const isNewUser = !userDoc.exists();
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || null,
+      photoURL: user.photoURL || null,
+      emailVerified: user.emailVerified || false,
+      providerId: user.providerId || "google.com",
+      isActive: true,
+      updatedAt: serverTimestamp(),
+      lastLoginAt: serverTimestamp(),
+      lastLoginIP: null,
+      appInfo: {
+        version: "1.0.0",
+        platform: typeof window !== "undefined" ? "web" : "mobile",
+        userAgent:
+          typeof window !== "undefined" ? window.navigator.userAgent : null,
+      },
+    };
+    if (isNewUser) {
+      userData.createdAt = serverTimestamp();
+      userData.loginCount = 1;
+      userData.role = "user";
+      userData.preferences = {
+        notifications: {
+          email: true,
+          push: true,
+          discounts: true,
+          promotions: true,
+        },
+        theme: "light",
+        language: "es",
+        currency: "ARS",
+      };
+
+      userData.activity = {
+        totalLogins: 1,
+        lastActivityAt: serverTimestamp(),
+        favoriteCategories: [],
+        savedDiscounts: [],
+        sharedDiscounts: 0,
+      };
+
+      userData.profile = {
+        firstName: user.displayName?.split(" ")[0] || null,
+        lastName: user.displayName?.split(" ").slice(1).join(" ") || null,
+        phone: null,
+        birthDate: null,
+        gender: null,
+        location: {
+          country: null,
+          city: null,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      };
+      userData.privacy = {
+        profileVisible: true,
+        emailVisible: false,
+        activityVisible: true,
+      };
+    } else {
+      userData.loginCount = increment(1);
+      userData.activity = {
+        totalLogins: increment(1),
+        lastActivityAt: serverTimestamp(),
+      };
+    }
+
+    await setDoc(userRef, userData, { merge: true });
+  } catch (error) {
+    console.error("Error guardando usuario en Firestore:", error);
+    throw error;
+  }
 };
 
-// Login con Google (Nativo - Capacitor/Android)
+export const loginWithGoogle = async () => {
+  const result = await signInWithPopup(auth, new GoogleAuthProvider());
+  await saveUserToFirestore(result.user);
+  return result;
+};
+
 export const loginWithGoogleNative = async () => {
   try {
     // Import dinámico para evitar errores en web
-    const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-    
-    // 1. Login nativo con Google
+    const { GoogleAuth } = await import(
+      "@codetrix-studio/capacitor-google-auth"
+    );
+
     const googleUser = await GoogleAuth.signIn();
-    
-    // 2. Obtener el idToken
+
     const idToken = googleUser.authentication.idToken;
-    
-    // 3. Crear credencial de Firebase
+
     const credential = GoogleAuthProvider.credential(idToken);
-    
-    // 4. Login en Firebase
-    return signInWithCredential(auth, credential);
+
+    const result = await signInWithCredential(auth, credential);
+
+    await saveUserToFirestore(result.user);
+
+    return result;
   } catch (error) {
-    console.error('Error en login nativo de Google:', error);
+    console.error("Error en login nativo de Google:", error);
     throw error;
   }
 };

@@ -158,7 +158,10 @@ export const checkAdminRole = async (userId: string): Promise<boolean> => {
   try {
     const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return false;
+
+    if (!userSnap.exists()) {
+      return false;
+    }
 
     const userData = userSnap.data();
     return userData.role === "admin";
