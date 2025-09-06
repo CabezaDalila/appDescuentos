@@ -1,0 +1,153 @@
+/* Estilos específicos para el panel de administración */
+.admin-dialog {
+  background: white !important;
+  border: 2px solid #e5e7eb !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.admin-dialog .dialog-title {
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.admin-dialog .dialog-description {
+  color: #4b5563 !important;
+}
+
+.admin-form input,
+.admin-form textarea,
+.admin-form select {
+  background: white !important;
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.admin-form input:focus,
+.admin-form textarea:focus,
+.admin-form select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.admin-form input::placeholder,
+.admin-form textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+.admin-form label {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+
+/* Mejorar contraste de botones */
+.admin-dialog .btn-primary {
+  background: #3b82f6 !important;
+  color: white !important;
+  border: none !important;
+}
+
+.admin-dialog .btn-primary:hover {
+  background: #2563eb !important;
+}
+
+.admin-dialog .btn-secondary {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.admin-dialog .btn-secondary:hover {
+  background: #e5e7eb !important;
+}
+
+/* Mejorar contraste de badges */
+.admin-badge {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+
+.admin-badge.active {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+.admin-badge.inactive {
+  background: #6b7280 !important;
+  color: white !important;
+}
+
+/* Mejorar contraste de switches */
+.admin-switch {
+  background: #d1d5db !important;
+}
+
+.admin-switch[data-state="checked"] {
+  background: #3b82f6 !important;
+}
+
+/* Mejorar contraste de tabs */
+.admin-tabs {
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.admin-tabs[data-state="active"] {
+  background: white !important;
+  color: #111827 !important;
+  border-bottom: 2px solid #3b82f6 !important;
+}
+
+/* Mejorar contraste de cards */
+.admin-card {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+.admin-card-header {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.admin-card-title {
+  color: #111827 !important;
+}
+
+.admin-card-description {
+  color: #6b7280 !important;
+}
+
+/* Mejorar contraste de código */
+.admin-code {
+  background: #f3f4f6 !important;
+  border: 1px solid #e5e7eb !important;
+  color: #374151 !important;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+}
+
+/* Mejorar contraste de separadores */
+.admin-separator {
+  background: #e5e7eb !important;
+}
+
+/* Mejorar contraste de iconos */
+.admin-icon {
+  color: #6b7280 !important;
+}
+
+.admin-icon.primary {
+  color: #3b82f6 !important;
+}
+
+.admin-icon.success {
+  color: #10b981 !important;
+}
+
+.admin-icon.warning {
+  color: #f59e0b !important;
+}
+
+.admin-icon.danger {
+  color: #ef4444 !important;
+}

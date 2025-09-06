@@ -1,16 +1,9 @@
 export interface Discount {
   id: string;
   name: string;
+  title?: string; // Agregado para compatibilidad
   description?: string;
-  category:
-    | "banco"
-    | "club"
-    | "salud"
-    | "educacion"
-    | "seguro"
-    | "telecomunicacion"
-    | "gastronomia"
-    | "otro";
+  category: string; // Cambiado a string para permitir todas las categorías
   discountPercentage?: number;
   discountAmount?: number;
   validFrom?: Date;
@@ -18,6 +11,7 @@ export interface Discount {
   membershipRequired?: string[];
   terms?: string;
   imageUrl?: string;
+  image?: string; // Agregado para compatibilidad
   createdAt: Date;
   updatedAt: Date;
   status: "active" | "inactive" | "expired";
