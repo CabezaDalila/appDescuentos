@@ -20,6 +20,7 @@ export function useAdmin() {
           setAdminLoading(false);
         }
       } else if (!loading) {
+        setIsAdmin(false);
         setAdminLoading(false);
       }
     };
