@@ -122,3 +122,56 @@ body {
   min-height: 100%;
   overflow: hidden;
 }
+
+/* Utilidades responsive personalizadas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mejorar el scroll en móviles */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Utilidad para truncar texto */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Safe area para dispositivos con notch */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mejoras para el input de búsqueda */
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Animaciones suaves */
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Mejoras para botones en móviles */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px; /* Tamaño mínimo recomendado para touch */
+  }
+}

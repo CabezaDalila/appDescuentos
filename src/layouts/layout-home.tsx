@@ -76,12 +76,30 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     );
   }
 
-  // Para páginas que necesitan el layout con ScrollArea (home, search, etc.)
+  // Para la página de home - sin Header
+  if (router.pathname === "/home") {
+    return (
+      <div className="h-screen flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          <main className="w-full max-w-2xl mx-auto">
+            <ScrollArea className="h-[calc(100vh-80px)]">{children}</ScrollArea>
+          </main>
+        </div>
+        <NavigationBar
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabsChange={handleTabsChange}
+        />
+      </div>
+    );
+  }
+
+  // Para páginas que necesitan el layout con ScrollArea (search, etc.)
   return (
     <div className="h-screen flex flex-col">
       <Header />
       <div className="flex-1 overflow-hidden">
-        <main className="container mx-auto px-4 py-1 max-w-2xl">
+        <main className="w-full max-w-2xl mx-auto">
           <ScrollArea className="h-[calc(100vh-100px)]">{children}</ScrollArea>
         </main>
       </div>
