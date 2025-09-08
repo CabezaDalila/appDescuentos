@@ -76,13 +76,75 @@ export const deleteScrapingScript = async (id: string): Promise<void> => {
 
 export const executeScrapingScript = async (id: string): Promise<void> => {
   try {
-    // Aquí se ejecutaría la lógica del script
-    // Por ahora solo actualizamos la fecha de última ejecución
+    // Obtener el script
+    const scriptDoc = await getDoc(doc(db, "scrapingScripts", id));
+    if (!scriptDoc.exists()) {
+      throw new Error("Script no encontrado");
+    }
+
+    const scriptData = scriptDoc.data();
+    const scriptCode = scriptData.script;
+
+    console.log("🚀 Ejecutando script:", scriptData.siteName);
+
+    // Ejecutar el script en el contexto del navegador
+    let result;
+    try {
+      // Crear una función que ejecute el script
+      const executeScript = new Function("return " + scriptCode);
+      result = await executeScript();
+    } catch (scriptError) {
+      console.error("Error ejecutando el script:", scriptError);
+      const errorMessage =
+        scriptError instanceof Error
+          ? scriptError.message
+          : String(scriptError);
+      throw new Error(`Error en el script: ${errorMessage}`);
+    }
+
+    // Si el script retorna descuentos, guardarlos en Firebase
+    if (result && Array.isArray(result)) {
+      console.log(`📊 Script retornó ${result.length} descuentos`);
+
+      for (const discountData of result) {
+        try {
+          // Validar que la categoría sea válida
+          if (
+            discountData.category &&
+            !isValidCategory(discountData.category)
+          ) {
+            console.warn(
+              `Categoría "${discountData.category}" no es válida, usando "general"`
+            );
+            discountData.category = "general";
+          }
+
+          // Guardar el descuento en Firebase
+          await addDoc(collection(db, "discounts"), {
+            ...discountData,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+            status: "active",
+            type: "scraped",
+          });
+
+          console.log(`✅ Descuento guardado: ${discountData.name}`);
+        } catch (discountError) {
+          console.error("Error guardando descuento:", discountError);
+        }
+      }
+    } else {
+      console.log("⚠️ El script no retornó descuentos válidos");
+    }
+
+    // Actualizar la fecha de última ejecución
     const docRef = doc(db, "scrapingScripts", id);
     await updateDoc(docRef, {
       lastExecuted: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
+
+    console.log("✅ Script ejecutado correctamente");
   } catch (error) {
     console.error("Error al ejecutar script de scraping:", error);
     throw error;
@@ -102,13 +164,54 @@ export const createManualDiscount = async (
       );
     }
 
-    const docRef = await addDoc(collection(db, "discounts"), {
+    // Convertir fechas ISO a Timestamps si es necesario
+    const discountData = {
       ...discount,
+      validUntil: discount.validUntil
+        ? typeof discount.validUntil === "string"
+          ? Timestamp.fromDate(new Date(discount.validUntil))
+          : discount.validUntil
+        : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 días por defecto
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       status: "active",
       type: "manual",
-    });
+    };
+
+    const docRef = await addDoc(collection(db, "discounts"), discountData);
+    return docRef.id;
+  } catch (error) {
+    console.error("Error al crear descuento manual:", error);
+    throw error;
+  }
+};
+
+export const createScrapedDiscount = async (
+  discount: Omit<ManualDiscount, "id" | "createdAt" | "updatedAt">
+): Promise<string> => {
+  try {
+    // Validar que la categoría sea válida
+    if (discount.category && !isValidCategory(discount.category)) {
+      throw new Error(
+        `Categoría "${discount.category}" no es válida. Use una de las categorías predefinidas.`
+      );
+    }
+
+    // Convertir fechas ISO a Timestamps si es necesario
+    const discountData = {
+      ...discount,
+      validUntil: discount.validUntil
+        ? typeof discount.validUntil === "string"
+          ? Timestamp.fromDate(new Date(discount.validUntil))
+          : discount.validUntil
+        : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 días por defecto
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      status: "active",
+      type: "scraped",
+    };
+
+    const docRef = await addDoc(collection(db, "discounts"), discountData);
     return docRef.id;
   } catch (error) {
     console.error("Error al crear descuento manual:", error);
@@ -128,8 +231,10 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
         origin: data.origin || "Origen no especificado",
         category: data.category || "Sin categoría",
         expirationDate:
-          data.expirationDate?.toDate() ||
-          data.validUntil?.toDate() ||
+          data.expirationDate?.toDate?.() ||
+          data.validUntil?.toDate?.() ||
+          (data.expirationDate ? new Date(data.expirationDate) : null) ||
+          (data.validUntil ? new Date(data.validUntil) : null) ||
           new Date(),
         description: data.description || data.descripcion || "Sin descripción",
         discountPercentage: data.discountPercentage,

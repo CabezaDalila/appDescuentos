@@ -151,3 +151,37 @@
 .admin-icon.danger {
   color: #ef4444 !important;
 }
+
+/* Estilos para scroll del admin */
+.admin-layout {
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.admin-main-content {
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.admin-main-content::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.admin-main-content::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+.admin-main-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+
+.admin-main-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+/* Asegurar que el contenido tenga scroll */
+.admin-content-wrapper {
+  min-height: calc(100vh - 200px) !important;
+}

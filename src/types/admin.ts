@@ -21,6 +21,7 @@ export interface ManualDiscount {
   imageUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  validUntil?: Date;
 }
 
 export interface AdminUser {

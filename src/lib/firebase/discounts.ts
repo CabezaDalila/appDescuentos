@@ -34,8 +34,18 @@ export const getDiscounts = async (): Promise<Discount[]> => {
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt:
+          data.createdAt?.toDate?.() ||
+          (data.createdAt ? new Date(data.createdAt) : null) ||
+          new Date(),
+        updatedAt:
+          data.updatedAt?.toDate?.() ||
+          (data.updatedAt ? new Date(data.updatedAt) : null) ||
+          new Date(),
+        validUntil:
+          data.validUntil?.toDate?.() ||
+          (data.validUntil ? new Date(data.validUntil) : null) ||
+          new Date(),
       } as Discount;
     });
   } catch (error) {
@@ -66,8 +76,10 @@ export const getHomePageDiscounts = async () => {
           getImageByCategory(data.category);
 
         const expiration =
-          data.validUntil?.toDate() ||
-          data.expirationDate?.toDate() ||
+          data.validUntil?.toDate?.() ||
+          data.expirationDate?.toDate?.() ||
+          (data.validUntil ? new Date(data.validUntil) : null) ||
+          (data.expirationDate ? new Date(data.expirationDate) : null) ||
           new Date();
 
         return {
@@ -120,8 +132,18 @@ export const getDiscountsBySearch = async (
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
+        createdAt:
+          data.createdAt?.toDate?.() ||
+          (data.createdAt ? new Date(data.createdAt) : null) ||
+          new Date(),
+        updatedAt:
+          data.updatedAt?.toDate?.() ||
+          (data.updatedAt ? new Date(data.updatedAt) : null) ||
+          new Date(),
+        validUntil:
+          data.validUntil?.toDate?.() ||
+          (data.validUntil ? new Date(data.validUntil) : null) ||
+          new Date(),
       } as Discount;
     });
 
