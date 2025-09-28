@@ -41,7 +41,7 @@ export default function Home() {
         ) : discounts.length === 0 ? (
           <div className="w-full text-center py-8">
             <p className="text-gray-600">No hay descuentos disponibles</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-gray-600 mt-2">
               Los descuentos aparecerán aquí cuando se agreguen desde el panel
               de administración
             </p>

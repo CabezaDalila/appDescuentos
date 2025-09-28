@@ -88,8 +88,8 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
       <div className="p-3 space-y-2">
         {/* Categoría y rating */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 font-medium">{category}</span>
-          <span className="text-xs text-gray-500 flex items-center gap-1">
+          <span className="text-xs text-gray-600 font-medium">{category}</span>
+          <span className="text-xs text-gray-600 flex items-center gap-1">
             <Image src="/star.png" alt="Star" width={10} height={10} />
             {points}
           </span>
@@ -101,7 +101,7 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
         </h3>
 
         {/* Información adicional */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
+        <div className="flex items-center justify-between text-xs text-gray-600">
           <span className="flex items-center gap-1">
             <Image src="/distance.png" alt="Distance" width={10} height={10} />
             {distance}

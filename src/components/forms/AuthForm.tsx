@@ -356,7 +356,7 @@ export default function AuthForm() {
                   }
                   disabled={isLoading || isGoogleLoading}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-600">
                   Mínimo 8 caracteres, una mayúscula, una minúscula y un número
                 </p>
               </div>

@@ -119,13 +119,15 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
             discountData.category = "general";
           }
 
-          // Guardar el descuento en Firebase
+          // Guardar el descuento en Firebase como pendiente de aprobación
           await addDoc(collection(db, "discounts"), {
             ...discountData,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
             status: "active",
             type: "scraped",
+            approvalStatus: "pending",
+            source: "scraping",
           });
 
           console.log(`✅ Descuento guardado: ${discountData.name}`);
@@ -167,6 +169,7 @@ export const createManualDiscount = async (
     // Convertir fechas ISO a Timestamps si es necesario
     const discountData = {
       ...discount,
+      isVisible: discount.isVisible ?? true, // Por defecto visible
       validUntil: discount.validUntil
         ? typeof discount.validUntil === "string"
           ? Timestamp.fromDate(new Date(discount.validUntil))
@@ -176,6 +179,7 @@ export const createManualDiscount = async (
       updatedAt: Timestamp.now(),
       status: "active",
       type: "manual",
+      approvalStatus: "approved", // Los descuentos manuales se aprueban automáticamente
     };
 
     const docRef = await addDoc(collection(db, "discounts"), discountData);
@@ -219,6 +223,40 @@ export const createScrapedDiscount = async (
   }
 };
 
+export const updateManualDiscount = async (
+  id: string,
+  updates: Partial<Omit<ManualDiscount, "id" | "createdAt" | "updatedAt">>
+): Promise<void> => {
+  try {
+    // Validar que la categoría sea válida si se está actualizando
+    if (updates.category && !isValidCategory(updates.category)) {
+      throw new Error(
+        `Categoría "${updates.category}" no es válida. Use una de las categorías predefinidas.`
+      );
+    }
+
+    // Preparar los datos de actualización
+    const updateData: Record<string, unknown> = {
+      ...updates,
+      updatedAt: Timestamp.now(),
+    };
+
+    // Convertir fechas ISO a Timestamps si es necesario
+    if (updates.expirationDate) {
+      updateData.expirationDate =
+        typeof updates.expirationDate === "string"
+          ? Timestamp.fromDate(new Date(updates.expirationDate))
+          : Timestamp.fromDate(updates.expirationDate);
+    }
+
+    const docRef = doc(db, "discounts", id);
+    await updateDoc(docRef, updateData);
+  } catch (error) {
+    console.error("Error al actualizar descuento manual:", error);
+    throw error;
+  }
+};
+
 export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
   try {
     // Obtener todos los descuentos para mostrar
@@ -240,6 +278,7 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
         discountPercentage: data.discountPercentage,
         discountAmount: data.discountAmount,
         imageUrl: data.imageUrl,
+        isVisible: data.isVisible ?? true,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as ManualDiscount;

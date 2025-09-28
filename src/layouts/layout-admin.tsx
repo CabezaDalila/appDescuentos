@@ -85,7 +85,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
                       className={`${
                         item.current
                           ? "text-white"
-                          : "text-gray-400 group-hover:text-gray-500"
+                          : "text-gray-600 group-hover:text-gray-700"
                       } mr-3 h-5 w-5`}
                     />
                     {item.name}
@@ -109,7 +109,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
                 <p className="text-sm font-medium text-gray-700 truncate">
                   {user?.email}
                 </p>
-                <p className="text-xs text-gray-500">Administrador</p>
+                <p className="text-xs text-gray-600">Administrador</p>
               </div>
             </div>
           </div>
@@ -119,7 +119,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
             <Button
               variant="outline"
               onClick={handleLogout}
-              className="w-full justify-start text-gray-600 hover:text-gray-900"
+              className="w-full justify-start text-gray-700 hover:text-gray-900"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar Sesión
@@ -141,7 +141,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
             <Button
               variant="outline"
               onClick={() => router.push("/home")}
-              className="flex items-center"
+              className="flex items-center text-gray-700 hover:text-gray-900"
             >
               <Home className="h-4 w-4 mr-2" />
               Ver como Usuario

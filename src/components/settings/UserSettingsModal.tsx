@@ -371,7 +371,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
             <Button
               variant="outline"
               onClick={handleCancel}
-              className="px-6 py-2"
+              className="px-6 py-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
             >
               Cancelar
             </Button>

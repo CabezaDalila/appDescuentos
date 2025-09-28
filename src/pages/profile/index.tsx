@@ -78,7 +78,7 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500">
+      <div className="flex justify-center items-center h-40 text-gray-600">
         Cargando usuario...
       </div>
     );
@@ -86,7 +86,7 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500">
+      <div className="flex justify-center items-center h-40 text-gray-600">
         Usuario no autenticado
       </div>
     );
@@ -121,7 +121,7 @@ export default function Profile() {
                   className="absolute bottom-1 left-1 bg-white rounded-full p-1 shadow border cursor-pointer"
                   title="Editar foto de perfil"
                 >
-                  <Pencil className="w-5 h-5 text-gray-500" />
+                  <Pencil className="w-5 h-5 text-gray-600" />
                 </span>
               </div>
               <div className="flex flex-col items-start justify-center">
@@ -161,17 +161,17 @@ export default function Profile() {
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/memberships")}
-                  className="ml-2"
+                  className="ml-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                 >
                   + Gestionar
                 </Button>
               </div>
               {loadingMemberships ? (
-                <div className="text-gray-400 text-sm py-6">
+                <div className="text-gray-600 text-sm py-6">
                   Cargando membresías...
                 </div>
               ) : memberships.length === 0 ? (
-                <div className="text-gray-400 text-sm py-6">
+                <div className="text-gray-600 text-sm py-6">
                   No tienes membresías activas
                 </div>
               ) : (

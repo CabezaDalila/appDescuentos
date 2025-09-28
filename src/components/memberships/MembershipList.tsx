@@ -98,7 +98,7 @@ const MembershipList: React.FC<MembershipListProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Buscador */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-4 w-4" />
             <Input
               placeholder="Buscar membresía..."
               value={searchTerm}
@@ -154,7 +154,7 @@ const MembershipList: React.FC<MembershipListProps> = ({
       {/* Lista de membresías */}
       {filteredAndSortedMemberships.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
+          <div className="text-gray-600 mb-4">
             {searchTerm || categoryFilter !== "all" ? (
               <>
                 <p className="text-lg font-medium mb-2">
@@ -174,7 +174,11 @@ const MembershipList: React.FC<MembershipListProps> = ({
             )}
           </div>
           {showAddButton && onAddMembership && (
-            <Button onClick={onAddMembership} variant="outline">
+            <Button
+              onClick={onAddMembership}
+              variant="outline"
+              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+            >
               + Añadir Primera Membresía
             </Button>
           )}

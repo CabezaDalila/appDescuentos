@@ -225,7 +225,7 @@ export function ScrapingScriptsManager() {
           <Button
             onClick={handlePasteJsonData}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
           >
             <Upload className="h-4 w-4" />
             Subir Datos JSON
@@ -300,6 +300,7 @@ export function ScrapingScriptsManager() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(script)}
+                      className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -308,6 +309,7 @@ export function ScrapingScriptsManager() {
                       size="sm"
                       onClick={() => handleCopyScript(script.script)}
                       title="Copiar script"
+                      className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -420,7 +422,11 @@ export function ScrapingScriptsManager() {
           </form>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+            >
               Cancelar
             </Button>
             <Button onClick={handleSubmit} className="flex items-center gap-2">
@@ -467,6 +473,7 @@ export function ScrapingScriptsManager() {
             <Button
               variant="outline"
               onClick={() => setIsJsonDialogOpen(false)}
+              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
             >
               Cancelar
             </Button>

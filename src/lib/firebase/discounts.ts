@@ -1,7 +1,18 @@
-import { collection, db, getDocs } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { getImageByCategory } from "@/lib/image-categories";
 import { Discount } from "@/types/discount";
-import { Timestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 
 interface FirestoreDiscount {
   name: string;
@@ -23,6 +34,12 @@ interface FirestoreDiscount {
   type?: string;
   expirationDate?: Timestamp;
   descripcion?: string; // Agregado para compatibilidad con datos existentes
+  approvalStatus?: "pending" | "approved" | "rejected"; // Nuevo campo
+  reviewedBy?: string; // ID del admin que revisó
+  reviewedAt?: Timestamp; // Fecha de revisión
+  rejectionReason?: string; // Razón del rechazo
+  source?: "manual" | "scraping"; // Origen del descuento
+  isVisible?: boolean; // Campo para controlar visibilidad
 }
 
 // Obtener todos los descuentos
@@ -34,18 +51,9 @@ export const getDiscounts = async (): Promise<Discount[]> => {
       return {
         id: doc.id,
         ...data,
-        createdAt:
-          data.createdAt?.toDate?.() ||
-          (data.createdAt ? new Date(data.createdAt) : null) ||
-          new Date(),
-        updatedAt:
-          data.updatedAt?.toDate?.() ||
-          (data.updatedAt ? new Date(data.updatedAt) : null) ||
-          new Date(),
-        validUntil:
-          data.validUntil?.toDate?.() ||
-          (data.validUntil ? new Date(data.validUntil) : null) ||
-          new Date(),
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        validUntil: data.validUntil?.toDate?.() || new Date(),
       } as Discount;
     });
   } catch (error) {
@@ -54,10 +62,16 @@ export const getDiscounts = async (): Promise<Discount[]> => {
   }
 };
 
-// Obtener descuentos para la página principal
+// Obtener descuentos para la página principal (solo aprobados)
 export const getHomePageDiscounts = async () => {
   try {
-    const snapshot = await getDocs(collection(db, "discounts"));
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "approved"),
+      where("status", "==", "active")
+    );
+
+    const snapshot = await getDocs(q);
     return snapshot.docs
       .map((doc) => {
         const data = doc.data() as FirestoreDiscount;
@@ -78,8 +92,6 @@ export const getHomePageDiscounts = async () => {
         const expiration =
           data.validUntil?.toDate?.() ||
           data.expirationDate?.toDate?.() ||
-          (data.validUntil ? new Date(data.validUntil) : null) ||
-          (data.expirationDate ? new Date(data.expirationDate) : null) ||
           new Date();
 
         return {
@@ -94,9 +106,13 @@ export const getHomePageDiscounts = async () => {
           description: data.description || data.descripcion || "",
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
+          isVisible: data.isVisible ?? true, // Incluir campo de visibilidad
         };
       })
-      .filter((discount) => discount.status === "active"); // Solo descuentos activos
+      .filter((discount) => {
+        // Solo descuentos activos y visibles
+        return discount.status === "active" && discount.isVisible !== false;
+      });
   } catch (error) {
     console.error(
       "Error al obtener descuentos para la página principal:",
@@ -121,29 +137,26 @@ export const getHomePageDiscounts = async () => {
   }
 };
 
-// Obtener descuentos por término de búsqueda
+// Obtener descuentos por término de búsqueda (solo aprobados)
 export const getDiscountsBySearch = async (
   searchTerm: string
 ): Promise<Discount[]> => {
   try {
-    const snapshot = await getDocs(collection(db, "discounts"));
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "approved"),
+      where("status", "==", "active")
+    );
+
+    const snapshot = await getDocs(q);
     const all = snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreDiscount;
       return {
         id: doc.id,
         ...data,
-        createdAt:
-          data.createdAt?.toDate?.() ||
-          (data.createdAt ? new Date(data.createdAt) : null) ||
-          new Date(),
-        updatedAt:
-          data.updatedAt?.toDate?.() ||
-          (data.updatedAt ? new Date(data.updatedAt) : null) ||
-          new Date(),
-        validUntil:
-          data.validUntil?.toDate?.() ||
-          (data.validUntil ? new Date(data.validUntil) : null) ||
-          new Date(),
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        validUntil: data.validUntil?.toDate?.() || new Date(),
       } as Discount;
     });
 
@@ -158,6 +171,157 @@ export const getDiscountsBySearch = async (
     );
   } catch (error) {
     console.error("Error al buscar descuentos:", error);
+    throw error;
+  }
+};
+
+// ===== FUNCIONES PARA GESTIÓN DE APROBACIÓN =====
+
+// Crear un descuento desde scraping (pendiente de aprobación)
+export const createScrapedDiscount = async (
+  discountData: Partial<Discount>
+) => {
+  try {
+    const docRef = await addDoc(collection(db, "discounts"), {
+      ...discountData,
+      approvalStatus: "pending",
+      source: "scraping",
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      status: "active",
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error("Error al crear descuento desde scraping:", error);
+    throw error;
+  }
+};
+
+// Obtener descuentos pendientes de aprobación
+export const getPendingDiscounts = async (): Promise<Discount[]> => {
+  try {
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "pending"),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => {
+      const data = doc.data() as FirestoreDiscount;
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        validUntil: data.validUntil?.toDate?.() || new Date(),
+        approvalStatus: data.approvalStatus || "pending",
+        source: data.source || "scraping",
+      } as Discount;
+    });
+  } catch (error) {
+    console.error("Error al obtener descuentos pendientes:", error);
+    throw error;
+  }
+};
+
+// Aprobar un descuento
+export const approveDiscount = async (
+  discountId: string,
+  reviewedBy: string
+): Promise<void> => {
+  try {
+    const docRef = doc(db, "discounts", discountId);
+    await updateDoc(docRef, {
+      approvalStatus: "approved",
+      reviewedBy,
+      reviewedAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error("Error al aprobar descuento:", error);
+    throw error;
+  }
+};
+
+// Rechazar un descuento
+export const rejectDiscount = async (
+  discountId: string,
+  reviewedBy: string,
+  rejectionReason: string
+): Promise<void> => {
+  try {
+    const docRef = doc(db, "discounts", discountId);
+    await updateDoc(docRef, {
+      approvalStatus: "rejected",
+      reviewedBy,
+      reviewedAt: Timestamp.now(),
+      rejectionReason,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    console.error("Error al rechazar descuento:", error);
+    throw error;
+  }
+};
+
+// Obtener descuentos aprobados para mostrar a usuarios
+export const getApprovedDiscounts = async (): Promise<Discount[]> => {
+  try {
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "approved"),
+      where("status", "==", "active"),
+      orderBy("createdAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs
+      .map((doc) => {
+        const data = doc.data() as FirestoreDiscount;
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+          validUntil: data.validUntil?.toDate?.() || new Date(),
+          approvalStatus: data.approvalStatus || "approved",
+          source: data.source || "scraping",
+        } as Discount;
+      })
+      .filter((discount) => {
+        // Filtrar por visibilidad - solo mostrar descuentos visibles
+        return discount.isVisible !== false; // true o undefined se consideran visibles
+      });
+  } catch (error) {
+    console.error("Error al obtener descuentos aprobados:", error);
+    throw error;
+  }
+};
+
+// Obtener un descuento por ID
+export const getDiscountById = async (
+  discountId: string
+): Promise<Discount | null> => {
+  try {
+    const docRef = doc(db, "discounts", discountId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data() as FirestoreDiscount;
+      return {
+        id: docSnap.id,
+        ...data,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        updatedAt: data.updatedAt?.toDate?.() || new Date(),
+        validUntil: data.validUntil?.toDate?.() || new Date(),
+        approvalStatus: data.approvalStatus || "pending",
+        source: data.source || "scraping",
+      } as Discount;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error al obtener descuento por ID:", error);
     throw error;
   }
 };

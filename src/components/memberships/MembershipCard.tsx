@@ -1,4 +1,4 @@
-import { ChevronRight, CreditCard, MapPin, Star, Wifi } from "lucide-react";
+import { ChevronRight, CreditCard, Star } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import { Membership } from "../../types/membership";
@@ -53,7 +53,7 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
   `;
 
   // Permitir gradiente de fondo si existe
-  const gradient = (membership as any).gradient as string | undefined;
+  const gradient = (membership as Membership & { gradient?: string }).gradient;
   const hasGradient = !!gradient;
   // Iniciales si no hay logo
   const initials = getInitials(membership.name);
@@ -77,38 +77,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
   //   </div>
   // );
 
-  // Beneficios destacados por tipo
-  const BENEFITS: Record<string, { icon: React.ReactNode; text: string }[]> = {
-    club: [
-      { icon: <Star className="w-5 h-5" />, text: "Descuentos exclusivos" },
-      { icon: <MapPin className="w-5 h-5" />, text: "Ubicaciones premium" },
-    ],
-    salud: [
-      { icon: <Star className="w-5 h-5" />, text: "Cobertura nacional" },
-      { icon: <MapPin className="w-5 h-5" />, text: "Red de prestadores" },
-    ],
-    educacion: [
-      { icon: <Star className="w-5 h-5" />, text: "Acceso a campus" },
-      {
-        icon: <MapPin className="w-5 h-5" />,
-        text: "Beneficios estudiantiles",
-      },
-    ],
-    seguro: [
-      { icon: <Star className="w-5 h-5" />, text: "Protección total" },
-      { icon: <MapPin className="w-5 h-5" />, text: "Atención 24/7" },
-    ],
-    telecomunicacion: [
-      { icon: <Star className="w-5 h-5" />, text: "Planes exclusivos" },
-      { icon: <MapPin className="w-5 h-5" />, text: "Cobertura nacional" },
-    ],
-  };
-
   // Layout para bancos
   if (membership.category === "banco") {
     return (
       <Card
-        className={`relative overflow-hidden rounded-3xl shadow-md min-h-[200px] transition-all duration-200 hover:shadow-xl ${
+        className={`relative overflow-hidden rounded-3xl shadow-md min-h-[160px] transition-all duration-200 hover:shadow-xl ${
           hasGradient ? `bg-gradient-to-r ${gradient}` : ""
         } ${cardClasses}`}
         onClick={onClick}
@@ -186,18 +159,11 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 text-white/90 text-base font-medium">
-            <CreditCard className="w-5 h-5 mr-1 text-white/70" />
-            {membership.cards.length} Tarjeta
-            {membership.cards.length !== 1 ? "s" : ""}
-          </div>
-
-          <div className="flex items-center justify-between pb-0">
-            <div className="flex items-center text-white/80 text-sm font-normal">
-              <Wifi className="w-5 h-5 mr-1" />
-              <span className="tracking-widest" style={{ marginLeft: "10px" }}>
-                **** **** **** ****
-              </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white/90 text-base font-medium">
+              <CreditCard className="w-5 h-5 mr-1 text-white/70" />
+              {membership.cards.length} Tarjeta
+              {membership.cards.length !== 1 ? "s" : ""}
             </div>
             <ChevronRight className="w-5 h-5 text-white/80" />
           </div>
@@ -207,11 +173,10 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
   }
 
   // Layout para otras categorías
-  const benefits = BENEFITS[membership.category] || [];
 
   return (
     <Card
-      className={`relative overflow-hidden rounded-3xl shadow-md min-h-[200px] transition-all duration-200 hover:shadow-xl ${
+      className={`relative overflow-hidden rounded-3xl shadow-md min-h-[160px] transition-all duration-200 hover:shadow-xl ${
         hasGradient ? `bg-gradient-to-r ${gradient}` : ""
       } ${cardClasses}`}
       onClick={onClick}
@@ -284,19 +249,9 @@ const MembershipCard: React.FC<MembershipCardProps> = ({
           )}
         </div>
 
-        {/* Beneficios */}
-        <div className="flex flex-col gap-1 mt-5 text-white/90 text-base font-normal opacity-90">
-          <div className="flex items-center gap-2">
-            {benefits[0]?.icon}
-            <span>{benefits[0]?.text}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {benefits[1]?.icon}
-              <span>{benefits[1]?.text}</span>
-            </div>
-            <ChevronRight className="w-5 h-5 text-white/80" />
-          </div>
+        {/* Flecha de navegación */}
+        <div className="flex justify-end mt-5">
+          <ChevronRight className="w-5 h-5 text-white/80" />
         </div>
       </CardContent>
     </Card>
