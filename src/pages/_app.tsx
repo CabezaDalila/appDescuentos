@@ -17,19 +17,14 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   useEffect(() => {
-    // Inicializar Google Auth para Capacitor
     initializeGoogleAuth();
 
-    if (
-      !loading &&
-      !user &&
-      !["/login", "/setup-admin"].includes(router.pathname)
-    ) {
+    if (!loading && !user && !["/login"].includes(router.pathname)) {
       router.push("/login");
     }
-    if (user && !loading && !adminLoading && router.pathname === "/login") {
-      if (isAdmin && !isMobile) {
-        return;
+    if (user && !loading && router.pathname === "/login") {
+      if (!isMobile) {
+        router.push("/admin");
       } else {
         router.push("/home");
       }
@@ -38,7 +33,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   if (
     (!user || (user && router.pathname === "/login")) &&
-    ["/login", "/setup-admin"].includes(router.pathname)
+    ["/login"].includes(router.pathname)
   ) {
     return (
       <>

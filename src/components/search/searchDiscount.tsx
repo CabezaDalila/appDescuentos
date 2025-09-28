@@ -1,7 +1,7 @@
 import Search from "@/components/search/search";
-import { useEffect, useState } from "react";
 import { getDiscountsBySearch } from "@/lib/firebase/discounts";
 import { Discount } from "@/types/discount";
+import { useEffect, useState } from "react";
 
 export default function SearchDiscount() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,9 +49,13 @@ export default function SearchDiscount() {
           return (
             <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-sm font-medium text-gray-900">{d.name}</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {d.name}
+                </div>
                 {d.description && (
-                  <div className="text-xs text-gray-500 line-clamp-1">{d.description}</div>
+                  <div className="text-xs text-gray-600 line-clamp-1">
+                    {d.description}
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -72,4 +76,4 @@ export default function SearchDiscount() {
       />
     </div>
   );
-} 
+}

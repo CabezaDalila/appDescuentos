@@ -2,7 +2,7 @@
 
 ## Descripción
 
-El Panel de Administración es una interfaz exclusiva para usuarios con permisos de administrador que permite gestionar scripts de scraping y cargar descuentos manualmente.
+El Panel de Administración es una interfaz exclusiva para usuarios con permisos de administrador que permite gestionar scripts de scraping y cargar descuentos manualmente. Está diseñado con una arquitectura modular y componentes reutilizables para facilitar el mantenimiento y la escalabilidad.
 
 ## Características
 
@@ -22,6 +22,9 @@ El Panel de Administración es una interfaz exclusiva para usuarios con permisos
 - **Validación**: Campos requeridos y validación de fechas
 - **Imágenes opcionales**: URL de imagen para mejorar la presentación
 - **Porcentajes y montos**: Campos para especificar el tipo de descuento
+- **Control de visibilidad**: Switch para mostrar/ocultar descuentos a los usuarios
+- **Edición en línea**: Modificar descuentos existentes directamente desde las tarjetas
+- **Eliminación masiva**: Seleccionar y eliminar múltiples descuentos
 
 ## Acceso
 
@@ -66,6 +69,8 @@ interface ManualDiscount {
   discountPercentage?: number;
   discountAmount?: number;
   imageUrl?: string;
+  isVisible: boolean;
+  approvalStatus: "approved" | "pending" | "rejected";
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -156,18 +161,27 @@ La aplicación incluye un sistema de notificaciones toast que informa sobre:
 - **Autenticación**: Firebase Auth
 - **Notificaciones**: React Hot Toast
 
-## Estructura de Archivos
+## Arquitectura del Sistema
+
+### Estructura de Archivos
 
 ```
 src/
 ├── components/
 │   └── admin/
 │       ├── ScrapingScriptsManager.tsx
-│       └── ManualDiscountsManager.tsx
+│       ├── ManualDiscountsManager.tsx
+│       ├── DiscountForm.tsx
+│       └── DiscountCard.tsx
 ├── hooks/
-│   └── useAdmin.tsx
+│   ├── useAdmin.tsx
+│   ├── useDiscounts.tsx
+│   ├── useDiscountForm.tsx
+│   └── useConfirmation.tsx
 ├── lib/
-│   └── firebase/
+│   ├── firebase/
+│   │   └── admin.ts
+│   └── constants/
 │       └── admin.ts
 ├── pages/
 │   └── admin/
@@ -175,6 +189,14 @@ src/
 └── types/
     └── admin.ts
 ```
+
+### Patrones de Diseño
+
+- **Hooks Personalizados**: Encapsulan la lógica de negocio y estado
+- **Componentes Reutilizables**: Formularios y tarjetas modulares
+- **Separación de Responsabilidades**: Lógica separada de presentación
+- **Constantes Centralizadas**: Textos y configuración en un solo lugar
+- **Tipado Fuerte**: Interfaces TypeScript para mejor desarrollo
 
 ## Próximas Mejoras
 

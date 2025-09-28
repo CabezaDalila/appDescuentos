@@ -154,6 +154,23 @@ export const DISCOUNT_CATEGORIES: Category[] = [
     color: "bg-indigo-100 text-indigo-800",
     icon: "📚",
   },
+
+  {
+    id: "general",
+    name: "General",
+    displayName: "🎯 General",
+    keywords: [
+      "general",
+      "varios",
+      "otros",
+      "promociones",
+      "descuentos",
+      "oferta",
+      "promo",
+    ],
+    color: "bg-gray-100 text-gray-800",
+    icon: "🎯",
+  },
 ];
 
 // Función para obtener categoría por ID
@@ -179,6 +196,7 @@ export const getAllCategories = (): Category[] => {
 export const isValidCategory = (categoryName: string): boolean => {
   return DISCOUNT_CATEGORIES.some(
     (cat) =>
+      cat.id.toLowerCase() === categoryName.toLowerCase() ||
       cat.name.toLowerCase() === categoryName.toLowerCase() ||
       cat.keywords.some((keyword) =>
         categoryName.toLowerCase().includes(keyword)

@@ -147,7 +147,7 @@ export default function Memberships() {
 
   if (authLoading) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500">
+      <div className="flex justify-center items-center h-40 text-gray-600">
         Cargando usuario...
       </div>
     );
@@ -155,7 +155,7 @@ export default function Memberships() {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-500">
+      <div className="flex justify-center items-center h-40 text-gray-600">
         Usuario no autenticado
       </div>
     );
@@ -200,7 +200,7 @@ export default function Memberships() {
         <div className="space-y-3 mb-4">
           {/* Buscador arriba */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-4 w-4" />
             <Input
               placeholder="Buscar membresías..."
               value={searchTerm}
@@ -217,7 +217,9 @@ export default function Memberships() {
                 <SelectValue>
                   {categoryFilter === "all"
                     ? "Todos"
-                    : MEMBERSHIP_CATEGORIES.find(c => c.value === categoryFilter)?.label || "Todos"}
+                    : MEMBERSHIP_CATEGORIES.find(
+                        (c) => c.value === categoryFilter
+                      )?.label || "Todos"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -230,7 +232,7 @@ export default function Memberships() {
               </SelectContent>
             </Select>
             {/* Ordenamiento */}
-            <Select value={sortBy} onValueChange={v => setSortBy(v as any)}>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
               <SelectTrigger className="rounded-full bg-white border border-gray-200 px-2 flex-1">
                 <SortAsc className="h-4 w-4 mr-1" />
                 <SelectValue>
@@ -261,7 +263,7 @@ export default function Memberships() {
           <CardContent className="p-6 max-h-[calc(100vh-220px)] overflow-y-auto pb-32">
             {loadingMemberships ? (
               <div className="text-center py-12">
-                <div className="text-gray-400">Cargando membresías...</div>
+                <div className="text-gray-600">Cargando membresías...</div>
               </div>
             ) : (
               <MembershipList

@@ -116,7 +116,7 @@ export function UsersManager() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 h-4 w-4" />
             <Input
               placeholder="Buscar por email o nombre..."
               value={searchTerm}
@@ -159,8 +159,8 @@ export function UsersManager() {
       {/* Lista de usuarios */}
       <div className="space-y-4">
         {filteredUsers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+          <div className="text-center py-8 text-gray-600">
+            <Users className="h-12 w-12 mx-auto mb-4 text-gray-500" />
             <p>No se encontraron usuarios</p>
             <p className="text-sm">
               {searchTerm
@@ -202,11 +202,11 @@ export function UsersManager() {
                           )}
                         </Badge>
                       </div>
-                      <div className="flex items-center text-sm text-gray-500 mb-1">
+                      <div className="flex items-center text-sm text-gray-600 mb-1">
                         <Mail className="h-4 w-4 mr-1" />
                         {user.email}
                       </div>
-                      <div className="flex items-center text-sm text-gray-500">
+                      <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-1" />
                         Registrado:{" "}
                         {user.createdAt && user.createdAt.toDate
@@ -224,6 +224,7 @@ export function UsersManager() {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleUserRole(user.id, user.role)}
+                      className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                     >
                       {user.role === "admin" ? "Quitar Admin" : "Hacer Admin"}
                     </Button>
@@ -242,7 +243,7 @@ export function UsersManager() {
             <div className="flex items-center">
               <Users className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
+                <p className="text-sm font-medium text-gray-600">
                   Total Usuarios
                 </p>
                 <p className="text-2xl font-bold">{users.length}</p>
@@ -255,7 +256,7 @@ export function UsersManager() {
             <div className="flex items-center">
               <Shield className="h-8 w-8 text-purple-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
+                <p className="text-sm font-medium text-gray-600">
                   Administradores
                 </p>
                 <p className="text-2xl font-bold">
@@ -270,7 +271,7 @@ export function UsersManager() {
             <div className="flex items-center">
               <User className="h-8 w-8 text-green-500" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">
+                <p className="text-sm font-medium text-gray-600">
                   Usuarios Regulares
                 </p>
                 <p className="text-2xl font-bold">

@@ -1,13 +1,19 @@
+// ===== TIPOS PARA SCRAPING SCRIPTS =====
+
 export interface ScrapingScript {
   id: string;
   siteName: string;
   script: string;
-  frequency: "manual" | "hourly" | "daily" | "weekly";
+  frequency: ScrapingFrequency;
   isActive: boolean;
   lastExecuted?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type ScrapingFrequency = "manual" | "hourly" | "daily" | "weekly";
+
+// ===== TIPOS PARA DESCUENTOS MANUALES =====
 
 export interface ManualDiscount {
   id?: string;
@@ -19,13 +25,81 @@ export interface ManualDiscount {
   discountPercentage?: number;
   discountAmount?: number;
   imageUrl?: string;
+  isVisible: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  validUntil?: Date;
 }
+
+export interface CreateManualDiscountData {
+  title: string;
+  origin: string;
+  category: string;
+  expirationDate: Date;
+  description: string;
+  discountPercentage?: number;
+  discountAmount?: number;
+  imageUrl?: string;
+  isVisible: boolean;
+}
+
+export interface UpdateManualDiscountData {
+  title?: string;
+  origin?: string;
+  category?: string;
+  expirationDate?: Date;
+  description?: string;
+  discountPercentage?: number;
+  discountAmount?: number;
+  imageUrl?: string;
+  isVisible?: boolean;
+}
+
+// ===== TIPOS PARA USUARIOS ADMIN =====
 
 export interface AdminUser {
   uid: string;
   email: string;
-  role: "admin" | "user";
+  role: UserRole;
   permissions: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type UserRole = "admin" | "user";
+
+// ===== TIPOS PARA ESTADOS DE COMPONENTES =====
+
+export interface DiscountFormState {
+  title: string;
+  origin: string;
+  category: string | undefined;
+  expirationDate: string;
+  description: string;
+  discountPercentage: string;
+  discountAmount: string;
+  imageUrl: string;
+  isVisible: boolean;
+}
+
+export interface ConfirmationModalState {
+  isOpen: boolean;
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  variant?: "default" | "destructive";
+}
+
+// ===== TIPOS PARA OPERACIONES =====
+
+export type DiscountOperation =
+  | "create"
+  | "update"
+  | "delete"
+  | "toggle-visibility";
+
+export interface OperationResult {
+  success: boolean;
+  message: string;
+  data?: any;
 }

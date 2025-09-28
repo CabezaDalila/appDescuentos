@@ -1,5 +1,5 @@
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { Input } from "../Share/input";
-import { useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 
 interface SearchProps {
   placeholder: string;
@@ -14,7 +14,17 @@ interface SearchProps {
   minChars?: number;
 }
 
-export default function Search({ placeholder, value, onSearch, debounceMs = 300, results = [], isLoading = false, renderResult, onSelectResult, minChars = 1 }: SearchProps) {
+export default function Search({
+  placeholder,
+  value,
+  onSearch,
+  debounceMs = 300,
+  results = [],
+  isLoading = false,
+  renderResult,
+  onSelectResult,
+  minChars = 1,
+}: SearchProps) {
   const [search, setSearch] = useState(value);
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
@@ -38,25 +48,34 @@ export default function Search({ placeholder, value, onSearch, debounceMs = 300,
     setActiveIndex(-1);
   };
 
-  const hasQueryToSearch = useMemo(() => (search?.length ?? 0) >= minChars, [search, minChars]);
-  const shouldShowDropdown = isFocused && hasQueryToSearch && (isLoading || (results && results.length >= 0));
+  const hasQueryToSearch = useMemo(
+    () => (search?.length ?? 0) >= minChars,
+    [search, minChars]
+  );
+  const shouldShowDropdown =
+    isFocused &&
+    hasQueryToSearch &&
+    (isLoading || (results && results.length >= 0));
 
-  const handleSelect = useCallback((item: unknown, index: number) => {
-    onSelectResult?.(item, index);
-  }, [onSelectResult]);
+  const handleSelect = useCallback(
+    (item: unknown, index: number) => {
+      onSelectResult?.(item, index);
+    },
+    [onSelectResult]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!shouldShowDropdown) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex(prev => {
+      setActiveIndex((prev) => {
         const next = Math.min((results?.length ?? 0) - 1, prev + 1);
         return next;
       });
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex(prev => {
+      setActiveIndex((prev) => {
         const next = Math.max(-1, prev - 1);
         return next;
       });
@@ -72,10 +91,10 @@ export default function Search({ placeholder, value, onSearch, debounceMs = 300,
 
   return (
     <div className="relative">
-      <Input 
-        placeholder={placeholder} 
-        type="search" 
-        value={search} 
+      <Input
+        placeholder={placeholder}
+        type="search"
+        value={search}
         onChange={(e) => {
           handleSearchChange(e.target.value);
         }}
@@ -84,23 +103,27 @@ export default function Search({ placeholder, value, onSearch, debounceMs = 300,
           setTimeout(() => setIsFocused(false), 100);
         }}
         onKeyDown={handleKeyDown}
-        className={`${isFocused ? "border-primary" : "border-gray-300"} text-gray-500`}
+        className={`${
+          isFocused ? "border-primary" : "border-gray-300"
+        } text-gray-600`}
       />
 
       {shouldShowDropdown && (
         <div className="absolute top-full left-0 w-full bg-white shadow-md rounded-lg mt-1 z-20 border border-gray-200 overflow-hidden">
           {isLoading ? (
-            <div className="p-3 text-sm text-gray-500">Buscando...</div>
+            <div className="p-3 text-sm text-gray-600">Buscando...</div>
           ) : (
             <>
-              {(results && results.length > 0) ? (
+              {results && results.length > 0 ? (
                 <ul className="max-h-64 overflow-y-auto">
                   {results.map((item, index) => {
                     const isActive = index === activeIndex;
                     return (
                       <li
                         key={index}
-                        className={`p-3 cursor-pointer transition-colors ${isActive ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                        className={`p-3 cursor-pointer transition-colors ${
+                          isActive ? "bg-blue-50" : "hover:bg-gray-50"
+                        }`}
                         onMouseEnter={() => setActiveIndex(index)}
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -110,14 +133,16 @@ export default function Search({ placeholder, value, onSearch, debounceMs = 300,
                         {renderResult ? (
                           renderResult(item, index, isActive)
                         ) : (
-                          <div className="text-sm text-gray-800">{String(item)}</div>
+                          <div className="text-sm text-gray-800">
+                            {String(item)}
+                          </div>
                         )}
                       </li>
                     );
                   })}
                 </ul>
               ) : (
-                <div className="p-3 text-sm text-gray-500">Sin resultados</div>
+                <div className="p-3 text-sm text-gray-600">Sin resultados</div>
               )}
             </>
           )}
