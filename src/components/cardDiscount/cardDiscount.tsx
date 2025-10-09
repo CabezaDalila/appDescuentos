@@ -94,19 +94,19 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
         />
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-500">{category}</span>
-        <span className="text-xs text-gray-500 flex items-center gap-1">
+        <span className="text-xs text-gray-600">{category}</span>
+        <span className="text-xs text-gray-600 flex items-center gap-1">
           <Image src="/star.png" alt="Star" width={10} height={10} />
           {`${points} (${countComments})`}
         </span>
       </div>
-      <h1 className="text-sm font-bold text-gray-500">{title}</h1>
+      <h1 className="text-sm font-bold text-gray-600">{title}</h1>
       <div className="flex items-center justify-start gap-4">
-        <span className="text-xs text-gray-500 flex items-center gap-1">
+        <span className="text-xs text-gray-600 flex items-center gap-1">
           <Image src="/distance.png" alt="Distance" width={10} height={10} />
           {distance}
         </span>
-        <span className="text-xs text-gray-500 flex items-center gap-1">
+        <span className="text-xs text-gray-600 flex items-center gap-1">
           <Image
             src="/expiration.png"
             alt="Expiration"
@@ -118,12 +118,12 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
       </div>
       {/* distancia mas vencimiento */}
       <Separator className="w-full" />
-      <p className="text-xs text-gray-500">{description}</p>
+      <p className="text-xs text-gray-600">{description}</p>
       <div className="flex flex-col gap-3">
         <h1 className="text-sm font-bold text-gray-600">Aplican</h1>
         <div className="flex  flex-wrap gap-2">
           {applyWith.map((item: string) => (
-            <Badge key={item} variant="outline" className="text-gray-500 gap-2">
+            <Badge key={item} variant="outline" className="text-gray-600 gap-2">
               {item}
             </Badge>
           ))}

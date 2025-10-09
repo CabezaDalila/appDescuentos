@@ -27,9 +27,9 @@ import {
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import {
+  createScrapedDiscount,
   createScrapingScript,
   deleteScrapingScript,
-  executeScrapingScript,
   getScrapingScripts,
   updateScrapingScript,
 } from "@/lib/firebase/admin";
@@ -38,12 +38,13 @@ import {
   Calendar,
   Clock,
   Code,
+  Copy,
   Edit,
   Globe,
-  Play,
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -61,6 +62,8 @@ export function ScrapingScriptsManager() {
     frequency: "daily",
     isActive: true,
   });
+  const [jsonData, setJsonData] = useState("");
+  const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
 
   useEffect(() => {
     loadScripts();
@@ -129,13 +132,44 @@ export function ScrapingScriptsManager() {
     }
   };
 
-  const handleExecute = async (id: string) => {
+  const handleCopyScript = (script: string) => {
+    navigator.clipboard.writeText(script);
+    toast.success("Script copiado al portapapeles");
+  };
+
+  const handlePasteJsonData = () => {
+    setIsJsonDialogOpen(true);
+  };
+
+  const handleSaveJsonData = async () => {
+    if (!jsonData.trim()) {
+      toast.error("Por favor pega el JSON con los datos de descuentos");
+      return;
+    }
+
     try {
-      await executeScrapingScript(id);
-      toast.success("Script ejecutado correctamente");
-      loadScripts();
+      const discounts = JSON.parse(jsonData);
+
+      if (!Array.isArray(discounts)) {
+        toast.error("El JSON debe ser un array de descuentos");
+        return;
+      }
+
+      let savedCount = 0;
+      for (const discount of discounts) {
+        try {
+          await createScrapedDiscount(discount);
+          savedCount++;
+        } catch (error) {
+          console.error("Error guardando descuento:", error);
+        }
+      }
+
+      toast.success(`${savedCount} descuentos guardados correctamente`);
+      setJsonData("");
+      setIsJsonDialogOpen(false);
     } catch (error) {
-      toast.error("Error al ejecutar el script");
+      toast.error("Error al procesar el JSON. Verifica el formato");
       console.error(error);
     }
   };
@@ -187,13 +221,23 @@ export function ScrapingScriptsManager() {
             diferentes sitios web
           </p>
         </div>
-        <Button
-          onClick={openNewScriptDialog}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo Script
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handlePasteJsonData}
+            variant="outline"
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+          >
+            <Upload className="h-4 w-4" />
+            Subir Datos JSON
+          </Button>
+          <Button
+            onClick={openNewScriptDialog}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo Script
+          </Button>
+        </div>
       </div>
 
       {/* Scripts List */}
@@ -256,16 +300,18 @@ export function ScrapingScriptsManager() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(script)}
+                      className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleExecute(script.id)}
-                      disabled={!script.isActive}
+                      onClick={() => handleCopyScript(script.script)}
+                      title="Copiar script"
+                      className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                     >
-                      <Play className="h-4 w-4" />
+                      <Copy className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -376,12 +422,67 @@ export function ScrapingScriptsManager() {
           </form>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+            >
               Cancelar
             </Button>
             <Button onClick={handleSubmit} className="flex items-center gap-2">
               <Save className="h-4 w-4" />
               {editingScript ? "Actualizar" : "Crear Script"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* JSON Data Dialog */}
+      <Dialog open={isJsonDialogOpen} onOpenChange={setIsJsonDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto admin-dialog">
+          <DialogHeader>
+            <DialogTitle className="dialog-title">
+              Subir Datos de Descuentos
+            </DialogTitle>
+            <DialogDescription className="dialog-description">
+              Pega aquí el JSON con los datos de descuentos obtenidos del script
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 admin-form">
+            <div className="space-y-2">
+              <Label htmlFor="jsonData">Datos JSON de Descuentos *</Label>
+              <Textarea
+                id="jsonData"
+                value={jsonData}
+                onChange={(e) => setJsonData(e.target.value)}
+                placeholder="Pega aquí el JSON con los descuentos obtenidos del script..."
+                rows={15}
+                required
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                El JSON debe ser un array de objetos con los descuentos.
+                Ejemplo: [{"{"}"name": "Descuento 1", "discountPercentage": 20
+                {"}"}]
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsJsonDialogOpen(false)}
+              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveJsonData}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Guardar Descuentos
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -30,6 +30,9 @@ interface DashboardStats {
   expiredDiscounts: number;
   manualDiscounts: number;
   scrapedDiscounts: number;
+  pendingDiscounts: number;
+  approvedDiscounts: number;
+  rejectedDiscounts: number;
 }
 
 interface RecentActivity {
@@ -52,6 +55,9 @@ export function AdminDashboard() {
     expiredDiscounts: 0,
     manualDiscounts: 0,
     scrapedDiscounts: 0,
+    pendingDiscounts: 0,
+    approvedDiscounts: 0,
+    rejectedDiscounts: 0,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -353,16 +359,16 @@ export function AdminDashboard() {
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {item.title}
                     </p>
-                    <p className="text-sm text-gray-500">{item.description}</p>
+                    <p className="text-sm text-gray-600">{item.description}</p>
                   </div>
-                  <div className="flex-shrink-0 text-sm text-gray-500">
+                  <div className="flex-shrink-0 text-sm text-gray-600">
                     {format(item.date, "dd/MM/yyyy HH:mm", { locale: es })}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 text-center py-4">
+            <p className="text-sm text-gray-600 text-center py-4">
               No hay actividad reciente
             </p>
           )}

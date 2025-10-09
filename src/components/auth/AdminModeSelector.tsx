@@ -118,7 +118,7 @@ export default function AdminModeSelector({
             </div>
 
             <div className="text-center pt-4">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-600">
                 Podrás cambiar de modo en cualquier momento desde tu perfil
               </p>
             </div>

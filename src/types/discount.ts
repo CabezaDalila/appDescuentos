@@ -12,9 +12,16 @@ export interface Discount {
   terms?: string;
   imageUrl?: string;
   image?: string; // Agregado para compatibilidad
+  isVisible?: boolean; // Campo para controlar visibilidad
   createdAt: Date;
   updatedAt: Date;
   status: "active" | "inactive" | "expired";
+  approvalStatus: "pending" | "approved" | "rejected"; // Nuevo campo para gestión de aprobación
+  reviewedBy?: string; // ID del admin que revisó
+  reviewedAt?: Date; // Fecha de revisión
+  rejectionReason?: string; // Razón del rechazo
+  source: "manual" | "scraping"; // Origen del descuento
+  origin?: string; // Origen del descuento (empresa/sitio)
 }
 
 export interface CreateDiscountData {
@@ -39,4 +46,4 @@ export const DISCOUNT_CATEGORIES = [
   { value: "telecomunicacion", label: "Telecomunicación" },
   { value: "gastronomia", label: "Gastronomía" },
   { value: "otro", label: "Otro" },
-] as const; 
+] as const;

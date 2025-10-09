@@ -1,36 +1,39 @@
-import React, { useState } from 'react';
+import { AlertTriangle, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import toast from "react-hot-toast";
+import {
+  CARD_BRANDS,
+  CARD_TYPES,
+  CARD_LEVELS as VALIDATION_CARD_LEVELS,
+  validateCardWithDuplicates,
+} from "../../lib/validation/cardValidation";
+import { Card, CardLevel, Membership } from "../../types/membership";
+import { Badge } from "../Share/badge";
+import { Button } from "../Share/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../Share/dialog';
-import { Button } from '../Share/button';
-import { Input } from '../Share/input';
-import { Label } from '../Share/label';
-import { Switch } from '../Share/switch';
-import { Badge } from '../Share/badge';
-import { Separator } from '../Share/separator';
-import { 
-  Edit, 
-  Trash2, 
-  Plus, 
-  CreditCard, 
-  AlertTriangle,
-  Save,
-  X
-} from 'lucide-react';
-import { Membership, Card, MEMBERSHIP_CATEGORIES, CARD_LEVELS, CardLevel } from '../../types/membership';
+} from "../Share/dialog";
+import { Input } from "../Share/input";
+import { Label } from "../Share/label";
+import { Separator } from "../Share/separator";
+import { Switch } from "../Share/switch";
 
 interface MembershipDetailModalProps {
   membership: Membership | null;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate?: (membershipId: string, data: any) => Promise<void>;
+  onUpdate?: (membershipId: string, data: Partial<Membership>) => Promise<void>;
   onDelete?: (membershipId: string) => Promise<void>;
-  onAddCard?: (membershipId: string, cardData: any) => Promise<void>;
-  onUpdateCard?: (membershipId: string, cardId: string, cardData: any) => Promise<void>;
+  onAddCard?: (membershipId: string, cardData: Card) => Promise<void>;
+  onUpdateCard?: (
+    membershipId: string,
+    cardId: string,
+    cardData: Partial<Card>
+  ) => Promise<void>;
   onDeleteCard?: (membershipId: string, cardId: string) => Promise<void>;
 }
 
@@ -42,61 +45,44 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
   onDelete,
   onAddCard,
   onUpdateCard,
-  onDeleteCard
+  onDeleteCard,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [editData, setEditData] = useState<Partial<Membership>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
   // Estados para gestión de tarjetas
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [showEditCardModal, setShowEditCardModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [cardFormData, setCardFormData] = useState({
-    type: 'Crédito' as Card['type'],
-    brand: 'Visa' as Card['brand'],
-    last4: '',
-    level: 'Classic' as CardLevel,
-    name: ''
+    type: "" as Card["type"],
+    brand: "" as Card["brand"],
+    level: "" as CardLevel,
+    name: "",
   });
 
-  const [localStatus, setLocalStatus] = useState<Membership['status']>('active');
-  const [localMembership, setLocalMembership] = useState<Membership | null>(membership);
+  const [localStatus, setLocalStatus] =
+    useState<Membership["status"]>("active");
+  const [localMembership, setLocalMembership] = useState<Membership | null>(
+    membership
+  );
 
   React.useEffect(() => {
     setLocalMembership(membership);
     if (membership) {
-      setEditData({
-        name: membership.name,
-        category: membership.category,
-        color: membership.color,
-        status: membership.status
-      });
       setLocalStatus(membership.status);
     }
   }, [membership]);
 
-  const handleSave = async () => {
-    if (!membership || !onUpdate) return;
-    
-    try {
-      await onUpdate(membership.id, editData);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error al actualizar membresía:', error);
-    }
-  };
-
   const handleDelete = async () => {
     if (!membership || !onDelete) return;
-    
+
     try {
       setIsDeleting(true);
       await onDelete(membership.id);
       onClose();
     } catch (error) {
-      console.error('Error al eliminar membresía:', error);
+      console.error("Error al eliminar membresía:", error);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -105,24 +91,23 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
   const handleStatusToggle = async () => {
     if (!membership || !onUpdate) return;
-    const newStatus = localStatus === 'active' ? 'inactive' : 'active';
+    const newStatus = localStatus === "active" ? "inactive" : "active";
     setLocalStatus(newStatus); // feedback inmediato
     try {
       await onUpdate(membership.id, { status: newStatus });
     } catch (error) {
       setLocalStatus(localStatus); // revertir si falla
-      console.error('Error al cambiar estado:', error);
+      console.error("Error al cambiar estado:", error);
     }
   };
 
   // Funciones para gestión de tarjetas
   const handleAddCard = () => {
     setCardFormData({
-      type: 'Crédito',
-      brand: 'Visa',
-      last4: '',
-      level: 'Classic',
-      name: ''
+      type: "" as Card["type"],
+      brand: "" as Card["brand"],
+      level: "" as CardLevel,
+      name: "",
     });
     setShowAddCardModal(true);
   };
@@ -132,38 +117,60 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     setCardFormData({
       type: card.type,
       brand: card.brand,
-      last4: card.last4,
       level: card.level,
-      name: card.name || ''
+      name: card.name || "",
     });
     setShowEditCardModal(true);
   };
 
   const handleSaveCard = async () => {
-    if (!localMembership || !cardFormData.last4.trim() || !cardFormData.level) return;
+    if (!localMembership) {
+      toast.error("Error: No se encontró la membresía");
+      return;
+    }
+
+    // Validar tarjeta con Yup y verificar duplicados
+    const validation = await validateCardWithDuplicates(
+      cardFormData,
+      localMembership.cards
+    );
+    if (!validation.isValid) {
+      validation.errors.forEach((error) => toast.error(error));
+      return;
+    }
+
     const newCard: Card = {
       id: Date.now().toString(),
-      ...cardFormData
+      ...cardFormData,
     };
+
     // Actualización optimista
     setLocalMembership({
       ...localMembership,
-      cards: [...localMembership.cards, newCard]
+      cards: [...localMembership.cards, newCard],
     });
     setShowAddCardModal(false);
     setShowEditCardModal(false);
     setSelectedCard(null);
-    setCardFormData({ type: 'Crédito', brand: 'Visa', last4: '', level: 'Classic', name: '' });
+    setCardFormData({
+      type: "" as Card["type"],
+      brand: "" as Card["brand"],
+      level: "" as CardLevel,
+      name: "",
+    });
+
     try {
       if (showEditCardModal && selectedCard && onUpdateCard) {
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
+        toast.success("Tarjeta actualizada correctamente");
       } else if (showAddCardModal && onAddCard) {
-        await onAddCard(localMembership.id, cardFormData);
+        await onAddCard(localMembership.id, newCard);
+        toast.success("Tarjeta agregada correctamente");
       }
     } catch (error) {
-      // Revertir si falla
       setLocalMembership(membership);
-      console.error('Error al guardar tarjeta:', error);
+      console.error("Error al guardar tarjeta:", error);
+      toast.error("Error al guardar la tarjeta");
     }
   };
 
@@ -172,14 +179,13 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     const prevCards = localMembership.cards;
     setLocalMembership({
       ...localMembership,
-      cards: localMembership.cards.filter(card => card.id !== cardId)
+      cards: localMembership.cards.filter((card) => card.id !== cardId),
     });
     try {
       await onDeleteCard(localMembership.id, cardId);
     } catch (error) {
-      // Revertir si falla
       setLocalMembership({ ...localMembership, cards: prevCards });
-      console.error('Error al eliminar tarjeta:', error);
+      console.error("Error al eliminar tarjeta:", error);
     }
   };
 
@@ -191,14 +197,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <Edit className="h-5 w-5" />
-                  Editar Membresía
-                </>
-              ) : (
-                localMembership.name
-              )}
+              {localMembership.name}
             </DialogTitle>
             <DialogDescription className="sr-only">
               Detalle y acciones de la membresía seleccionada
@@ -210,37 +209,47 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Categoría</span>
-                <Badge variant="outline" className="capitalize">
+                <Badge
+                  variant="outline"
+                  className="capitalize text-gray-700 border-gray-300"
+                >
                   {localMembership.category}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Estado</span>
                 <div className="flex items-center gap-2">
                   <Switch
-                    checked={localStatus === 'active'}
+                    checked={localStatus === "active"}
                     onCheckedChange={handleStatusToggle}
                   />
-                  <Badge variant={localStatus === 'active' ? 'default' : 'secondary'}>
-                    {localStatus === 'active' ? 'Activa' : 'Inactiva'}
+                  <Badge
+                    variant={localStatus === "active" ? "default" : "secondary"}
+                  >
+                    {localStatus === "active" ? "Activa" : "Inactiva"}
                   </Badge>
                 </div>
               </div>
             </div>
 
             {/* Sección de tarjetas (solo para bancos) */}
-            {localMembership.category === 'banco' && (
+            {localMembership.category === "banco" && (
               <>
                 <Separator />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium flex items-center gap-2">
+                    <h4 className="font-medium flex items-center gap-2 text-gray-900">
                       <CreditCard className="h-4 w-4" />
                       Tarjetas asociadas
                     </h4>
                     {onAddCard && (
-                      <Button size="sm" variant="outline" onClick={handleAddCard}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleAddCard}
+                        className="text-gray-700 hover:text-gray-900"
+                      >
                         <Plus className="h-4 w-4 mr-1" />
                         Añadir
                       </Button>
@@ -248,34 +257,38 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                   </div>
 
                   {localMembership.cards.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-gray-700 text-center py-4">
                       No hay tarjetas asociadas
                     </p>
                   ) : (
                     <div className="space-y-2">
                       {localMembership.cards.map((card) => (
-                        <div 
+                        <div
                           key={card.id}
                           className="flex items-center justify-between p-3 border rounded-lg"
                         >
                           <div>
-                            <p className="font-medium text-sm">{card.type}</p>
-                            <p className="text-xs text-gray-600">
-                              {card.brand} •••• {card.last4} {card.level}
+                            <p className="font-medium text-sm text-gray-800">
+                              {card.type}
+                            </p>
+                            <p className="text-sm text-gray-700 font-medium">
+                              {card.brand} {card.level}
                             </p>
                           </div>
                           <div className="flex gap-1">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => handleEditCard(card)}
+                              className="text-gray-600 hover:text-gray-900"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => handleDeleteCard(card.id)}
+                              className="text-gray-600 hover:text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -291,7 +304,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
             {/* Acciones */}
             <Separator />
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={() => setShowDeleteConfirm(true)}
                 variant="destructive"
                 className="flex-1"
@@ -307,23 +320,27 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-red-800">¿Eliminar membresía?</p>
+                    <p className="font-medium text-red-800">
+                      ¿Eliminar membresía?
+                    </p>
                     <p className="text-sm text-red-600 mt-1">
-                      Esta acción no se puede deshacer. Se eliminarán todas las tarjetas asociadas.
+                      Esta acción no se puede deshacer. Se eliminarán todas las
+                      tarjetas asociadas.
                     </p>
                     <div className="flex gap-2 mt-3">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="destructive"
                         onClick={handleDelete}
                         disabled={isDeleting}
                       >
-                        {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                        {isDeleting ? "Eliminando..." : "Eliminar"}
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => setShowDeleteConfirm(false)}
+                        className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
                       >
                         Cancelar
                       </Button>
@@ -338,8 +355,8 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
       {/* Modal para agregar/editar tarjeta */}
       {(showAddCardModal || showEditCardModal) && (
-        <Dialog 
-          open={showAddCardModal || showEditCardModal} 
+        <Dialog
+          open={showAddCardModal || showEditCardModal}
           onOpenChange={() => {
             setShowAddCardModal(false);
             setShowEditCardModal(false);
@@ -349,13 +366,12 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>
-                {showAddCardModal ? 'Agregar Tarjeta' : 'Editar Tarjeta'}
+                {showAddCardModal ? "Agregar Tarjeta" : "Editar Tarjeta"}
               </DialogTitle>
               <DialogDescription>
-                {showAddCardModal 
-                  ? 'Agrega una nueva tarjeta a tu membresía'
-                  : 'Modifica los datos de la tarjeta'
-                }
+                {showAddCardModal
+                  ? "Agrega una nueva tarjeta a tu membresía"
+                  : "Modifica los datos de la tarjeta"}
               </DialogDescription>
             </DialogHeader>
 
@@ -365,11 +381,23 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <select
                   id="cardType"
                   value={cardFormData.type}
-                  onChange={(e) => setCardFormData({ ...cardFormData, type: e.target.value as Card['type'] })}
-                  className="w-full p-2 border rounded-md"
+                  onChange={(e) =>
+                    setCardFormData({
+                      ...cardFormData,
+                      type: e.target.value as Card["type"],
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 >
-                  <option value="Crédito">Crédito</option>
-                  <option value="Débito">Débito</option>
+                  <option value="" disabled>
+                    Selecciona el tipo
+                  </option>
+                  {CARD_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -378,14 +406,23 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <select
                   id="cardBrand"
                   value={cardFormData.brand}
-                  onChange={(e) => setCardFormData({ ...cardFormData, brand: e.target.value as Card['brand'] })}
-                  className="w-full p-2 border rounded-md"
+                  onChange={(e) =>
+                    setCardFormData({
+                      ...cardFormData,
+                      brand: e.target.value as Card["brand"],
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                 >
-                  <option value="Visa">Visa</option>
-                  <option value="Mastercard">Mastercard</option>
-                  <option value="American Express">American Express</option>
-                  <option value="Diners Club">Diners Club</option>
-                  <option value="Otro">Otro</option>
+                  <option value="" disabled>
+                    Selecciona la marca
+                  </option>
+                  {CARD_BRANDS.map((brand) => (
+                    <option key={brand} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -394,26 +431,24 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <select
                   id="cardLevel"
                   value={cardFormData.level}
-                  onChange={(e) => setCardFormData({ ...cardFormData, level: e.target.value as CardLevel })}
-                  className="w-full p-2 border rounded-md"
+                  onChange={(e) =>
+                    setCardFormData({
+                      ...cardFormData,
+                      level: e.target.value as CardLevel,
+                    })
+                  }
+                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="" disabled>Selecciona un nivel</option>
-                  {CARD_LEVELS.map(lvl => (
-                    <option key={lvl.value} value={lvl.value}>{lvl.label}</option>
+                  <option value="" disabled className="text-gray-600">
+                    Selecciona un nivel
+                  </option>
+                  {VALIDATION_CARD_LEVELS.map((lvl) => (
+                    <option key={lvl.value} value={lvl.value}>
+                      {lvl.label}
+                    </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <Label htmlFor="cardLast4">Últimos 4 dígitos</Label>
-                <Input
-                  id="cardLast4"
-                  value={cardFormData.last4}
-                  onChange={(e) => setCardFormData({ ...cardFormData, last4: e.target.value })}
-                  placeholder="1234"
-                  maxLength={4}
-                />
               </div>
 
               <div>
@@ -421,22 +456,33 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <Input
                   id="cardName"
                   value={cardFormData.name}
-                  onChange={(e) => setCardFormData({ ...cardFormData, name: e.target.value })}
-                  placeholder="Mi tarjeta personal"
+                  onChange={(e) =>
+                    setCardFormData({ ...cardFormData, name: e.target.value })
+                  }
+                  placeholder="Ej: Mi tarjeta principal"
                 />
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleSaveCard} className="flex-1" disabled={!cardFormData.level}>
-                  {showAddCardModal ? 'Agregar' : 'Guardar'}
+                <Button
+                  onClick={handleSaveCard}
+                  className="flex-1"
+                  disabled={
+                    !cardFormData.type ||
+                    !cardFormData.brand ||
+                    !cardFormData.level
+                  }
+                >
+                  {showAddCardModal ? "Agregar" : "Guardar"}
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => {
                     setShowAddCardModal(false);
                     setShowEditCardModal(false);
                     setSelectedCard(null);
                   }}
+                  className="text-gray-700 hover:text-gray-900"
                 >
                   Cancelar
                 </Button>
@@ -449,4 +495,4 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
   );
 };
 
-export default MembershipDetailModal; 
+export default MembershipDetailModal;
