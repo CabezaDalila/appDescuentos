@@ -5,7 +5,7 @@ import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { checkAdminRole } from "@/lib/firebase/admin";
+import { checkAdminRole } from "@/lib/admin";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Membership } from "@/types/membership";
 import { User } from "firebase/auth";

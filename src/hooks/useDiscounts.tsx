@@ -2,11 +2,8 @@ import {
   createManualDiscount,
   getManualDiscounts,
   updateManualDiscount,
-} from "@/lib/firebase/admin";
-import {
-  deleteDiscount,
-  deleteMultipleDiscounts,
-} from "@/lib/firebase/discount-utils";
+} from "@/lib/admin";
+import { deleteDiscount, deleteMultipleDiscounts } from "@/lib/discount-utils";
 import { ManualDiscount } from "@/types/admin";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -58,14 +55,16 @@ export function useDiscounts(): UseDiscountsReturn {
       try {
         await createManualDiscount(discountData);
         toast.success("Descuento creado correctamente");
-        await loadDiscounts();
+
+        const data = await getManualDiscounts();
+        setDiscounts(data);
       } catch (error) {
         toast.error("Error al crear el descuento");
         console.error(error);
         throw error;
       }
     },
-    [loadDiscounts]
+    [] // Sin dependencias para evitar ciclos
   );
 
   const updateDiscount = useCallback(
@@ -73,14 +72,16 @@ export function useDiscounts(): UseDiscountsReturn {
       try {
         await updateManualDiscount(id, updates);
         toast.success("Descuento actualizado correctamente");
-        await loadDiscounts();
+
+        const data = await getManualDiscounts();
+        setDiscounts(data);
       } catch (error) {
         toast.error("Error al actualizar el descuento");
         console.error(error);
         throw error;
       }
     },
-    [loadDiscounts]
+    [] // Sin dependencias para evitar ciclos
   );
 
   const deleteDiscountById = useCallback(
@@ -89,7 +90,9 @@ export function useDiscounts(): UseDiscountsReturn {
         setDeleting(true);
         await deleteDiscount(id);
         toast.success("Descuento eliminado correctamente");
-        await loadDiscounts();
+
+        const data = await getManualDiscounts();
+        setDiscounts(data);
       } catch (error) {
         console.error("Error al eliminar descuento:", error);
         toast.error("Error al eliminar descuento");
@@ -98,7 +101,7 @@ export function useDiscounts(): UseDiscountsReturn {
         setDeleting(false);
       }
     },
-    [loadDiscounts]
+    [] // Sin dependencias para evitar ciclos
   );
 
   const deleteMultipleDiscountsByIds = useCallback(
@@ -112,7 +115,8 @@ export function useDiscounts(): UseDiscountsReturn {
         setDeleting(true);
         await deleteMultipleDiscounts(ids);
         toast.success(`${ids.length} descuentos eliminados correctamente`);
-        await loadDiscounts();
+        const data = await getManualDiscounts();
+        setDiscounts(data);
       } catch (error) {
         console.error("Error al eliminar descuentos:", error);
         toast.error("Error al eliminar descuentos");
@@ -121,7 +125,7 @@ export function useDiscounts(): UseDiscountsReturn {
         setDeleting(false);
       }
     },
-    [loadDiscounts]
+    [] // Sin dependencias para evitar ciclos
   );
 
   const toggleVisibility = useCallback(
