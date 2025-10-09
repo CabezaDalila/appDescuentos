@@ -1,5 +1,5 @@
 import Search from "@/components/search/search";
-import { getDiscountsBySearch } from "@/lib/firebase/discounts";
+import { getDiscountsBySearch } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
 import { useEffect, useState } from "react";
 

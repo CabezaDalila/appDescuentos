@@ -17,7 +17,7 @@ import {
 } from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
-import { getAllCategories } from "@/lib/categories";
+import { getAllCategories } from "@/constants/categories";
 import { ManualDiscount } from "@/types/admin";
 import { Gift, Save, X } from "lucide-react";
 

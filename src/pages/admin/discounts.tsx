@@ -1,4 +1,4 @@
-import { ManualDiscountsManager } from "@/components/admin/ManualDiscountsManager";
+import { ManualDiscountsManager } from "@/components/admin/scripts/ManualDiscountsManager";
 import {
   Card,
   CardContent,

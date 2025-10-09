@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/css";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as React from "react";
 

@@ -1,4 +1,4 @@
-import { db, doc, getDoc, setDoc, updateDoc } from "@/lib/firebase";
+import { db, doc, getDoc, setDoc } from "@/lib/firebase/firebase";
 
 /**
  * Actualiza las preferencias del usuario en Firestore
@@ -22,4 +22,4 @@ export async function getUserPreferences(userId) {
   const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) return null;
   return userSnap.data().preferences || null;
-} 
+}

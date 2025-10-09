@@ -3,7 +3,7 @@ import { Badge } from "@/components/Share/badge";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {

@@ -4,9 +4,9 @@ import {
   getDiscountById,
   getPendingDiscounts,
   rejectDiscount,
-} from "@/lib/firebase/discounts";
-import { validateDiscount } from "@/lib/validation/discountValidation";
+} from "@/lib/discounts";
 import { Discount } from "@/types/discount";
+import { validateDiscount } from "@/utils/validation/discountValidation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -65,7 +65,17 @@ export function DiscountApprovalManager({
   const validateCurrentDiscount = async () => {
     if (!editingDiscount) return false;
 
-    const validation = await validateDiscount(editingDiscount);
+    // Crear un objeto con las propiedades requeridas para la validación
+    const discountForValidation = {
+      title: editingDiscount.title || editingDiscount.name || "",
+      description: editingDiscount.description || "",
+      category: editingDiscount.category || "",
+      discountPercentage: editingDiscount.discountPercentage,
+      discountAmount: editingDiscount.discountAmount,
+      validUntil: editingDiscount.validUntil,
+    };
+
+    const validation = await validateDiscount(discountForValidation);
     setValidationErrors(validation.errors);
     return validation.isValid;
   };
