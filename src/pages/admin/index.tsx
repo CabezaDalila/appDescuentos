@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { LayoutAdmin } from "@/layouts/layout-admin";
 import { Shield } from "lucide-react";

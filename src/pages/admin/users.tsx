@@ -1,4 +1,4 @@
-import { UsersManager } from "@/components/admin/UsersManager";
+import { UsersManager } from "@/components/admin/users/UsersManager";
 import {
   Card,
   CardContent,
