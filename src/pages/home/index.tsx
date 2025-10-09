@@ -1,6 +1,6 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { Card, CardContent } from "@/components/Share/card";
-import { useAuth } from "@/hooks/useAuth";
+
 import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
 import {
@@ -123,7 +123,6 @@ const trendingOffers = [
 
 export default function Home() {
   const router = useRouter();
-  const { user } = useAuth();
   const [greeting, setGreeting] = useState("Buenas noches");
   const [notificationCount, setNotificationCount] = useState(3);
   const [searchTerm, setSearchTerm] = useState("");
@@ -191,7 +190,6 @@ export default function Home() {
     }
   };
 
-  // Función para limpiar búsqueda
   const clearSearch = () => {
     setSearchTerm("");
     setSearchResults([]);
@@ -199,18 +197,11 @@ export default function Home() {
   };
 
   const handleCategoryClick = (categoryId: string) => {
-    // Navegar a la página de búsqueda con el filtro de categoría
     router.push(`/search?category=${categoryId}`);
   };
 
   const handleBankClick = (bankId: string) => {
-    // Navegar a la página de búsqueda con el filtro de banco
     router.push(`/search?bank=${bankId}`);
-  };
-
-  const handleOfferClick = (offerId: string) => {
-    // Navegar al detalle de la oferta
-    router.push(`/discount/${offerId}`);
   };
 
   const handleNavigateToDetail = (discountId: string) => {
@@ -220,7 +211,6 @@ export default function Home() {
   const handleSelectSearchResult = (discount: Discount) => {
     setSearchTerm(discount.name);
     setShowSearchResults(false);
-    // Aquí puedes navegar al detalle del descuento si quieres
     router.push(`/discount/${discount.id}`);
   };
 
@@ -333,7 +323,7 @@ export default function Home() {
               ) : searchTerm.trim().length > 0 ? (
                 <div className="p-3 sm:p-4 text-center text-gray-500">
                   <span className="text-xs sm:text-sm">
-                    No se encontraron resultados para "{searchTerm}"
+                    No se encontraron resultados para &quot;{searchTerm}&quot;
                   </span>
                 </div>
               ) : null}
