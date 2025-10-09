@@ -1,3 +1,18 @@
+// Importar iconos de Lucide React
+import {
+  BookOpen,
+  Car,
+  Dumbbell,
+  Heart,
+  Home,
+  Laptop,
+  Music,
+  Shirt,
+  Sparkles,
+  Target,
+  Utensils,
+} from "lucide-react";
+
 // Categorías predefinidas para descuentos
 export interface Category {
   id: string;
@@ -216,3 +231,80 @@ export const getSuggestedCategory = (text: string): Category | null => {
 
   return null;
 };
+
+// Categorías para la sección de explorar (con iconos de React)
+export interface ExploreCategory {
+  id: string;
+  label: string;
+  color: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+export const EXPLORE_CATEGORIES: ExploreCategory[] = [
+  {
+    id: "food",
+    label: "Alimentos",
+    color: "bg-gradient-to-br from-green-400 to-green-600",
+    icon: Utensils,
+  },
+  {
+    id: "fashion",
+    label: "Moda",
+    color: "bg-gradient-to-br from-pink-400 to-pink-600",
+    icon: Shirt,
+  },
+  {
+    id: "technology",
+    label: "Tecnología",
+    color: "bg-gradient-to-br from-blue-400 to-blue-600",
+    icon: Laptop,
+  },
+  {
+    id: "home",
+    label: "Hogar",
+    color: "bg-gradient-to-br from-orange-400 to-orange-600",
+    icon: Home,
+  },
+  {
+    id: "sports",
+    label: "Deportes",
+    color: "bg-gradient-to-br from-purple-400 to-purple-600",
+    icon: Dumbbell,
+  },
+  {
+    id: "beauty",
+    label: "Belleza",
+    color: "bg-gradient-to-br from-red-400 to-red-600",
+    icon: Sparkles,
+  },
+  {
+    id: "automotive",
+    label: "Automóviles",
+    color: "bg-gradient-to-br from-gray-400 to-gray-600",
+    icon: Car,
+  },
+  {
+    id: "entertainment",
+    label: "Entretenimiento",
+    color: "bg-gradient-to-br from-yellow-400 to-yellow-600",
+    icon: Music,
+  },
+  {
+    id: "health",
+    label: "Salud",
+    color: "bg-gradient-to-br from-teal-400 to-teal-600",
+    icon: Heart,
+  },
+  {
+    id: "education",
+    label: "Educación",
+    color: "bg-gradient-to-br from-indigo-400 to-indigo-600",
+    icon: BookOpen,
+  },
+  {
+    id: "general",
+    label: "General",
+    color: "bg-gradient-to-br from-gray-400 to-gray-600",
+    icon: Target,
+  },
+];

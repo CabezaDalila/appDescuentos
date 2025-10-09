@@ -1,4 +1,4 @@
-import { checkAdminRole } from "@/lib/firebase/admin";
+import { checkAdminRole } from "@/lib/admin";
 import { useEffect, useState } from "react";
 import { useAuth } from "./useAuth";
 

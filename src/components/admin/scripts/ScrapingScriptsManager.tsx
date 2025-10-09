@@ -32,7 +32,7 @@ import {
   deleteScrapingScript,
   getScrapingScripts,
   updateScrapingScript,
-} from "@/lib/firebase/admin";
+} from "@/lib/admin";
 import { ScrapingScript } from "@/types/admin";
 import {
   Calendar,

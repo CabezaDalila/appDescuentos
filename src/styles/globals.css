@@ -113,24 +113,67 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   height: 100%;
   min-height: 100%;
-  overflow: hidden;
 }
 
 html,
 body {
   height: 100%;
   min-height: 100%;
-  overflow: hidden;
+}
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+html {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* WebKit */
 }
 
 /* Utilidades responsive personalizadas */
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  display: none; /* WebKit */
+}
+
+/* Ocultar scrollbar en todos los elementos */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
+/* Mantener funcionalidad de scroll pero sin barra visible */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Para contenedores específicos que necesiten scroll oculto */
+.hide-scrollbar {
+  overflow: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* WebKit */
 }
 
 /* Mejorar el scroll en móviles */

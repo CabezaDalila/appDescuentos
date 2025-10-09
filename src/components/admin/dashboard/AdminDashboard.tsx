@@ -4,7 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/firebase";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { collection, getDocs } from "firebase/firestore";
@@ -139,6 +139,9 @@ export function AdminDashboard() {
           expiredDiscounts,
           manualDiscounts,
           scrapedDiscounts,
+          pendingDiscounts: 0,
+          approvedDiscounts: activeDiscounts, // Aproximación: descuentos activos = aprobados
+          rejectedDiscounts: 0,
         });
 
         // Crear actividad reciente

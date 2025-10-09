@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { auth } from "@/lib/firebase/firebase";
+import { logout } from "@/lib/firebase/firebase-auth";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { logout } from "@/lib/firebase-auth";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 interface UseAuthResult {
   user: User | null;
@@ -33,4 +33,4 @@ export function useAuth(): UseAuthResult {
   };
 
   return { user, loading, logout: handleLogout };
-} 
+}

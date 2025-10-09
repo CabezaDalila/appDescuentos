@@ -7,7 +7,7 @@ import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
 import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
-import { ADMIN_CONSTANTS } from "@/lib/constants/admin";
+import { ADMIN_CONSTANTS } from "@/utils/admin";
 import { Gift, Plus, X } from "lucide-react";
 import { useState } from "react";
 
@@ -145,6 +145,7 @@ export function ManualDiscountsManager() {
       resetForm();
     } catch (error) {
       // El error ya se maneja en los hooks
+      console.error(error);
     }
   };
 
