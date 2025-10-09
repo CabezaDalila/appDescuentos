@@ -2,11 +2,8 @@ import {
   createManualDiscount,
   getManualDiscounts,
   updateManualDiscount,
-} from "@/lib/firebase/admin";
-import {
-  deleteDiscount,
-  deleteMultipleDiscounts,
-} from "@/lib/firebase/discount-utils";
+} from "@/lib/admin";
+import { deleteDiscount, deleteMultipleDiscounts } from "@/lib/discount-utils";
 import { ManualDiscount } from "@/types/admin";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";

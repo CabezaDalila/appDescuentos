@@ -1,10 +1,10 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
 import { BackButton } from "@/components/Share/back-button";
+import { getDiscounts } from "@/lib/discounts";
+import { Discount } from "@/types/discount";
+import { getImageByCategory } from "@/utils/category-mapping";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { getDiscounts } from "@/lib/firebase/discounts";
-import { getImageByCategory } from "@/lib/image-categories";
-import { Discount } from "@/types/discount";
 
 export default function DiscountDetail() {
   const router = useRouter();
@@ -15,27 +15,28 @@ export default function DiscountDetail() {
   useEffect(() => {
     const loadDiscount = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         const allDiscounts = await getDiscounts();
-        const discount = allDiscounts.find(d => d.id === id);
-        
+        const discount = allDiscounts.find((d) => d.id === id);
+
         if (discount) {
           // Usar el mismo sistema de imágenes por categoría
-          const image = discount.imageUrl || getImageByCategory(discount.category);
-          
+          const image =
+            discount.imageUrl || getImageByCategory(discount.category);
+
           setDiscountData({
             ...discount,
-            image: image
+            image: image,
           });
         } else {
           // Si no se encuentra, redirigir a 404 o mostrar error
-          router.push('/404');
+          router.push("/404");
         }
       } catch (error) {
         console.error("Error cargando descuento:", error);
-        router.push('/404');
+        router.push("/404");
       } finally {
         setLoading(false);
       }
@@ -75,8 +76,15 @@ export default function DiscountDetail() {
             points={6} // Valor por defecto
             countComments={0} // Valor por defecto
             distance="1.2km" // Valor por defecto
-            expiration={discountData.validUntil?.toLocaleDateString("es-ES") || "Sin fecha"}
-            discountPercentage={discountData.discountPercentage ? `${discountData.discountPercentage}%` : "Sin descuento"}
+            expiration={
+              discountData.validUntil?.toLocaleDateString("es-ES") ||
+              "Sin fecha"
+            }
+            discountPercentage={
+              discountData.discountPercentage
+                ? `${discountData.discountPercentage}%`
+                : "Sin descuento"
+            }
           />
         ) : (
           <div className="text-center py-8">

@@ -1,6 +1,6 @@
-import { getImageByCategory } from "@/constants/image-categories";
 import { db } from "@/lib/firebase/firebase";
 import { Discount } from "@/types/discount";
+import { getImageByCategory } from "@/utils/category-mapping";
 import {
   addDoc,
   collection,
