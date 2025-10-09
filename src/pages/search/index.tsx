@@ -97,9 +97,6 @@ export default function Search() {
             <ArrowLeft className="w-5 h-5" />
             <span className="text-sm font-medium">Volver</span>
           </button>
-          <h1 className="text-lg font-semibold text-gray-900">
-            {categoryInfo ? categoryInfo.displayName : "Búsqueda"}
-          </h1>
           <div className="w-20" /> {/* Spacer para centrar el título */}
         </div>
       </div>

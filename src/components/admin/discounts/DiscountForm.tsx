@@ -1,11 +1,12 @@
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/Share/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
@@ -19,7 +20,7 @@ import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import { getAllCategories } from "@/constants/categories";
 import { ManualDiscount } from "@/types/admin";
-import { Gift, Save, X } from "lucide-react";
+import { Edit, Gift, Save, X } from "lucide-react";
 
 interface DiscountFormData {
   title: string;
@@ -58,23 +59,31 @@ export function DiscountForm({
   onResetForm,
   onSubmit,
 }: DiscountFormProps) {
+  // Si no se debe mostrar el formulario, no renderizar nada
   if (!showForm) return null;
 
+  // Determinar si es edición o creación
+  const isEditing = !!editingDiscount;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Gift className="h-5 w-5" />
-          {editingDiscount ? "Editar Descuento" : "Nuevo Descuento"}
-        </CardTitle>
-        <CardDescription>
-          {editingDiscount
-            ? "Modifica la información del descuento seleccionado"
-            : "Completa la información del descuento que deseas agregar"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4 admin-form">
+    <Dialog open={showForm} onOpenChange={onShowFormChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {isEditing ? (
+              <Edit className="h-5 w-5" />
+            ) : (
+              <Gift className="h-5 w-5" />
+            )}
+            {isEditing ? "Editar Descuento" : "Nuevo Descuento"}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? "Modifica la información del descuento seleccionado"
+              : "Completa la información del descuento que deseas agregar"}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Título del Descuento *</Label>
@@ -225,7 +234,7 @@ export function DiscountForm({
             </p>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
@@ -240,11 +249,11 @@ export function DiscountForm({
             </Button>
             <Button type="submit" className="flex items-center gap-2">
               <Save className="h-4 w-4" />
-              {editingDiscount ? "Actualizar Descuento" : "Guardar Descuento"}
+              {isEditing ? "Actualizar Descuento" : "Guardar Descuento"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

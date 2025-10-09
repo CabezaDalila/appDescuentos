@@ -70,6 +70,7 @@ export function useDiscountForm(): UseDiscountFormReturn {
   );
 
   const handleEditDiscount = useCallback((discount: ManualDiscount) => {
+    console.log("handleEditDiscount llamado con:", discount);
     setEditingDiscount(discount);
     setFormData({
       title: discount.title,

@@ -120,8 +120,11 @@ export default function Home() {
     ["food", "fashion", "technology", "home"].includes(category.id)
   );
 
+  // Obtener descuentos de tendencias (máximo 3 para que quepan bien en el ancho)
+  const trendingDiscounts = discounts.slice(0, 3);
+
   return (
-    <div className="w-full min-h-screen bg-white">
+    <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden">
       <Header
         greeting={greeting}
         notificationCount={notificationCount}
@@ -158,7 +161,10 @@ export default function Home() {
 
       <PersonalizedOffersSection onOfferClick={handleOfferClick} />
 
-      <TrendingSection onOfferClick={handleOfferClick} />
+      <TrendingSection
+        discounts={trendingDiscounts}
+        onOfferClick={handleOfferClick}
+      />
 
       <DiscountsSection
         discounts={discounts}
