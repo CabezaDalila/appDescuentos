@@ -20,9 +20,6 @@ export function Header({
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
             {greeting}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-            Descubre ofertas increíbles cerca de ti
-          </p>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 pt-1">
           <button
