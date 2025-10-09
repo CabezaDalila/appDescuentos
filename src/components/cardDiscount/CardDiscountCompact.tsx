@@ -43,10 +43,10 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
   return (
     <div
-      className="flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer m-2"
+      className="flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
       onClick={handleCardClick}
     >
-      <div className="relative h-32 w-full">
+      <div className="relative h-24 sm:h-32 w-full">
         <Image
           src={image}
           alt={title}
@@ -56,10 +56,10 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
         {/* Badge de descuento */}
         {discountPercentage && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-1.5 sm:top-2 left-1.5 sm:left-2">
             <Badge
               variant="default"
-              className="bg-purple-600 text-white text-xs font-bold"
+              className="bg-purple-600 text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5"
             >
               {discountPercentage}
             </Badge>
@@ -67,51 +67,53 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
         )}
 
         {/* Botón de like */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2">
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 bg-white/70 hover:bg-white rounded-full"
+            className="h-5 w-5 sm:h-6 sm:w-6 p-0 bg-white/70 hover:bg-white rounded-full"
             onClick={handleLike}
           >
             <Image
               src={isLiked ? "/loveRed.png" : "/love.png"}
               alt="Like"
-              width={14}
-              height={14}
+              width={12}
+              height={12}
+              className="sm:w-[14px] sm:h-[14px]"
             />
           </Button>
         </div>
       </div>
 
       {/* Contenido */}
-      <div className="p-3 space-y-2">
+      <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
         {/* Categoría y rating */}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-600 font-medium">{category}</span>
-          <span className="text-xs text-gray-600 flex items-center gap-1">
-            <Image src="/star.png" alt="Star" width={10} height={10} />
+          <span className="text-[10px] sm:text-xs text-gray-500 font-medium">{category}</span>
+          <span className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-0.5 sm:gap-1">
+            <Image src="/star.png" alt="Star" width={8} height={8} className="sm:w-[10px] sm:h-[10px]" />
             {points}
           </span>
         </div>
 
         {/* Título */}
-        <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 leading-tight">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight">
           {title}
         </h3>
 
         {/* Información adicional */}
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <span className="flex items-center gap-1">
-            <Image src="/distance.png" alt="Distance" width={10} height={10} />
+        <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500">
+          <span className="flex items-center gap-0.5 sm:gap-1">
+            <Image src="/distance.png" alt="Distance" width={8} height={8} className="sm:w-[10px] sm:h-[10px]" />
             {distance}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-0.5 sm:gap-1">
             <Image
               src="/expiration.png"
               alt="Expiration"
-              width={10}
-              height={10}
+              width={8}
+              height={8}
+              className="sm:w-[10px] sm:h-[10px]"
             />
             {expiration}
           </span>
