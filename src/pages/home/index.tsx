@@ -66,7 +66,8 @@ const personalizedOffers = [
     discount: "30%",
     color: "bg-gradient-to-br from-green-500 to-green-600"
   }
-];
+]; 
+
 
 // Datos de ejemplo para tendencias
 const trendingOffers = [
