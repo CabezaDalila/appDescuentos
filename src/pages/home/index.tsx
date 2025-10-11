@@ -206,7 +206,7 @@ export default function Home() {
         greeting={greeting}
         notificationCount={getUnreadCount()}
         onNotificationClick={() => router.push("/notifications")}
-        onThemeToggle={() => console.log("Toggle theme")}
+        onThemeToggle={() => {}}
       />
 
       <SearchSection

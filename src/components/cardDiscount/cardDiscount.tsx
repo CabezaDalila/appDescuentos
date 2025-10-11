@@ -72,7 +72,6 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
               } else {
                 // Fallback para navegadores que no soportan Web Share API
                 navigator.clipboard.writeText(window.location.href);
-                alert("¡URL copiada al portapapeles!");
               }
             }}
           >

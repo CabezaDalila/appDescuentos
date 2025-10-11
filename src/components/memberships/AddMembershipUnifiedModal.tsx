@@ -132,9 +132,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
         cards: selectedCategory === "banco" ? cards : [],
       };
 
-      console.log("🚀 Creando membresía con datos:", membershipData);
       await onCreate(membershipData);
-      console.log("✅ Membresía creada exitosamente");
       toast.success("Membresía creada exitosamente");
       handleClose();
     } catch (error) {
@@ -186,10 +184,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
         cards: [card], // Una sola tarjeta
       };
 
-      console.log("🚀 Creando banco con tarjeta:", membershipData);
-      console.log("📋 Tarjeta que se está guardando:", card);
       await onCreate(membershipData);
-      console.log("✅ Banco con tarjeta creado exitosamente");
       toast.success("Banco y tarjeta creados exitosamente");
       handleClose(); // Cerrar el modal automáticamente
     } catch (error) {

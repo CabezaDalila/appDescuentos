@@ -51,16 +51,6 @@ export default function AuthForm() {
 
   // Si el usuario está logueado y es admin, mostrar selector de modo (solo en desktop)
   useEffect(() => {
-    console.log("AuthForm useEffect:", {
-      user: !!user,
-      loading,
-      adminLoading,
-      isAdmin,
-      loginSuccess,
-      isMobile,
-      pathname: router.pathname,
-    });
-
     if (
       user &&
       !loading &&
@@ -69,7 +59,6 @@ export default function AuthForm() {
       loginSuccess &&
       !isMobile
     ) {
-      console.log("Mostrando selector de modo para admin (desktop)");
       setShowModeSelector(true);
     } else if (
       user &&
@@ -79,7 +68,6 @@ export default function AuthForm() {
       loginSuccess &&
       isMobile
     ) {
-      console.log("Admin en mobile, redirigiendo directamente a home");
       router.push("/home");
     }
   }, [user, loading, adminLoading, isAdmin, loginSuccess, isMobile, router]);

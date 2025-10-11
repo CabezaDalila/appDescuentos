@@ -50,15 +50,6 @@ export default function Search() {
 
         // Aplicar filtros inmediatamente después de cargar los datos
         applyFilters(data, category as string);
-
-        // Debug: mostrar todas las categorías disponibles
-        console.log(
-          "Descuentos cargados:",
-          data.map((d) => ({
-            title: d.title || d.name,
-            category: d.category,
-          }))
-        );
       } catch (error) {
         console.error("Error cargando descuentos:", error);
       } finally {

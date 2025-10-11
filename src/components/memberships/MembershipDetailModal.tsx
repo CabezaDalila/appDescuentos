@@ -200,15 +200,11 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
     try {
       if (showEditCardModal && selectedCard && onUpdateCard) {
-        console.log("🔄 Actualizando tarjeta:", selectedCard.id, cardFormData);
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
         toast.success("Tarjeta actualizada correctamente");
-        console.log("✅ Tarjeta actualizada exitosamente");
       } else if (showAddCardModal && onAddCard) {
-        console.log("➕ Agregando nueva tarjeta:", newCard);
         await onAddCard(localMembership.id, newCard);
         toast.success("Tarjeta agregada correctamente");
-        console.log("✅ Tarjeta agregada exitosamente");
       }
     } catch (error) {
       // Revertir actualización optimista en caso de error
@@ -227,11 +223,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     const isLastCard = remainingCards.length === 0;
     const isBank = localMembership.category === "banco";
 
-    console.log("🗑️ Eliminando tarjeta:", cardId);
-    console.log("📊 Tarjetas restantes:", remainingCards.length);
-    console.log("🏦 Es banco:", isBank);
-    console.log("🔚 Es última tarjeta:", isLastCard);
-
     // Actualización optimista
     const prevCards = localMembership.cards;
     setLocalMembership({
@@ -241,7 +232,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
     try {
       const result = await onDeleteCard(localMembership.id, cardId);
-      console.log("📋 Resultado de eliminación:", result);
 
       if (result.membershipDeleted) {
         // Si se eliminó la membresía completa, cerrar el modal
@@ -251,8 +241,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
         // Si solo se eliminó la tarjeta, mostrar mensaje
         toast.success(result.message);
       }
-
-      console.log("✅ Operación completada exitosamente");
     } catch (error) {
       // Revertir actualización optimista en caso de error
       setLocalMembership({ ...localMembership, cards: prevCards });

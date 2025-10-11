@@ -118,9 +118,6 @@ export const createMembership = async (membershipData) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
-
-    console.log("💾 Guardando membresía en Firestore:", newMembership);
-    console.log("💳 Tarjetas que se están guardando:", newMembership.cards);
     
     const docRef = await addDoc(membershipsRef, newMembership);
     return {
@@ -264,17 +261,11 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
     }
 
     const membership = membershipDoc.data();
-    const updatedCards = membership.cards.filter((card) => card.id !== cardId);
-
-    console.log("🗑️ Eliminando tarjeta:", cardId);
-    console.log("📊 Tarjetas restantes:", updatedCards.length);
-    console.log("🏦 Membresía:", membership.name, "- Categoría:", membership.category);
+    const updatedCards = membership.cards.filter((card) => card.id !== cardId    );
 
     // Si es un banco y no quedan tarjetas, eliminar la membresía completa
     if (membership.category === "banco" && updatedCards.length === 0) {
-      console.log("🏦 Banco sin tarjetas - Eliminando membresía completa");
       await deleteDoc(membershipRef);
-      console.log("✅ Banco eliminado completamente");
       return { 
         success: true, 
         membershipDeleted: true,
@@ -286,8 +277,7 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
         cards: updatedCards,
         updatedAt: serverTimestamp(),
       });
-      console.log("✅ Tarjeta eliminada, membresía actualizada");
-      return { 
+      return {
         success: true, 
         membershipDeleted: false,
         remainingCards: updatedCards.length,

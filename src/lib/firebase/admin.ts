@@ -85,8 +85,6 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
     const scriptData = scriptDoc.data();
     const scriptCode = scriptData.script;
 
-    console.log("🚀 Ejecutando script:", scriptData.siteName);
-
     // Ejecutar el script en el contexto del navegador
     let result;
     try {
@@ -104,8 +102,6 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
 
     // Si el script retorna descuentos, guardarlos en Firebase
     if (result && Array.isArray(result)) {
-      console.log(`📊 Script retornó ${result.length} descuentos`);
-
       for (const discountData of result) {
         try {
           // Validar que la categoría sea válida
@@ -129,14 +125,10 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
             approvalStatus: "pending",
             source: "scraping",
           });
-
-          console.log(`✅ Descuento guardado: ${discountData.name}`);
         } catch (discountError) {
           console.error("Error guardando descuento:", discountError);
         }
       }
-    } else {
-      console.log("⚠️ El script no retornó descuentos válidos");
     }
 
     // Actualizar la fecha de última ejecución
@@ -145,8 +137,6 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
       lastExecuted: Timestamp.now(),
       updatedAt: Timestamp.now(),
     });
-
-    console.log("✅ Script ejecutado correctamente");
   } catch (error) {
     console.error("Error al ejecutar script de scraping:", error);
     throw error;

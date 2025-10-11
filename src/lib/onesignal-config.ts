@@ -11,17 +11,9 @@ export const initializeOneSignal = async () => {
     // Para Android/iOS - Inicialización correcta según las instrucciones
     const OneSignal = (await import('onesignal-cordova-plugin')).default;
     
-    console.log('🚀 Inicializando OneSignal para móvil...');
-    
     // Solo se ejecuta una vez al inicio de la app
     OneSignal.initialize(ONESIGNAL_CONFIG.APP_ID);
     OneSignal.Notifications.requestPermission(true);
-    
-    console.log('✅ OneSignal inicializado para móvil');
-    
-  } else {
-    // Para web
-    console.log('🌐 OneSignal para web ya está configurado en _app.tsx');
   }
 };
 

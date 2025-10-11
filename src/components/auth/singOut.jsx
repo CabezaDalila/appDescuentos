@@ -4,9 +4,8 @@ export default function SignOut() {
   const handleLogout = async () => {
     try {
       await logout();
-      alert("Sesión cerrada correctamente");
     } catch (err) {
-      alert("Error al cerrar sesión: " + err.message);
+      console.error("Error al cerrar sesión:", err);
     }
   };
 

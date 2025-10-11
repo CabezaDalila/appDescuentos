@@ -118,9 +118,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
         cards: [newCard],
       };
 
-      console.log("🚀 Creando banco con tarjeta:", membershipData);
       await onCreate?.(membershipData);
-      console.log("✅ Banco con tarjeta creado exitosamente");
       toast.success("Banco y tarjeta creados exitosamente");
       handleClose();
     } catch (error) {
