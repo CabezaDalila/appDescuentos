@@ -1,4 +1,4 @@
-import { isValidCategory } from "@/lib/categories";
+import { isValidCategory } from "@/constants/categories";
 import {
   addDoc,
   collection,
@@ -9,7 +9,7 @@ import {
   getDocs,
   Timestamp,
   updateDoc,
-} from "@/lib/firebase";
+} from "@/lib/firebase/firebase";
 import { ManualDiscount, ScrapingScript } from "@/types/admin";
 // ===== GESTIÓN DE SCRIPTS DE SCRAPING =====
 
@@ -236,7 +236,7 @@ export const updateManualDiscount = async (
     }
 
     // Preparar los datos de actualización
-    const updateData: Record<string, unknown> = {
+    const updateData: any = {
       ...updates,
       updatedAt: Timestamp.now(),
     };

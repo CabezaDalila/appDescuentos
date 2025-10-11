@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/Share/card";
 
 import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   ArrowRight,
   Bell,
@@ -123,8 +124,8 @@ const trendingOffers = [
 
 export default function Home() {
   const router = useRouter();
+  const { getUnreadCount } = useNotifications();
   const [greeting, setGreeting] = useState("Buenas noches");
-  const [notificationCount, setNotificationCount] = useState(3);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Discount[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -231,11 +232,14 @@ export default function Home() {
             <button className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors">
               <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
             </button>
-            <button className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors">
+            <button 
+              onClick={() => router.push('/notifications')}
+              className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors"
+            >
               <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-              {notificationCount > 0 && (
+              {getUnreadCount() > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center font-medium">
-                  {notificationCount > 9 ? "9+" : notificationCount}
+                  {getUnreadCount() > 9 ? "9+" : getUnreadCount()}
                 </span>
               )}
             </button>
@@ -518,7 +522,7 @@ export default function Home() {
       </div>
 
       {/* Promos/Descuentos - Responsive */}
-      <div className="w-full px-3 sm:px-4 mb-4 sm:mb-6 pb-20 sm:pb-6">
+      <div className="w-full px-3 sm:px-4 mb-4 sm:mb-6">
         <div className="flex justify-between items-center mb-2 sm:mb-3">
           <h2 className="text-sm sm:text-base font-semibold text-gray-900">
             Promociones destacadas

@@ -33,7 +33,7 @@ import {
   getScrapingScripts,
   updateScrapingScript,
 } from "@/lib/admin";
-import { ScrapingScript } from "@/types/admin";
+import { ScrapingScript, ScrapingFrequency } from "@/types/admin";
 import {
   Calendar,
   Clock,
@@ -92,10 +92,16 @@ export function ScrapingScriptsManager() {
 
     try {
       if (editingScript) {
-        await updateScrapingScript(editingScript.id, formData);
+        await updateScrapingScript(editingScript.id, {
+          ...formData,
+          frequency: formData.frequency as ScrapingFrequency
+        });
         toast.success("Script actualizado correctamente");
       } else {
-        await createScrapingScript(formData);
+        await createScrapingScript({
+          ...formData,
+          frequency: formData.frequency as ScrapingFrequency
+        });
         toast.success("Script creado correctamente");
       }
 
