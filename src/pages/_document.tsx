@@ -6,6 +6,11 @@ export default function Document() {
       <Head>
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
+        {/* OneSignal SDK */}
+        <script
+          src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
+          async
+        />
       </Head>
       <body className="antialiased">
         <Main />

@@ -114,11 +114,14 @@ export const createMembership = async (membershipData) => {
     const newMembership = {
       ...membershipData,
       status: "active",
-      cards: [],
+      cards: membershipData.cards || [], // Usar las tarjetas proporcionadas o array vacío
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
+    console.log("💾 Guardando membresía en Firestore:", newMembership);
+    console.log("💳 Tarjetas que se están guardando:", newMembership.cards);
+    
     const docRef = await addDoc(membershipsRef, newMembership);
     return {
       id: docRef.id,
@@ -263,12 +266,34 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
     const membership = membershipDoc.data();
     const updatedCards = membership.cards.filter((card) => card.id !== cardId);
 
-    await updateDoc(membershipRef, {
-      cards: updatedCards,
-      updatedAt: serverTimestamp(),
-    });
+    console.log("🗑️ Eliminando tarjeta:", cardId);
+    console.log("📊 Tarjetas restantes:", updatedCards.length);
+    console.log("🏦 Membresía:", membership.name, "- Categoría:", membership.category);
 
-    return { success: true };
+    // Si es un banco y no quedan tarjetas, eliminar la membresía completa
+    if (membership.category === "banco" && updatedCards.length === 0) {
+      console.log("🏦 Banco sin tarjetas - Eliminando membresía completa");
+      await deleteDoc(membershipRef);
+      console.log("✅ Banco eliminado completamente");
+      return { 
+        success: true, 
+        membershipDeleted: true,
+        message: "Banco eliminado (no quedaban tarjetas)"
+      };
+    } else {
+      // Actualizar la membresía con las tarjetas restantes
+      await updateDoc(membershipRef, {
+        cards: updatedCards,
+        updatedAt: serverTimestamp(),
+      });
+      console.log("✅ Tarjeta eliminada, membresía actualizada");
+      return { 
+        success: true, 
+        membershipDeleted: false,
+        remainingCards: updatedCards.length,
+        message: `Tarjeta eliminada. Quedan ${updatedCards.length} tarjeta(s)`
+      };
+    }
   } catch (error) {
     console.error("Error al eliminar tarjeta:", error);
     throw error;

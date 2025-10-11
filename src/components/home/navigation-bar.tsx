@@ -8,7 +8,7 @@ interface NavigationBarProps {
 
 export function NavigationBar({ tabs, activeTab, onTabsChange }: NavigationBarProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 py-1.5 sm:py-2 safe-area-pb z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 sm:px-4 pb-1.5 sm:pb-2 safe-area-pb z-30">
       <div className="flex justify-around max-w-2xl mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

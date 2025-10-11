@@ -14,6 +14,7 @@ export interface Card {
   brand: "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Otro";
   level: CardLevel;
   name?: string;
+  expiry?: string; // Formato MM/YY
 }
 
 export interface Membership {
@@ -52,6 +53,7 @@ export interface CreateCardData {
   brand: Card["brand"];
   level: CardLevel;
   name?: string;
+  expiry?: string; // Formato MM/YY
 }
 
 export interface UpdateCardData {
@@ -59,6 +61,7 @@ export interface UpdateCardData {
   brand?: Card["brand"];
   level?: CardLevel;
   name?: string;
+  expiry?: string; // Formato MM/YY
 }
 
 // Categorías disponibles para el selector
@@ -130,6 +133,19 @@ export const ENTITIES_BY_CATEGORY = {
     "DirecTV",
   ],
 } as const;
+
+export const CARD_TYPES: { value: Card["type"]; label: string }[] = [
+  { value: "Crédito", label: "Crédito" },
+  { value: "Débito", label: "Débito" },
+];
+
+export const CARD_BRANDS: { value: Card["brand"]; label: string }[] = [
+  { value: "Visa", label: "Visa" },
+  { value: "Mastercard", label: "Mastercard" },
+  { value: "American Express", label: "American Express" },
+  { value: "Diners Club", label: "Diners Club" },
+  { value: "Otro", label: "Otro" },
+];
 
 export const CARD_LEVELS: { value: CardLevel; label: string }[] = [
   { value: "Classic", label: "Classic" },

@@ -8,23 +8,15 @@ import {
   Filter,
   Percent,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/router";
-import { useState } from "react";
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "info" | "warning" | "success" | "error";
-  timestamp: Date;
-  read: boolean;
-  category: string;
-  icon: string;
-}
+import { useState, useEffect } from "react";
+import { useNotifications, Notification } from "@/hooks/useNotifications";
 
 export default function Notifications() {
   const router = useRouter();
+  const { notifications, loading, error, markAsRead, deleteNotification, getUnreadCount } = useNotifications();
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{
     unreadOnly: boolean;
@@ -36,165 +28,13 @@ export default function Notifications() {
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "promotions">(
     "all"
   );
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      title: "Promoción por vencer",
-      message: "Tu promoción de 2x1 en cines vence en 2 días",
-      type: "warning",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 horas atrás
-      read: false,
-      category: "promociones",
-      icon: "calendar",
-    },
-    {
-      id: "2",
-      title: "Nueva cuenta añadida",
-      message: "Tu cuenta de Banco Santander ha sido añadida exitosamente",
-      type: "success",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 horas atrás
-      read: false,
-      category: "cuenta",
-      icon: "creditcard",
-    },
-    {
-      id: "3",
-      title: "Nueva promoción disponible",
-      message: "25% de descuento en tiendas de ropa con Club La Nación",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 día atrás
-      read: true,
-      category: "ofertas",
-      icon: "percent",
-    },
-    {
-      id: "4",
-      title: "Descuento aplicado",
-      message: "Se ha aplicado un descuento del 15% en tu próxima compra",
-      type: "success",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 días atrás
-      read: true,
-      category: "ofertas",
-      icon: "percent",
-    },
-    {
-      id: "5",
-      title: "Recordatorio de vencimiento",
-      message: "Tu membresía de Galeno vence en 7 días",
-      type: "warning",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 días atrás
-      read: false,
-      category: "recordatorios",
-      icon: "calendar",
-    },
-    {
-      id: "6",
-      title: "Nueva promoción de Banco Galicia",
-      message: "50% de descuento en restaurantes seleccionados",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4), // 4 días atrás
-      read: true,
-      category: "promociones",
-      icon: "percent",
-    },
-    {
-      id: "7",
-      title: "Cuenta verificada",
-      message: "Tu cuenta de Banco Macro ha sido verificada exitosamente",
-      type: "success",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 días atrás
-      read: true,
-      category: "cuenta",
-      icon: "creditcard",
-    },
-    {
-      id: "8",
-      title: "Promoción especial",
-      message: "3x2 en todas las entradas de cine este fin de semana",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6), // 6 días atrás
-      read: false,
-      category: "promociones",
-      icon: "calendar",
-    },
-    {
-      id: "9",
-      title: "Actualización del sistema",
-      message: "Se han aplicado mejoras en la seguridad de tu cuenta",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7), // 7 días atrás
-      read: true,
-      category: "sistema",
-      icon: "bell",
-    },
-    {
-      id: "10",
-      title: "Oferta limitada",
-      message: "30% de descuento en supermercados hasta mañana",
-      type: "warning",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8), // 8 días atrás
-      read: false,
-      category: "ofertas",
-      icon: "percent",
-    },
-    {
-      id: "11",
-      title: "Nueva tarjeta disponible",
-      message: "Tu tarjeta de crédito está lista para retirar",
-      type: "success",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9), // 9 días atrás
-      read: true,
-      category: "cuenta",
-      icon: "creditcard",
-    },
-    {
-      id: "12",
-      title: "Promoción por tiempo limitado",
-      message: "2x1 en todas las pizzas de las mejores pizzerías",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10), // 10 días atrás
-      read: true,
-      category: "promociones",
-      icon: "calendar",
-    },
-    {
-      id: "13",
-      title: "Mantenimiento programado",
-      message: "El sistema estará en mantenimiento mañana de 2:00 a 4:00 AM",
-      type: "warning",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11), // 11 días atrás
-      read: false,
-      category: "sistema",
-      icon: "bell",
-    },
-    {
-      id: "14",
-      title: "Descuento en farmacias",
-      message: "20% de descuento en medicamentos con receta",
-      type: "info",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12), // 12 días atrás
-      read: true,
-      category: "ofertas",
-      icon: "percent",
-    },
-    {
-      id: "15",
-      title: "Cuenta bloqueada temporalmente",
-      message: "Tu cuenta ha sido bloqueada por seguridad. Contacta soporte",
-      type: "error",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13), // 13 días atrás
-      read: false,
-      category: "cuenta",
-      icon: "creditcard",
-    },
-  ]);
 
-  const handleDeleteNotification = (notificationId: string) => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter(
-        (notification) => notification.id !== notificationId
-      )
-    );
+  const handleDeleteNotification = async (notificationId: string) => {
+    await deleteNotification(notificationId);
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    await markAsRead(notificationId);
   };
 
   const handleFilterChange = (
@@ -225,28 +65,25 @@ export default function Notifications() {
     if (activeFilters.category !== "all") {
       if (
         activeFilters.category === "offers" &&
-        notification.category !== "ofertas"
+        notification.type !== "info"
       ) {
         return false;
       }
       if (
         activeFilters.category === "account" &&
-        notification.category !== "cuenta"
+        notification.type !== "success"
       ) {
         return false;
       }
       if (
         activeFilters.category === "expiring" &&
-        !(
-          notification.category === "promociones" &&
-          notification.title.toLowerCase().includes("vencer")
-        )
+        notification.type !== "card_expiry"
       ) {
         return false;
       }
       if (
         activeFilters.category === "system" &&
-        notification.category !== "sistema"
+        notification.type !== "warning"
       ) {
         return false;
       }
@@ -255,24 +92,30 @@ export default function Notifications() {
     return true;
   });
 
-  const getNotificationIcon = (icon: string) => {
-    switch (icon) {
-      case "percent":
+  const getNotificationIcon = (notification: Notification) => {
+    switch (notification.type) {
+      case "card_expiry":
         return (
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <Percent className="h-4 w-4 text-green-600" />
+          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
           </div>
         );
-      case "calendar":
+      case "success":
+        return (
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <CreditCard className="h-4 w-4 text-green-600" />
+          </div>
+        );
+      case "warning":
         return (
           <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
             <Calendar className="h-4 w-4 text-orange-600" />
           </div>
         );
-      case "creditcard":
+      case "info":
         return (
           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <CreditCard className="h-4 w-4 text-blue-600" />
+            <Percent className="h-4 w-4 text-blue-600" />
           </div>
         );
       default:
@@ -338,7 +181,7 @@ export default function Notifications() {
     const groups: { [key: string]: Notification[] } = {};
 
     filteredNotifications.forEach((notification) => {
-      const section = getTimeSection(notification.timestamp);
+      const section = getTimeSection(notification.createdAt);
       if (!groups[section]) {
         groups[section] = [];
       }
@@ -348,7 +191,7 @@ export default function Notifications() {
     return groups;
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = getUnreadCount();
 
   const filterOptions = [
     { id: "unreadOnly", label: "Solo no leídas", icon: null },
@@ -497,7 +340,37 @@ export default function Notifications() {
       {/* Lista de notificaciones */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-4 max-w-2xl pb-20">
-          {filteredNotifications.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <Bell className="h-8 w-8 text-gray-600 animate-pulse" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Cargando notificaciones...
+              </h3>
+              <p className="text-sm text-gray-600">
+                Por favor espera mientras cargamos tus notificaciones
+              </p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Error al cargar notificaciones
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {error}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <Bell className="h-8 w-8 text-gray-600" />
@@ -538,7 +411,7 @@ export default function Notifications() {
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-3">
-                            {getNotificationIcon(notification.icon)}
+                            {getNotificationIcon(notification)}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
                                 <h3 className="font-semibold text-sm text-gray-900">
@@ -553,17 +426,30 @@ export default function Notifications() {
                               </p>
                               <div className="flex items-center justify-between mt-3">
                                 <span className="text-xs text-gray-600">
-                                  {formatTimeDisplay(notification.timestamp)}
+                                  {formatTimeDisplay(notification.createdAt)}
                                 </span>
-                                <button
-                                  onClick={() =>
-                                    handleDeleteNotification(notification.id)
-                                  }
-                                  className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                  <span className="text-xs">Eliminar</span>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {!notification.read && (
+                                    <button
+                                      onClick={() =>
+                                        handleMarkAsRead(notification.id)
+                                      }
+                                      className="flex items-center gap-1 text-blue-500 hover:text-blue-600 transition-colors"
+                                    >
+                                      <Check className="h-3 w-3" />
+                                      <span className="text-xs">Marcar leída</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteNotification(notification.id)
+                                    }
+                                    className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    <span className="text-xs">Eliminar</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
