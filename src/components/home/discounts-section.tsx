@@ -2,7 +2,7 @@ import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { ArrowRight } from "lucide-react";
 import { EmptyState } from "./empty-state";
 
-interface Discount {
+interface HomePageDiscount {
   id: string;
   title: string;
   image: string;
@@ -11,10 +11,14 @@ interface Discount {
   distance: string;
   expiration: string;
   discountPercentage: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
 }
 
 interface DiscountsSectionProps {
-  discounts: Discount[];
+  discounts: HomePageDiscount[];
   loading: boolean;
   onDiscountClick: (discountId: string) => void;
   onViewAll: () => void;

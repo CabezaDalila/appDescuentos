@@ -62,8 +62,24 @@ export const getDiscounts = async (): Promise<Discount[]> => {
   }
 };
 
+// Tipo específico para los descuentos de la página de inicio
+interface HomePageDiscount {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  discountPercentage: string;
+  points: number;
+  distance: string;
+  expiration: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
+}
+
 // Obtener descuentos para la página principal (solo aprobados)
-export const getHomePageDiscounts = async () => {
+export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
   try {
     const q = query(
       collection(db, "discounts"),
@@ -107,7 +123,7 @@ export const getHomePageDiscounts = async () => {
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
           isVisible: data.isVisible ?? true, // Incluir campo de visibilidad
-        };
+        } as HomePageDiscount;
       })
       .filter((discount) => {
         // Solo descuentos activos y visibles
@@ -131,9 +147,10 @@ export const getHomePageDiscounts = async () => {
         expiration: "Próximamente",
         description: "Cargando descuentos desde la base de datos...",
         origin: "Sistema",
-        status: "active",
+        status: "active" as const,
+        isVisible: true,
       },
-    ];
+    ] as HomePageDiscount[];
   }
 };
 

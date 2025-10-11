@@ -1,9 +1,23 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
-import { Discount } from "@/types/discount";
 import { TrendingUp } from "lucide-react";
 
+interface HomePageDiscount {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  points: number;
+  distance: string;
+  expiration: string;
+  discountPercentage: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
+}
+
 interface TrendingSectionProps {
-  discounts: Discount[];
+  discounts: HomePageDiscount[];
   onOfferClick: (offerId: string) => void;
 }
 
@@ -29,17 +43,13 @@ export function TrendingSection({
           {limitedDiscounts.map((discount) => (
             <CardDiscountCompact
               key={discount.id}
-              title={discount.name}
-              image={discount.imageUrl || discount.image || "/imgDefault.svg"}
+              title={discount.title}
+              image={discount.image}
               category={discount.category}
-              points={4.5} // Rating fijo ya que no está en la interfaz Discount
-              distance="0.5 km" // Distancia fija ya que no está en la interfaz Discount
-              expiration="30 días" // Expiración fija ya que no está en la interfaz Discount
-              discountPercentage={
-                discount.discountPercentage
-                  ? `${discount.discountPercentage}%`
-                  : "Oferta"
-              }
+              points={discount.points}
+              distance={discount.distance}
+              expiration={discount.expiration}
+              discountPercentage={discount.discountPercentage}
               onNavigateToDetail={() => onOfferClick(discount.id)}
             />
           ))}
