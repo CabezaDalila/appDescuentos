@@ -2,12 +2,14 @@ import { AlertTriangle, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import {
+  Card,
   CARD_BRANDS,
-  CARD_TYPES,
   CARD_LEVELS,
-} from "../../types/membership";
-import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
-import { Card, CardLevel, Membership } from "../../types/membership";
+  CARD_TYPES,
+  CardLevel,
+  Membership,
+} from "../../constants/membership";
+import { formatExpiryInput, validateExpiry } from "../../lib/card-utils";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import {
@@ -34,7 +36,10 @@ interface MembershipDetailModalProps {
     cardId: string,
     cardData: Partial<Card>
   ) => Promise<void>;
-  onDeleteCard?: (membershipId: string, cardId: string) => Promise<{membershipDeleted: boolean; message: string}>;
+  onDeleteCard?: (
+    membershipId: string,
+    cardId: string
+  ) => Promise<{ membershipDeleted: boolean; message: string }>;
 }
 
 const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
@@ -126,7 +131,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     setShowEditCardModal(true);
   };
 
-
   const handleSaveCard = async () => {
     if (!localMembership) {
       toast.error("Error: No se encontró la membresía");
@@ -135,24 +139,26 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
     // Validar datos de la tarjeta
     const errors: string[] = [];
-    
+
     if (!cardFormData.type) {
       errors.push("Debe seleccionar un tipo de tarjeta");
     }
-    
+
     if (!cardFormData.brand) {
       errors.push("Debe seleccionar una marca de tarjeta");
     }
-    
+
     if (!cardFormData.level) {
       errors.push("Debe seleccionar un nivel de tarjeta");
     }
-    
+
     // Validar formato de fecha de vencimiento
     if (cardFormData.expiry && !validateExpiry(cardFormData.expiry)) {
-      errors.push("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
+      errors.push(
+        "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
+      );
     }
-    
+
     // Verificar duplicados
     const isDuplicate = localMembership.cards.some(
       (card) =>
@@ -161,11 +167,11 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
         card.level === cardFormData.level &&
         (!selectedCard || card.id !== selectedCard.id)
     );
-    
+
     if (isDuplicate) {
       errors.push("Ya existe una tarjeta con estas características");
     }
-    
+
     if (errors.length > 0) {
       errors.forEach((error) => toast.error(error));
       return;
@@ -194,15 +200,11 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
     try {
       if (showEditCardModal && selectedCard && onUpdateCard) {
-        console.log("🔄 Actualizando tarjeta:", selectedCard.id, cardFormData);
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
         toast.success("Tarjeta actualizada correctamente");
-        console.log("✅ Tarjeta actualizada exitosamente");
       } else if (showAddCardModal && onAddCard) {
-        console.log("➕ Agregando nueva tarjeta:", newCard);
         await onAddCard(localMembership.id, newCard);
         toast.success("Tarjeta agregada correctamente");
-        console.log("✅ Tarjeta agregada exitosamente");
       }
     } catch (error) {
       // Revertir actualización optimista en caso de error
@@ -214,27 +216,23 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
 
   const handleDeleteCard = async (cardId: string) => {
     if (!localMembership || !onDeleteCard) return;
-    
-    const remainingCards = localMembership.cards.filter((card) => card.id !== cardId);
+
+    const remainingCards = localMembership.cards.filter(
+      (card) => card.id !== cardId
+    );
     const isLastCard = remainingCards.length === 0;
     const isBank = localMembership.category === "banco";
-    
-    console.log("🗑️ Eliminando tarjeta:", cardId);
-    console.log("📊 Tarjetas restantes:", remainingCards.length);
-    console.log("🏦 Es banco:", isBank);
-    console.log("🔚 Es última tarjeta:", isLastCard);
-    
+
     // Actualización optimista
     const prevCards = localMembership.cards;
     setLocalMembership({
       ...localMembership,
       cards: remainingCards,
     });
-    
+
     try {
       const result = await onDeleteCard(localMembership.id, cardId);
-      console.log("📋 Resultado de eliminación:", result);
-      
+
       if (result.membershipDeleted) {
         // Si se eliminó la membresía completa, cerrar el modal
         toast.success(result.message);
@@ -243,8 +241,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
         // Si solo se eliminó la tarjeta, mostrar mensaje
         toast.success(result.message);
       }
-      
-      console.log("✅ Operación completada exitosamente");
     } catch (error) {
       // Revertir actualización optimista en caso de error
       setLocalMembership({ ...localMembership, cards: prevCards });

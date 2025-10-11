@@ -29,23 +29,17 @@ export default function NotificationButton({
 
   const checkSubscriptionStatus = async () => {
     try {
-      console.log("🔍 Verificando estado de notificaciones...");
-
       if (Capacitor.isNativePlatform()) {
         // Para móvil
-        console.log("📱 Verificando estado en móvil...");
         const isEnabled = await isOneSignalEnabled();
-        console.log("📱 Estado de notificaciones móvil:", isEnabled);
         setIsSubscribed(isEnabled);
       } else {
         // Para web
         if (typeof window === "undefined" || !window.OneSignal) {
-          console.log("❌ OneSignal no disponible en web");
           return;
         }
 
         const isEnabled = await window.OneSignal.isPushNotificationsEnabled();
-        console.log("🌐 Estado de notificaciones web:", isEnabled);
         setIsSubscribed(isEnabled);
       }
     } catch (error) {
@@ -66,8 +60,6 @@ export default function NotificationButton({
 
       if (Capacitor.isNativePlatform()) {
         // Para móvil - OneSignal se configura automáticamente
-        console.log("📱 Configurando notificaciones para móvil...");
-
         try {
           // Verificar si ya está suscrito
           const isEnabled = await isOneSignalEnabled();
@@ -103,8 +95,6 @@ export default function NotificationButton({
           setIsLoading(false);
           return;
         }
-
-        console.log("🔔 Solicitando permisos en web...");
 
         // Solicitar permisos de notificación
         await window.OneSignal.showNativePrompt();

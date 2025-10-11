@@ -1,23 +1,16 @@
-import {
-  Building2,
-  CreditCard,
-  Plus,
-  Search,
-} from "lucide-react";
+import { Building2, CreditCard, Search } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import {
+  Card,
   CARD_BRANDS,
   CARD_LEVELS,
   CARD_TYPES,
-  ENTITIES_BY_CATEGORY,
-} from "../../types/membership";
-import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
-import {
-  Card,
   CardLevel,
   CreateMembershipData,
-} from "../../types/membership";
+  ENTITIES_BY_CATEGORY,
+} from "../../constants/membership";
+import { formatExpiryInput, validateExpiry } from "../../lib/card-utils";
 import { Button } from "../Share/button";
 import {
   Dialog,
@@ -96,16 +89,18 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
 
     // Validar fecha de vencimiento si se proporciona
     if (cardData.expiry && !validateExpiry(cardData.expiry)) {
-      toast.error("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
+      toast.error(
+        "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
+      );
       return;
     }
 
     try {
       setIsCreating(true);
-      
+
       const bankName = customBankName.trim();
       const gradient = BANK_GRADIENTS[bankName] || "from-blue-500 to-blue-600";
-      
+
       const newCard: Card = {
         id: Date.now().toString(),
         type: cardData.type,
@@ -123,9 +118,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
         cards: [newCard],
       };
 
-      console.log("🚀 Creando banco con tarjeta:", membershipData);
       await onCreate?.(membershipData);
-      console.log("✅ Banco con tarjeta creado exitosamente");
       toast.success("Banco y tarjeta creados exitosamente");
       handleClose();
     } catch (error) {
@@ -204,8 +197,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                     onClick={() => handleBankSelect(bank)}
                     className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors flex items-center justify-between"
                     style={{
-                      borderColor: selectedBank === bank ? "#3B82F6" : "#D1D5DB",
-                      backgroundColor: selectedBank === bank ? "#EFF6FF" : "white",
+                      borderColor:
+                        selectedBank === bank ? "#3B82F6" : "#D1D5DB",
+                      backgroundColor:
+                        selectedBank === bank ? "#EFF6FF" : "white",
                     }}
                   >
                     <span
@@ -222,7 +217,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
 
               {/* Entrada personalizada */}
               <div className="space-y-2">
-                <Label htmlFor="customBankName" className="text-gray-700 font-medium">
+                <Label
+                  htmlFor="customBankName"
+                  className="text-gray-700 font-medium"
+                >
                   O ingresa un nombre personalizado
                 </Label>
                 <Input
@@ -256,13 +254,19 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cardType" className="text-gray-700 font-medium">
+                    <Label
+                      htmlFor="cardType"
+                      className="text-gray-700 font-medium"
+                    >
                       Tipo *
                     </Label>
                     <Select
                       value={cardData.type}
                       onValueChange={(value) =>
-                        setCardData({ ...cardData, type: value as Card["type"] })
+                        setCardData({
+                          ...cardData,
+                          type: value as Card["type"],
+                        })
                       }
                     >
                       <SelectTrigger>
@@ -279,7 +283,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                   </div>
 
                   <div>
-                    <Label htmlFor="cardBrand" className="text-gray-700 font-medium">
+                    <Label
+                      htmlFor="cardBrand"
+                      className="text-gray-700 font-medium"
+                    >
                       Marca *
                     </Label>
                     <Select
@@ -306,7 +313,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                 </div>
 
                 <div>
-                  <Label htmlFor="cardLevel" className="text-gray-700 font-medium">
+                  <Label
+                    htmlFor="cardLevel"
+                    className="text-gray-700 font-medium"
+                  >
                     Nivel *
                   </Label>
                   <Select
@@ -329,7 +339,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                 </div>
 
                 <div>
-                  <Label htmlFor="cardName" className="text-gray-700 font-medium">
+                  <Label
+                    htmlFor="cardName"
+                    className="text-gray-700 font-medium"
+                  >
                     Nombre (opcional)
                   </Label>
                   <Input
@@ -343,7 +356,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                 </div>
 
                 <div>
-                  <Label htmlFor="cardExpiry" className="text-gray-700 font-medium">
+                  <Label
+                    htmlFor="cardExpiry"
+                    className="text-gray-700 font-medium"
+                  >
                     Vencimiento (opcional)
                   </Label>
                   <Input

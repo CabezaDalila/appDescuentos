@@ -1,3 +1,4 @@
+import { CreditCard, Users } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Badge } from "../Share/badge";
@@ -8,7 +9,13 @@ interface CardDiscountProps {
   title: string;
   image: string;
   description: string;
-  applyWith: string[];
+  availableMemberships?: string[];
+  availableCredentials?: Array<{
+    bank: string;
+    type: string;
+    brand: string;
+    level: string;
+  }>;
   category: string;
   points: number;
   countComments: number;
@@ -21,7 +28,8 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   title,
   image,
   description,
-  applyWith,
+  availableMemberships,
+  availableCredentials,
   category,
   points,
   countComments,
@@ -64,7 +72,6 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
               } else {
                 // Fallback para navegadores que no soportan Web Share API
                 navigator.clipboard.writeText(window.location.href);
-                alert("¡URL copiada al portapapeles!");
               }
             }}
           >
@@ -119,15 +126,68 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
       {/* distancia mas vencimiento */}
       <Separator className="w-full" />
       <p className="text-xs text-gray-600">{description}</p>
-      <div className="flex flex-col gap-3">
+
+      {/* Sección Aplican */}
+      <div className="flex flex-col gap-2">
         <h1 className="text-sm font-bold text-gray-600">Aplican</h1>
-        <div className="flex  flex-wrap gap-2">
-          {applyWith.map((item: string) => (
-            <Badge key={item} variant="outline" className="text-gray-600 gap-2">
-              {item}
+
+        {/* Si no tiene requisitos */}
+        {(!availableMemberships || availableMemberships.length === 0) &&
+          (!availableCredentials || availableCredentials.length === 0) && (
+            <Badge
+              variant="secondary"
+              className="bg-gray-100 text-gray-600 border-gray-300 text-xs w-fit"
+            >
+              Sin requisitos
             </Badge>
-          ))}
-        </div>
+          )}
+
+        {/* Membresías */}
+        {availableMemberships && availableMemberships.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3 text-blue-600" />
+              <span className="text-xs font-medium text-gray-700">
+                Membresías:
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {availableMemberships.map((membership, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                >
+                  {membership}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Credenciales */}
+        {availableCredentials && availableCredentials.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1">
+              <CreditCard className="h-3 w-3 text-violet-600" />
+              <span className="text-xs font-medium text-gray-700">
+                Credenciales:
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {availableCredentials.map((credential, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="bg-violet-50 text-violet-700 border-violet-200 text-xs"
+                >
+                  {credential.bank} - {credential.type} {credential.brand}{" "}
+                  {credential.level}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -57,13 +57,11 @@ function MyApp({ Component, pageProps }: AppProps) {
       const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
       
       if (!appId || appId === 'your_onesignal_app_id_here') {
-        console.log('⚠️ OneSignal App ID no configurado');
         return;
       }
 
       // Verificar si ya se está inicializando o ya se inicializó
       if (isInitializing || (window as any).OneSignalInitialized) {
-        console.log('⚠️ OneSignal ya fue inicializado o se está inicializando');
         return;
       }
 
@@ -72,8 +70,6 @@ function MyApp({ Component, pageProps }: AppProps) {
       try {
         // Esperar a que OneSignal se cargue
         if (typeof window !== 'undefined' && window.OneSignal) {
-          console.log('🚀 Inicializando OneSignal...');
-          
           await window.OneSignal.init({
             appId: appId,
             allowLocalhostAsSecureOrigin: true
@@ -81,9 +77,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           
           // Marcar como inicializado
           (window as any).OneSignalInitialized = true;
-          console.log('✅ OneSignal inicializado correctamente');
         } else {
-          console.log('⏳ Esperando a que OneSignal se cargue...');
           isInitializing = false;
           // Reintentar después de 500ms
           setTimeout(initOneSignal, 500);

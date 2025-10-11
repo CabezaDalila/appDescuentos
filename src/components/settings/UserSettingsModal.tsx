@@ -32,11 +32,7 @@ interface UserSettingsModalProps {
 }
 
 const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
-  function UserSettingsModal({
-    isOpen,
-    onClose,
-    initialValues,
-  }: UserSettingsModalProps) {
+  function UserSettingsModal({ isOpen, onClose }: UserSettingsModalProps) {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<"general" | "appearance">(
       "general"
@@ -151,9 +147,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
         );
         if (formData.useLocation) {
           navigator.geolocation.getCurrentPosition(
-            (position) => {
-              console.log("Ubicación obtenida:", position.coords);
-            },
+            () => {},
             (error) => {
               console.error("Error al obtener ubicación:", error);
               setFormData((prev) => ({ ...prev, useLocation: false }));
@@ -201,7 +195,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
                   }));
                 }
               })
-              .catch((error) => {
+              .catch(() => {
                 setFormData((prev) => ({
                   ...prev,
                   region: `Lat: ${position.coords.latitude.toFixed(
