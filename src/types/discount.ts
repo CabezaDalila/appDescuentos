@@ -22,6 +22,13 @@ export interface Discount {
   rejectionReason?: string; // Razón del rechazo
   source: "manual" | "scraping"; // Origen del descuento
   origin?: string; // Origen del descuento (empresa/sitio)
+  availableMemberships?: string[];
+  availableCredentials?: Array<{
+    bank: string;
+    type: string;
+    brand: string;
+    level: string;
+  }>;
   // Propiedades adicionales para la UI
   points?: number;
   distance?: string;

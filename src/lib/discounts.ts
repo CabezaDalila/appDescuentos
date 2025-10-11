@@ -40,6 +40,15 @@ interface FirestoreDiscount {
   rejectionReason?: string; // Razón del rechazo
   source?: "manual" | "scraping"; // Origen del descuento
   isVisible?: boolean; // Campo para controlar visibilidad
+  bancos?: string[];
+  // Campos para matching con membresías y credenciales del usuario
+  availableMemberships?: string[]; // ["Club Despegar", "Banco Galicia"]
+  availableCredentials?: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
 }
 
 // Obtener todos los descuentos
@@ -340,5 +349,149 @@ export const getDiscountById = async (
   } catch (error) {
     console.error("Error al obtener descuento por ID:", error);
     throw error;
+  }
+};
+
+// Obtener descuentos personalizados basados en las membresías y credenciales del usuario
+export const getPersonalizedDiscounts = async (
+  userMemberships: string[],
+  userCredentials: Array<{
+    bank: string;
+    type: string;
+    brand: string;
+    level: string;
+  }>
+): Promise<HomePageDiscount[]> => {
+  try {
+    // Si no hay membresías ni credenciales, retornar array vacío
+    if (
+      (!userMemberships || userMemberships.length === 0) &&
+      (!userCredentials || userCredentials.length === 0)
+    ) {
+      return [];
+    }
+
+    // Normalizar membresías del usuario
+    const normalizedUserMemberships = userMemberships.map((m) =>
+      m.toLowerCase().trim().replace(/\s+/g, " ")
+    );
+
+    // Función helper para normalizar strings
+    const normalize = (str: string): string => {
+      return str.toLowerCase().trim().replace(/\s+/g, " ");
+    };
+
+    // Función helper para verificar si hay match de membresía
+    const hasMembershipMatch = (discountMembership: string): boolean => {
+      return normalizedUserMemberships.some(
+        (userMembership) => normalize(discountMembership) === userMembership
+      );
+    };
+
+    // Función helper para verificar si hay match ESTRICTO de credencial
+    // Debe coincidir: bank, type, brand y level
+    const hasCredentialMatch = (discountCred: {
+      bank: string;
+      type: string;
+      brand: string;
+      level: string;
+    }): boolean => {
+      return userCredentials.some((userCred) => {
+        return (
+          normalize(discountCred.bank) === normalize(userCred.bank) &&
+          normalize(discountCred.type) === normalize(userCred.type) &&
+          normalize(discountCred.brand) === normalize(userCred.brand) &&
+          normalize(discountCred.level) === normalize(userCred.level)
+        );
+      });
+    };
+
+    // Obtener todos los descuentos aprobados y activos
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "approved"),
+      where("status", "==", "active")
+    );
+
+    const snapshot = await getDocs(q);
+
+    const allDiscounts = snapshot.docs.map((doc) => {
+      const data = doc.data() as FirestoreDiscount;
+      return {
+        id: doc.id,
+        data,
+      };
+    });
+
+    // Filtrar descuentos que coincidan con las membresías o credenciales del usuario
+    const matchedDiscounts = allDiscounts.filter(({ data }) => {
+      // Verificar si availableMemberships coincide con alguna membresía del usuario
+      if (
+        data.availableMemberships &&
+        Array.isArray(data.availableMemberships) &&
+        data.availableMemberships.length > 0
+      ) {
+        const matchFound = data.availableMemberships.some(
+          (availableMembership) => {
+            return hasMembershipMatch(availableMembership);
+          }
+        );
+        if (matchFound) return true;
+      }
+
+      // Verificar si availableCredentials coincide EXACTAMENTE con credenciales del usuario
+      // MATCH ESTRICTO: bank, type, brand y level deben ser iguales
+      if (
+        data.availableCredentials &&
+        Array.isArray(data.availableCredentials) &&
+        data.availableCredentials.length > 0
+      ) {
+        const matchFound = data.availableCredentials.some((discountCred) => {
+          return hasCredentialMatch(discountCred);
+        });
+        if (matchFound) return true;
+      }
+
+      return false;
+    });
+
+    // Convertir a formato HomePageDiscount y limitar resultados
+    return matchedDiscounts
+      .slice(0, 10) // Limitar a máximo 10 descuentos
+      .map(({ id, data }) => {
+        const title = data.title || data.name || "Sin título";
+        const category = data.category || "Sin categoría";
+        const discountPercentage = data.discountPercentage
+          ? `${data.discountPercentage}%`
+          : "Sin descuento";
+
+        const image =
+          data.imageUrl?.trim() ||
+          data.image?.trim() ||
+          getImageByCategory(data.category);
+
+        const expiration =
+          data.validUntil?.toDate?.() ||
+          data.expirationDate?.toDate?.() ||
+          new Date();
+
+        return {
+          id,
+          title,
+          image,
+          category,
+          discountPercentage,
+          points: 6,
+          distance: "1.2km",
+          expiration: expiration.toLocaleDateString("es-ES"),
+          description: data.description || data.descripcion || "",
+          origin: data.origin || "Origen no especificado",
+          status: data.status || "active",
+          isVisible: data.isVisible ?? true,
+        } as HomePageDiscount;
+      });
+  } catch (error) {
+    console.error("Error al obtener descuentos personalizados:", error);
+    return [];
   }
 };

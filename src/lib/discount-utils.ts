@@ -13,7 +13,6 @@ import {
 export const deleteDiscount = async (discountId: string): Promise<void> => {
   try {
     await deleteDoc(doc(db, "discounts", discountId));
-    console.log(`Descuento ${discountId} eliminado correctamente`);
   } catch (error) {
     console.error("Error al eliminar descuento:", error);
     throw error;
@@ -32,7 +31,6 @@ export const deleteMultipleDiscounts = async (
     });
 
     await batch.commit();
-    console.log(` ${discountIds.length} descuentos eliminados correctamente`);
   } catch (error) {
     console.error("Error al eliminar descuentos:", error);
     throw error;
@@ -80,7 +78,6 @@ export const deleteDiscountsByCriteria = async (criteria: {
 
     await batch.commit();
 
-    console.log(`✅ ${snapshot.size} descuentos eliminados por criterios`);
     return snapshot.size;
   } catch (error) {
     console.error("Error al eliminar descuentos por criterios:", error);
@@ -118,7 +115,6 @@ export const deleteAllDiscounts = async (): Promise<number> => {
       await batch.commit();
     }
 
-    console.log(`✅ ${totalDeleted} descuentos eliminados`);
     return totalDeleted;
   } catch (error) {
     console.error("Error al eliminar todos los descuentos:", error);

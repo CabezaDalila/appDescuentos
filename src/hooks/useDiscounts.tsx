@@ -37,7 +37,6 @@ export function useDiscounts(): UseDiscountsReturn {
       setDiscounts(data);
     } catch (error) {
       if (error instanceof Error && error.message.includes("index")) {
-        console.log("Esperando que se cree el índice de Firebase...");
         setDiscounts([]);
       } else {
         toast.error("Error al cargar descuentos manuales");

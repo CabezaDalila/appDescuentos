@@ -26,6 +26,13 @@ export interface ManualDiscount {
   discountAmount?: number;
   imageUrl?: string;
   isVisible: boolean;
+  availableCredentials?: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
+  availableMemberships?: string[];
   createdAt?: Date;
   updatedAt?: Date;
   validUntil?: Date;
@@ -41,6 +48,13 @@ export interface CreateManualDiscountData {
   discountAmount?: number;
   imageUrl?: string;
   isVisible: boolean;
+  availableCredentials?: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
+  availableMemberships?: string[];
 }
 
 export interface UpdateManualDiscountData {
@@ -53,6 +67,13 @@ export interface UpdateManualDiscountData {
   discountAmount?: number;
   imageUrl?: string;
   isVisible?: boolean;
+  availableCredentials?: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
+  availableMemberships?: string[];
 }
 
 // ===== TIPOS PARA USUARIOS ADMIN =====
@@ -80,6 +101,7 @@ export interface DiscountFormState {
   discountAmount: string;
   imageUrl: string;
   isVisible: boolean;
+  availableCredentials: string[];
 }
 
 export interface ConfirmationModalState {
@@ -101,5 +123,5 @@ export type DiscountOperation =
 export interface OperationResult {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }

@@ -8,18 +8,16 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import {
+  Card,
   CARD_BRANDS,
   CARD_LEVELS,
   CARD_TYPES,
-} from "../../types/membership";
-import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
-import {
-  Card,
   CardLevel,
   CreateMembershipData,
   ENTITIES_BY_CATEGORY,
   MEMBERSHIP_CATEGORIES,
-} from "../../types/membership";
+} from "../../constants/membership";
+import { formatExpiryInput, validateExpiry } from "../../lib/card-utils";
 import { Button } from "../Share/button";
 import {
   Dialog,
@@ -109,7 +107,6 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
 
     // Para bancos, verificar que tenga al menos una tarjeta
     if (selectedCategory === "banco" && cards.length === 0) {
-      alert("Los bancos deben tener al menos una tarjeta asociada");
       return;
     }
 
@@ -141,28 +138,22 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
         cards: selectedCategory === "banco" ? cards : [],
       };
 
-      console.log("🚀 Creando membresía con datos:", membershipData);
       await onCreate(membershipData);
-      console.log("✅ Membresía creada exitosamente");
       handleClose();
     } catch (error) {
       console.error("❌ Error al crear membresía:", error);
-      alert("Error al crear la membresía. Inténtalo de nuevo.");
     } finally {
       setIsCreating(false);
     }
   };
 
-
   const handleAddCard = () => {
     if (!newCard.type || !newCard.brand || !newCard.level) {
-      alert("Por favor completa todos los campos obligatorios de la tarjeta");
       return;
     }
 
     // Validar fecha de vencimiento si se proporciona
     if (newCard.expiry && !validateExpiry(newCard.expiry)) {
-      alert("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
       return;
     }
 

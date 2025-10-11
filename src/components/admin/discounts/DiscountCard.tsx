@@ -12,6 +12,7 @@ import { Switch } from "@/components/Share/switch";
 import { ManualDiscount } from "@/types/admin";
 import {
   Calendar,
+  CreditCard,
   Edit,
   Eye,
   EyeOff,
@@ -20,6 +21,7 @@ import {
   Store,
   Tag,
   Trash2,
+  Users,
 } from "lucide-react";
 
 interface DiscountCardProps {
@@ -148,6 +150,76 @@ export function DiscountCard({
             </p>
           </div>
         )}
+
+        {/* Sección Aplican - Siempre visible */}
+        <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+          <Label className="text-sm font-medium mb-2 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-blue-600" />
+            Aplican:
+          </Label>
+
+          {/* Si no tiene requisitos */}
+          {(!discount.availableMemberships ||
+            discount.availableMemberships.length === 0) &&
+            (!discount.availableCredentials ||
+              discount.availableCredentials.length === 0) && (
+              <Badge
+                variant="secondary"
+                className="bg-gray-100 text-gray-600 border-gray-300 text-xs"
+              >
+                Sin requisitos
+              </Badge>
+            )}
+
+          {/* Membresías */}
+          {discount.availableMemberships &&
+            discount.availableMemberships.length > 0 && (
+              <div className="mb-3">
+                <div className="flex items-center gap-1 mb-1.5">
+                  <Users className="h-3 w-3 text-blue-600" />
+                  <span className="text-xs font-medium text-gray-700">
+                    Membresías:
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {discount.availableMemberships.map((membership, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
+                    >
+                      {membership}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Credenciales */}
+          {discount.availableCredentials &&
+            discount.availableCredentials.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1 mb-1.5">
+                  <CreditCard className="h-3 w-3 text-violet-600" />
+                  <span className="text-xs font-medium text-gray-700">
+                    Credenciales:
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {discount.availableCredentials.map((credential, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="bg-violet-50 text-violet-700 border-violet-200 text-xs"
+                    >
+                      {credential.bank} - {credential.type} {credential.brand}{" "}
+                      {credential.level}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+        </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm">

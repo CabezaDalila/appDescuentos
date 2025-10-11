@@ -1,6 +1,6 @@
 import { Filter, Search, SortAsc } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { Membership, MEMBERSHIP_CATEGORIES } from "../../types/membership";
+import { Membership, MEMBERSHIP_CATEGORIES } from "../../constants/membership";
 import { Button } from "../Share/button";
 import { Input } from "../Share/input";
 import {
