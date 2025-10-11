@@ -31,7 +31,7 @@ export function DiscountsSection({
   onViewAll,
 }: DiscountsSectionProps) {
   return (
-    <div className="w-full px-3 sm:px-4 mb-4 sm:mb-6 pb-20 sm:pb-6">
+    <div className="w-full px-3 sm:px-4 mb-4 sm:mb-6">
       <div className="flex justify-between items-center mb-2 sm:mb-3">
         <h2 className="text-sm sm:text-base font-semibold text-gray-900">
           Promociones destacadas
