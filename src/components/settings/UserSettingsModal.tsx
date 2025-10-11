@@ -163,7 +163,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
         }
         setInitialPrefs(formData);
         onClose();
-      } catch (error) {
+      } catch {
         localStorage.setItem(
           `user-prefs-${user.uid}`,
           JSON.stringify(formData)
@@ -210,7 +210,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
                 }));
               });
           },
-          (error) => {
+          () => {
             fetch("https://ipapi.co/json/")
               .then((res) => res.json())
               .then((data) => {

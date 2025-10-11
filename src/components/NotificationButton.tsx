@@ -1,24 +1,24 @@
-import { Bell, BellOff, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { Button } from './Share/button';
-import toast from 'react-hot-toast';
-import { Capacitor } from '@capacitor/core';
-import { getOneSignalUserId, isOneSignalEnabled } from '@/lib/onesignal-config';
+import { isOneSignalEnabled } from "@/lib/onesignal-config";
+import { Capacitor } from "@capacitor/core";
+import { Bell, BellOff, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { Button } from "./Share/button";
 
 interface NotificationButtonProps {
-  variant?: 'default' | 'outline' | 'ghost';
-  size?: 'sm' | 'default' | 'lg';
+  variant?: "default" | "outline" | "ghost";
+  size?: "sm" | "default" | "lg";
   showIcon?: boolean;
   showText?: boolean;
   className?: string;
 }
 
 export default function NotificationButton({
-  variant = 'outline',
-  size = 'default',
+  variant = "outline",
+  size = "default",
   showIcon = true,
   showText = true,
-  className = ''
+  className = "",
 }: NotificationButtonProps) {
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,67 +29,67 @@ export default function NotificationButton({
 
   const checkSubscriptionStatus = async () => {
     try {
-      console.log('🔍 Verificando estado de notificaciones...');
-      
+      console.log("🔍 Verificando estado de notificaciones...");
+
       if (Capacitor.isNativePlatform()) {
         // Para móvil
-        console.log('📱 Verificando estado en móvil...');
+        console.log("📱 Verificando estado en móvil...");
         const isEnabled = await isOneSignalEnabled();
-        console.log('📱 Estado de notificaciones móvil:', isEnabled);
+        console.log("📱 Estado de notificaciones móvil:", isEnabled);
         setIsSubscribed(isEnabled);
       } else {
         // Para web
-        if (typeof window === 'undefined' || !window.OneSignal) {
-          console.log('❌ OneSignal no disponible en web');
+        if (typeof window === "undefined" || !window.OneSignal) {
+          console.log("❌ OneSignal no disponible en web");
           return;
         }
 
         const isEnabled = await window.OneSignal.isPushNotificationsEnabled();
-        console.log('🌐 Estado de notificaciones web:', isEnabled);
+        console.log("🌐 Estado de notificaciones web:", isEnabled);
         setIsSubscribed(isEnabled);
       }
-      
     } catch (error) {
-      console.error('❌ Error verificando estado:', error);
+      console.error("❌ Error verificando estado:", error);
       setIsSubscribed(false);
     }
   };
 
   const handleToggleNotifications = async () => {
     setIsLoading(true);
-    
+
     try {
       if (isSubscribed) {
-        toast.success('Ya estás suscrito a las notificaciones');
+        toast.success("Ya estás suscrito a las notificaciones");
         setIsLoading(false);
         return;
       }
 
       if (Capacitor.isNativePlatform()) {
         // Para móvil - OneSignal se configura automáticamente
-        console.log('📱 Configurando notificaciones para móvil...');
-        
+        console.log("📱 Configurando notificaciones para móvil...");
+
         try {
           // Verificar si ya está suscrito
           const isEnabled = await isOneSignalEnabled();
           if (isEnabled) {
-            toast.success('¡Notificaciones activadas en móvil!');
+            toast.success("¡Notificaciones activadas en móvil!");
             setIsSubscribed(true);
           } else {
-            toast.success('Notificaciones configuradas. Revisa la configuración del dispositivo.');
+            toast.success(
+              "Notificaciones configuradas. Revisa la configuración del dispositivo."
+            );
             setIsSubscribed(true);
           }
         } catch (error) {
-          console.error('Error configurando notificaciones móviles:', error);
-          toast.error('Error configurando notificaciones');
+          console.error("Error configurando notificaciones móviles:", error);
+          toast.error("Error configurando notificaciones");
         }
-        
+
         setIsLoading(false);
-        
       } else {
         // Para web
-        if (typeof window === 'undefined' || !window.OneSignal) {
-          toast.error('OneSignal no está disponible');
+        if (typeof window === "undefined" || !window.OneSignal) {
+          toast.error("OneSignal no está disponible");
           setIsLoading(false);
           return;
         }
@@ -97,38 +97,43 @@ export default function NotificationButton({
         // Verificar si está en modo incógnito
         const isIncognito = await detectIncognitoMode();
         if (isIncognito) {
-          toast.error('Las notificaciones no funcionan en modo incógnito. Usa un navegador normal.');
+          toast.error(
+            "Las notificaciones no funcionan en modo incógnito. Usa un navegador normal."
+          );
           setIsLoading(false);
           return;
         }
 
-        console.log('🔔 Solicitando permisos en web...');
-        
+        console.log("🔔 Solicitando permisos en web...");
+
         // Solicitar permisos de notificación
         await window.OneSignal.showNativePrompt();
-        
+
         // Verificar el estado después de un momento
         setTimeout(async () => {
           try {
             if (window.OneSignal) {
-              const newState = await window.OneSignal.isPushNotificationsEnabled();
+              const newState =
+                await window.OneSignal.isPushNotificationsEnabled();
               setIsSubscribed(newState);
-              
+
               if (newState) {
-                toast.success('¡Notificaciones activadas en web!');
+                toast.success("¡Notificaciones activadas en web!");
               } else {
-                toast.error('Permisos denegados. Verifica la configuración del navegador.');
+                toast.error(
+                  "Permisos denegados. Verifica la configuración del navegador."
+                );
               }
             }
           } catch (error) {
-            console.error('❌ Error verificando estado:', error);
+            console.error("❌ Error verificando estado:", error);
           }
           setIsLoading(false);
         }, 1000);
       }
     } catch (error) {
-      console.error('❌ Error:', error);
-      toast.error('Error al configurar notificaciones');
+      console.error("❌ Error:", error);
+      toast.error("Error al configurar notificaciones");
       setIsLoading(false);
     }
   };
@@ -137,31 +142,31 @@ export default function NotificationButton({
   const detectIncognitoMode = async (): Promise<boolean> => {
     try {
       // Verificar si Notification API está disponible
-      if (!('Notification' in window)) {
+      if (!("Notification" in window)) {
         return true;
       }
 
       // Verificar si el navegador soporta service workers
-      if (!('serviceWorker' in navigator)) {
+      if (!("serviceWorker" in navigator)) {
         return true;
       }
 
       // Verificar si localStorage está disponible (limitado en incógnito)
       try {
-        localStorage.setItem('test', 'test');
-        localStorage.removeItem('test');
-      } catch (e) {
+        localStorage.setItem("test", "test");
+        localStorage.removeItem("test");
+      } catch {
         return true;
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return true;
     }
   };
 
   // Verificar si OneSignal está disponible
-  if (typeof window === 'undefined' || !window.OneSignal) {
+  if (typeof window === "undefined" || !window.OneSignal) {
     return (
       <div className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex items-center gap-3">
@@ -180,9 +185,9 @@ export default function NotificationButton({
   }
 
   const getButtonText = () => {
-    if (isLoading) return 'Configurando...';
-    if (isSubscribed) return 'Notificaciones activas';
-    return 'Activar notificaciones';
+    if (isLoading) return "Configurando...";
+    if (isSubscribed) return "Notificaciones activas";
+    return "Activar notificaciones";
   };
 
   const getButtonIcon = () => {
@@ -202,16 +207,16 @@ export default function NotificationButton({
       >
         {showIcon && getButtonIcon()}
         {showText && (
-          <span className="text-sm font-medium">
-            {getButtonText()}
-          </span>
+          <span className="text-sm font-medium">{getButtonText()}</span>
         )}
       </Button>
-      
+
       {/* Debug info */}
       <div className="mt-2 text-xs text-gray-400">
-        Estado: {isSubscribed ? 'Suscrito' : 'No suscrito'} | 
-        OneSignal: {typeof window !== 'undefined' && window.OneSignal ? 'Disponible' : 'No disponible'}
+        Estado: {isSubscribed ? "Suscrito" : "No suscrito"} | OneSignal:{" "}
+        {typeof window !== "undefined" && window.OneSignal
+          ? "Disponible"
+          : "No disponible"}
       </div>
     </div>
   );
