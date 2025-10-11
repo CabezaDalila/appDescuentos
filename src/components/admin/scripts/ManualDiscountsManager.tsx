@@ -181,7 +181,7 @@ export function ManualDiscountsManager() {
         </Button>
       </div>
 
-      {/* Formulario */}
+      {/* Formulario para crear y editar descuentos */}
       <DiscountForm
         formData={formData}
         selectedCategory={selectedCategory}

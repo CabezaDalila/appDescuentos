@@ -1,8 +1,8 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
 import { BackButton } from "@/components/Share/back-button";
+import { getImageByCategory } from "@/constants/image-categories";
 import { getDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
-import { getImageByCategory } from "@/utils/category-mapping";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 

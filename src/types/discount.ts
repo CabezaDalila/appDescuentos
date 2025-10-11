@@ -4,7 +4,7 @@ export interface Discount {
   title?: string; // Agregado para compatibilidad
   description?: string;
   category: string; // Cambiado a string para permitir todas las categorías
-  discountPercentage?: number;
+  discountPercentage?: number | string; // Cambiado para permitir string también
   discountAmount?: number;
   validFrom?: Date;
   validUntil?: Date;
@@ -22,6 +22,10 @@ export interface Discount {
   rejectionReason?: string; // Razón del rechazo
   source: "manual" | "scraping"; // Origen del descuento
   origin?: string; // Origen del descuento (empresa/sitio)
+  // Propiedades adicionales para la UI
+  points?: number;
+  distance?: string;
+  expiration?: string;
 }
 
 export interface CreateDiscountData {

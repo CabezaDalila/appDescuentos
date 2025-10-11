@@ -43,7 +43,7 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
   return (
     <div
-      className="flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full max-w-full"
       onClick={handleCardClick}
     >
       <div className="relative h-24 sm:h-32 w-full">
@@ -89,22 +89,36 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
       <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
         {/* Categoría y rating */}
         <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs text-gray-500 font-medium">{category}</span>
+          <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+            {category}
+          </span>
           <span className="text-[10px] sm:text-xs text-gray-500 flex items-center gap-0.5 sm:gap-1">
-            <Image src="/star.png" alt="Star" width={8} height={8} className="sm:w-[10px] sm:h-[10px]" />
+            <Image
+              src="/star.png"
+              alt="Star"
+              width={8}
+              height={8}
+              className="sm:w-[10px] sm:h-[10px]"
+            />
             {points}
           </span>
         </div>
 
         {/* Título */}
-        <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight">
+        <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight break-words">
           {title}
         </h3>
 
         {/* Información adicional */}
         <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500">
           <span className="flex items-center gap-0.5 sm:gap-1">
-            <Image src="/distance.png" alt="Distance" width={8} height={8} className="sm:w-[10px] sm:h-[10px]" />
+            <Image
+              src="/distance.png"
+              alt="Distance"
+              width={8}
+              height={8}
+              className="sm:w-[10px] sm:h-[10px]"
+            />
             {distance}
           </span>
           <span className="flex items-center gap-0.5 sm:gap-1">
