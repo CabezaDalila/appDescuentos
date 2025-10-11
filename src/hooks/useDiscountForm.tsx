@@ -1,5 +1,5 @@
 import { ManualDiscount } from "@/types/admin";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 interface DiscountFormData {
   title: string;
@@ -11,16 +11,27 @@ interface DiscountFormData {
   discountAmount: string;
   imageUrl: string;
   isVisible: boolean;
+  availableCredentials: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
+  newCredentialType: string;
+  newCredentialBrand: string;
+  newCredentialLevel: string;
+  newCredentialBank: string;
+  availableMemberships: string[];
+  newMembershipCategory: string;
+  newMembershipEntity: string;
 }
 
 interface UseDiscountFormReturn {
   formData: DiscountFormData;
-  selectedCategory: string | undefined;
   showForm: boolean;
   editingDiscount: ManualDiscount | null;
   setShowForm: (show: boolean) => void;
   setFormData: React.Dispatch<React.SetStateAction<DiscountFormData>>;
-  setSelectedCategory: React.Dispatch<React.SetStateAction<string | undefined>>;
   handleCategoryChange: (value: string) => void;
   handleEditDiscount: (discount: ManualDiscount) => void;
   resetForm: () => void;
@@ -37,40 +48,33 @@ const initialFormData: DiscountFormData = {
   discountAmount: "",
   imageUrl: "",
   isVisible: true,
+  availableCredentials: [],
+  newCredentialType: "",
+  newCredentialBrand: "",
+  newCredentialLevel: "",
+  newCredentialBank: "",
+  availableMemberships: [],
+  newMembershipCategory: "",
+  newMembershipEntity: "",
 };
 
 export function useDiscountForm(): UseDiscountFormReturn {
   const [formData, setFormData] = useState<DiscountFormData>(initialFormData);
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined
-  );
   const [showForm, setShowForm] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState<ManualDiscount | null>(
     null
   );
 
-  // Sincronizar estados cuando cambie formData.category
-  useEffect(() => {
-    if (formData.category && formData.category !== selectedCategory) {
-      setSelectedCategory(formData.category);
+  const handleCategoryChange = useCallback((value: string) => {
+    if (value && value.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        category: value,
+      }));
     }
-  }, [formData.category, selectedCategory]);
-
-  const handleCategoryChange = useCallback(
-    (value: string) => {
-      if (value && value.trim() !== "" && value !== selectedCategory) {
-        setSelectedCategory(value);
-        setFormData((prev) => ({
-          ...prev,
-          category: value,
-        }));
-      }
-    },
-    [selectedCategory]
-  );
+  }, []);
 
   const handleEditDiscount = useCallback((discount: ManualDiscount) => {
-    console.log("handleEditDiscount llamado con:", discount);
     setEditingDiscount(discount);
     setFormData({
       title: discount.title,
@@ -84,14 +88,32 @@ export function useDiscountForm(): UseDiscountFormReturn {
       discountAmount: discount.discountAmount?.toString() || "",
       imageUrl: discount.imageUrl || "",
       isVisible: discount.isVisible ?? true,
+      availableCredentials:
+        (
+          discount as ManualDiscount & {
+            availableCredentials?: Array<{
+              brand: string;
+              level: string;
+              type: string;
+              bank: string;
+            }>;
+          }
+        ).availableCredentials || [],
+      newCredentialType: "",
+      newCredentialBrand: "",
+      newCredentialLevel: "",
+      newCredentialBank: "",
+      availableMemberships:
+        (discount as ManualDiscount & { availableMemberships?: string[] })
+          .availableMemberships || [],
+      newMembershipCategory: "",
+      newMembershipEntity: "",
     });
-    setSelectedCategory(discount.category);
     setShowForm(true);
   }, []);
 
   const resetForm = useCallback(() => {
     setFormData(initialFormData);
-    setSelectedCategory(undefined);
     setEditingDiscount(null);
   }, []);
 
@@ -106,12 +128,10 @@ export function useDiscountForm(): UseDiscountFormReturn {
 
   return {
     formData,
-    selectedCategory,
     showForm,
     editingDiscount,
     setShowForm,
     setFormData,
-    setSelectedCategory,
     handleCategoryChange,
     handleEditDiscount,
     resetForm,

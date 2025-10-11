@@ -39,12 +39,10 @@ export function ManualDiscountsManager() {
 
   const {
     formData,
-    selectedCategory,
     showForm,
     editingDiscount,
     setShowForm,
     setFormData,
-    setSelectedCategory,
     handleCategoryChange,
     handleEditDiscount,
     resetForm,
@@ -121,6 +119,12 @@ export function ManualDiscountsManager() {
         expirationDate: new Date(formData.expirationDate),
         description: formData.description.trim(),
         isVisible: formData.isVisible,
+        ...(formData.availableCredentials.length > 0 && {
+          availableCredentials: formData.availableCredentials,
+        }),
+        ...(formData.availableMemberships.length > 0 && {
+          availableMemberships: formData.availableMemberships,
+        }),
         ...(formData.discountPercentage &&
           formData.discountPercentage.trim() !== "" && {
             discountPercentage: parseFloat(formData.discountPercentage),
@@ -184,7 +188,6 @@ export function ManualDiscountsManager() {
       {/* Formulario para crear y editar descuentos */}
       <DiscountForm
         formData={formData}
-        selectedCategory={selectedCategory}
         editingDiscount={editingDiscount}
         showForm={showForm}
         onFormDataChange={setFormData}

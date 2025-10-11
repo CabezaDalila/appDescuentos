@@ -19,8 +19,16 @@ import {
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import { getAllCategories } from "@/constants/categories";
+import {
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
+  ENTITIES_BY_CATEGORY,
+} from "@/constants/membership";
+import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
 import { Edit, Gift, Save, X } from "lucide-react";
+import React, { useState } from "react";
 
 interface DiscountFormData {
   title: string;
@@ -32,11 +40,23 @@ interface DiscountFormData {
   discountAmount: string;
   imageUrl: string;
   isVisible: boolean;
+  availableCredentials: Array<{
+    brand: string;
+    level: string;
+    type: string;
+    bank: string;
+  }>;
+  newCredentialType: string;
+  newCredentialBrand: string;
+  newCredentialLevel: string;
+  newCredentialBank: string;
+  availableMemberships: string[];
+  newMembershipCategory: string;
+  newMembershipEntity: string;
 }
 
 interface DiscountFormProps {
   formData: DiscountFormData;
-  selectedCategory: string | undefined;
   editingDiscount: ManualDiscount | null;
   showForm: boolean;
   onFormDataChange: React.Dispatch<React.SetStateAction<DiscountFormData>>;
@@ -47,10 +67,10 @@ interface DiscountFormProps {
 }
 
 const CATEGORIES = getAllCategories().map((cat) => cat.name);
+const ORIGINS = getAllOrigins();
 
 export function DiscountForm({
   formData,
-  selectedCategory,
   editingDiscount,
   showForm,
   onFormDataChange,
@@ -59,11 +79,45 @@ export function DiscountForm({
   onResetForm,
   onSubmit,
 }: DiscountFormProps) {
-  // Si no se debe mostrar el formulario, no renderizar nada
+  const [credentialError, setCredentialError] = useState<string>("");
+  const [membershipError, setMembershipError] = useState<string>("");
+  const [formErrors, setFormErrors] = useState<{
+    title?: string;
+    origin?: string;
+    category?: string;
+    expirationDate?: string;
+  }>({});
+
   if (!showForm) return null;
 
   // Determinar si es edición o creación
   const isEditing = !!editingDiscount;
+
+  // Función de validación
+  const validateForm = () => {
+    const errors: {
+      title?: string;
+      origin?: string;
+      category?: string;
+      expirationDate?: string;
+    } = {};
+
+    if (!formData.title.trim()) {
+      errors.title = "El título es obligatorio";
+    }
+    if (!formData.origin.trim()) {
+      errors.origin = "El origen es obligatorio";
+    }
+    if (!formData.category) {
+      errors.category = "La categoría es obligatoria";
+    }
+    if (!formData.expirationDate) {
+      errors.expirationDate = "La fecha de expiración es obligatoria";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   return (
     <Dialog open={showForm} onOpenChange={onShowFormChange}>
@@ -83,55 +137,466 @@ export function DiscountForm({
               : "Completa la información del descuento que deseas agregar"}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (validateForm()) {
+              onSubmit(e);
+            }
+          }}
+          className="space-y-4"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Título del Descuento *</Label>
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) =>
-                  onFormDataChange({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => {
+                  onFormDataChange({ ...formData, title: e.target.value });
+                  if (formErrors.title) {
+                    setFormErrors({ ...formErrors, title: undefined });
+                  }
+                }}
                 placeholder="Ej: 50% off en smartphones"
                 required
+                className={formErrors.title ? "border-red-500" : ""}
               />
+              {formErrors.title && (
+                <p className="text-red-500 text-sm">{formErrors.title}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="origin">Origen/Tienda *</Label>
-              <Input
-                id="origin"
-                value={formData.origin}
-                onChange={(e) =>
-                  onFormDataChange({ ...formData, origin: e.target.value })
-                }
-                placeholder="Ej: Amazon, Mercado Libre"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoría *</Label>
               <Select
-                value={selectedCategory || formData.category || ""}
-                onValueChange={onCategoryChange}
+                value={formData.origin}
+                onValueChange={(value) => {
+                  if (value && value.trim() !== "") {
+                    onFormDataChange({ ...formData, origin: value });
+                    if (formErrors.origin) {
+                      setFormErrors({ ...formErrors, origin: undefined });
+                    }
+                  }
+                }}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {selectedCategory ||
-                      formData.category ||
-                      "Selecciona una categoría"}
+                <SelectTrigger
+                  className={`w-full ${
+                    formErrors.origin ? "border-red-500" : ""
+                  }`}
+                >
+                  <SelectValue placeholder="Selecciona un origen">
+                    {formData.origin || "Selecciona un origen"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {ORIGINS.map((origin) => (
+                    <SelectItem key={origin.id} value={origin.displayName}>
+                      {origin.displayName}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {formErrors.origin && (
+                <p className="text-red-500 text-sm">{formErrors.origin}</p>
+              )}
+            </div>
+
+            <div className="col-span-2">
+              <Label className="text-base font-medium block ">
+                Tarjetas que aplican para este descuento
+              </Label>
+
+              {/* Selector de tipo de tarjeta */}
+              <div
+                className="flex items-end gap-2"
+                key={`credential-${formData.newCredentialType}-${formData.newCredentialBrand}-${formData.newCredentialLevel}-${formData.newCredentialBank}`}
+              >
+                <div className="flex-1">
+                  <Select
+                    value={formData.newCredentialBank}
+                    onValueChange={(value) => {
+                      setCredentialError(""); // Limpiar error al cambiar
+                      onFormDataChange({
+                        ...formData,
+                        newCredentialBank: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Banco">
+                        {formData.newCredentialBank
+                          ? formData.newCredentialBank.replace("Banco ", "")
+                          : "Banco"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ENTITIES_BY_CATEGORY.banco.map((bank) => (
+                        <SelectItem
+                          key={bank}
+                          value={bank}
+                          className="truncate"
+                        >
+                          {bank.replace("Banco ", "")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <Select
+                    value={formData.newCredentialType}
+                    onValueChange={(value) => {
+                      setCredentialError(""); // Limpiar error al cambiar
+                      onFormDataChange({
+                        ...formData,
+                        newCredentialType: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Tipo">
+                        {formData.newCredentialType || "Tipo"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARD_TYPES.map((type) => (
+                        <SelectItem
+                          key={type.value}
+                          value={type.value}
+                          className="truncate"
+                        >
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <Select
+                    value={formData.newCredentialBrand}
+                    onValueChange={(value) => {
+                      setCredentialError(""); // Limpiar error al cambiar
+                      onFormDataChange({
+                        ...formData,
+                        newCredentialBrand: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Marca">
+                        {formData.newCredentialBrand || "Marca"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARD_BRANDS.map((brand) => (
+                        <SelectItem
+                          key={brand.value}
+                          value={brand.value}
+                          className="truncate"
+                        >
+                          {brand.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex-1">
+                  <Select
+                    value={formData.newCredentialLevel}
+                    onValueChange={(value) => {
+                      setCredentialError(""); // Limpiar error al cambiar
+                      onFormDataChange({
+                        ...formData,
+                        newCredentialLevel: value,
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Nivel">
+                        {formData.newCredentialLevel || "Nivel"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARD_LEVELS.map((level) => (
+                        <SelectItem
+                          key={level.value}
+                          value={level.value}
+                          className="truncate"
+                        >
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Botón para agregar credencial */}
+                <div className="flex-shrink-0 flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        formData.newCredentialType &&
+                        formData.newCredentialBrand &&
+                        formData.newCredentialLevel &&
+                        formData.newCredentialBank
+                      ) {
+                        const newCredential = {
+                          type: formData.newCredentialType,
+                          brand: formData.newCredentialBrand,
+                          level: formData.newCredentialLevel,
+                          bank: formData.newCredentialBank,
+                        };
+
+                        // Verificar si ya existe
+                        const exists = formData.availableCredentials.some(
+                          (cred) =>
+                            cred.type === newCredential.type &&
+                            cred.brand === newCredential.brand &&
+                            cred.level === newCredential.level &&
+                            cred.bank === newCredential.bank
+                        );
+
+                        if (!exists) {
+                          setCredentialError(""); // Limpiar error
+                          onFormDataChange({
+                            ...formData,
+                            availableCredentials: [
+                              ...formData.availableCredentials,
+                              newCredential,
+                            ],
+                            newCredentialType: "",
+                            newCredentialBrand: "",
+                            newCredentialLevel: "",
+                            newCredentialBank: "",
+                          });
+                        } else {
+                          setCredentialError(
+                            "Esta credencial ya está agregada"
+                          );
+                        }
+                      }
+                    }}
+                    disabled={
+                      !formData.newCredentialType ||
+                      !formData.newCredentialBrand ||
+                      !formData.newCredentialLevel ||
+                      !formData.newCredentialBank
+                    }
+                    className={`h-[42px] w-[42px] flex items-center justify-center text-lg font-bold transition-transform ${
+                      formData.newCredentialType &&
+                      formData.newCredentialBrand &&
+                      formData.newCredentialLevel &&
+                      formData.newCredentialBank
+                        ? "bg-green-500 hover:scale-105 text-white border-green-500"
+                        : "bg-gray-100 text-gray-400 border-gray-300"
+                    }`}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              {/* Mostrar credenciales seleccionadas */}
+              {formData.availableCredentials.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {formData.availableCredentials.map((credential, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-violet-100 text-violet-700 text-xs rounded border border-violet-200"
+                    >
+                      <span className="font-medium text-xs">
+                        {credential.bank} - {credential.type} {credential.brand}{" "}
+                        {credential.level}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onFormDataChange({
+                            ...formData,
+                            availableCredentials:
+                              formData.availableCredentials.filter(
+                                (_, i) => i !== index
+                              ),
+                          });
+                        }}
+                        className="hover:text-violet-600 hover:bg-violet-200 rounded p-0.5 transition-colors text-xs"
+                        title="Eliminar credencial"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Mostrar error de credenciales */}
+              {credentialError && (
+                <div className="text-red-500 text-sm mt-2 px-2 py-1 bg-red-50 border border-red-200 rounded-md">
+                  {credentialError}
+                </div>
+              )}
+
+              {/* Sección de Membresías */}
+              <div className="flex flex-col mt-4">
+                <Label className="text-base font-medium block mb-0.5">
+                  Membresías que aplican para este descuento
+                </Label>
+
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={formData.newMembershipEntity || ""}
+                      onValueChange={(value) => {
+                        if (value && value.trim() !== "") {
+                          setMembershipError(""); // Limpiar error al cambiar
+                          onFormDataChange({
+                            ...formData,
+                            newMembershipEntity: value,
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Membresia">
+                          {formData.newMembershipEntity || "Entidad"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ENTITIES_BY_CATEGORY).flatMap(
+                          ([, entities]) =>
+                            entities.map((entity) => (
+                              <SelectItem
+                                key={entity}
+                                value={String(entity)}
+                                className="truncate"
+                              >
+                                {String(entity)}
+                              </SelectItem>
+                            ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Botón para agregar membresía */}
+                  <div className="flex-shrink-0 flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (formData.newMembershipEntity) {
+                          // Verificar si ya existe
+                          const exists = formData.availableMemberships.includes(
+                            formData.newMembershipEntity
+                          );
+
+                          if (!exists) {
+                            setMembershipError(""); // Limpiar error
+                            onFormDataChange({
+                              ...formData,
+                              availableMemberships: [
+                                ...formData.availableMemberships,
+                                formData.newMembershipEntity,
+                              ],
+                              newMembershipEntity: "",
+                            });
+                          } else {
+                            setMembershipError("Esta entidad ya está agregada");
+                          }
+                        }
+                      }}
+                      disabled={!formData.newMembershipEntity}
+                      className={`h-[42px] w-[42px] flex items-center justify-center text-lg font-bold transition-transform ${
+                        formData.newMembershipEntity
+                          ? "bg-green-500 hover:scale-105 text-white border-green-500"
+                          : "bg-gray-100 text-gray-400 border-gray-300"
+                      }`}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Mostrar membresías seleccionadas */}
+                {formData.availableMemberships.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {formData.availableMemberships.map((membership, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded border border-blue-200"
+                      >
+                        <span className="font-medium text-xs">
+                          {membership}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onFormDataChange({
+                              ...formData,
+                              availableMemberships:
+                                formData.availableMemberships.filter(
+                                  (_, i) => i !== index
+                                ),
+                            });
+                          }}
+                          className="hover:text-blue-600 hover:bg-blue-200 rounded p-0.5 transition-colors text-xs"
+                          title="Eliminar membresía"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mostrar error de membresías */}
+                {membershipError && (
+                  <div className="text-red-500 text-sm mt-2 px-2 py-1 bg-red-50 border border-red-200 rounded-md">
+                    {membershipError}
+                  </div>
+                )}
+              </div>
+
+              {/* Campo de categoría del descuento */}
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoría *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => {
+                    onCategoryChange(value);
+                    if (formErrors.category) {
+                      setFormErrors({ ...formErrors, category: undefined });
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    className={`w-full ${
+                      formErrors.category ? "border-red-500" : ""
+                    }`}
+                  >
+                    <SelectValue placeholder="Selecciona una categoría">
+                      {formData.category || "Selecciona una categoría"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.category && (
+                  <p className="text-red-500 text-sm">{formErrors.category}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -140,14 +605,52 @@ export function DiscountForm({
                 id="expirationDate"
                 type="date"
                 value={formData.expirationDate}
-                onChange={(e) =>
+                onChange={(e) => {
                   onFormDataChange({
                     ...formData,
                     expirationDate: e.target.value,
-                  })
-                }
+                  });
+                  if (formErrors.expirationDate) {
+                    setFormErrors({ ...formErrors, expirationDate: undefined });
+                  }
+                }}
                 required
                 min={new Date().toISOString().split("T")[0]}
+                className={formErrors.expirationDate ? "border-red-500" : ""}
+              />
+              {formErrors.expirationDate && (
+                <p className="text-red-500 text-sm">
+                  {formErrors.expirationDate}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl">URL de Imagen (opcional)</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) =>
+                  onFormDataChange({ ...formData, imageUrl: e.target.value })
+                }
+                placeholder="https://ejemplo.com/imagen.jpg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="discountAmount">Monto de Descuento</Label>
+              <Input
+                id="discountAmount"
+                type="number"
+                min="0"
+                value={formData.discountAmount}
+                onChange={(e) =>
+                  onFormDataChange({
+                    ...formData,
+                    discountAmount: e.target.value,
+                  })
+                }
+                placeholder="Ej: 1000"
               />
             </div>
 
@@ -170,23 +673,6 @@ export function DiscountForm({
                 placeholder="Ej: 25"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="discountAmount">Monto de Descuento</Label>
-              <Input
-                id="discountAmount"
-                type="number"
-                min="0"
-                value={formData.discountAmount}
-                onChange={(e) =>
-                  onFormDataChange({
-                    ...formData,
-                    discountAmount: e.target.value,
-                  })
-                }
-                placeholder="Ej: 1000"
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -199,19 +685,6 @@ export function DiscountForm({
               }
               placeholder="Describe los detalles del descuento, términos y condiciones..."
               rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">URL de Imagen (opcional)</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={formData.imageUrl}
-              onChange={(e) =>
-                onFormDataChange({ ...formData, imageUrl: e.target.value })
-              }
-              placeholder="https://ejemplo.com/imagen.jpg"
             />
           </div>
 

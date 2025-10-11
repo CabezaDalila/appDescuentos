@@ -9,18 +9,16 @@ import {
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import {
+  Card,
   CARD_BRANDS,
   CARD_LEVELS,
   CARD_TYPES,
-} from "../../types/membership";
-import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
-import {
-  Card,
   CardLevel,
   CreateMembershipData,
   ENTITIES_BY_CATEGORY,
   MEMBERSHIP_CATEGORIES,
-} from "../../types/membership";
+} from "../../constants/membership";
+import { formatExpiryInput, validateExpiry } from "../../lib/card-utils";
 import { Button } from "../Share/button";
 import {
   Dialog,
@@ -149,13 +147,17 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
 
   const handleAddCard = async () => {
     if (!newCard.type || !newCard.brand || !newCard.level) {
-      toast.error("Por favor completa todos los campos obligatorios de la tarjeta");
+      toast.error(
+        "Por favor completa todos los campos obligatorios de la tarjeta"
+      );
       return;
     }
 
     // Validar fecha de vencimiento si se proporciona
     if (newCard.expiry && !validateExpiry(newCard.expiry)) {
-      toast.error("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
+      toast.error(
+        "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
+      );
       return;
     }
 
@@ -172,10 +174,10 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
 
     try {
       setIsCreating(true);
-      
+
       const bankName = customName.trim();
       const gradient = BANK_GRADIENTS[bankName] || "from-blue-500 to-blue-600";
-      
+
       const membershipData = {
         name: bankName,
         category: "banco" as const,
@@ -602,7 +604,6 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
                     style={{ borderColor: "#D1D5DB" }}
                   />
                 </div>
-
               </div>
 
               {/* Botones de navegación */}

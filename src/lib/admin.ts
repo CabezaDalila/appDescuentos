@@ -279,6 +279,8 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
         discountAmount: data.discountAmount,
         imageUrl: data.imageUrl,
         isVisible: data.isVisible ?? true,
+        availableCredentials: data.availableCredentials || [],
+        availableMemberships: data.availableMemberships || [],
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as ManualDiscount;

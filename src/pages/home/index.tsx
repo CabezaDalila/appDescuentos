@@ -1,6 +1,9 @@
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
+import { Card, Membership } from "@/constants/membership";
+import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
+import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Discount } from "@/types/discount";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -33,6 +36,7 @@ import { TrendingSection } from "@/components/home/trending-section";
 export default function Home() {
   const router = useRouter();
   const { getUnreadCount } = useNotifications();
+  const { user } = useAuth();
 
   const [greeting, setGreeting] = useState("Buenas noches");
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +45,15 @@ export default function Home() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [discounts, setDiscounts] = useState<HomePageDiscount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userMemberships, setUserMemberships] = useState<string[]>([]);
+  const [userCredentials, setUserCredentials] = useState<
+    Array<{
+      bank: string;
+      type: string;
+      brand: string;
+      level: string;
+    }>
+  >([]);
 
   // Determinar saludo según la hora del día
   useEffect(() => {
@@ -70,6 +83,57 @@ export default function Home() {
 
     loadDiscounts();
   }, []);
+
+  // Cargar membresías y credenciales activas del usuario
+  useEffect(() => {
+    const loadUserMemberships = async () => {
+      if (!user) {
+        setUserMemberships([]);
+        setUserCredentials([]);
+        return;
+      }
+
+      try {
+        const memberships = await getActiveMemberships();
+
+        // Array de nombres de membresías
+        const membershipNames: string[] = [];
+        // Array de credenciales completas
+        const credentials: Array<{
+          bank: string;
+          type: string;
+          brand: string;
+          level: string;
+        }> = [];
+
+        memberships.forEach((m: Membership) => {
+          // Agregar el nombre de la membresía
+          membershipNames.push(m.name);
+
+          // Agregar las credenciales completas de cada tarjeta
+          if (m.cards && m.cards.length > 0) {
+            m.cards.forEach((card: Card) => {
+              credentials.push({
+                bank: m.name, // El banco es el nombre de la membresía
+                type: card.type,
+                brand: card.brand,
+                level: card.level,
+              });
+            });
+          }
+        });
+
+        setUserMemberships(membershipNames);
+        setUserCredentials(credentials);
+      } catch (error) {
+        console.error("Error cargando membresías del usuario:", error);
+        setUserMemberships([]);
+        setUserCredentials([]);
+      }
+    };
+
+    loadUserMemberships();
+  }, [user]);
 
   // Función de búsqueda con Firebase y debounce
   const handleSearch = async (value: string) => {
@@ -172,7 +236,11 @@ export default function Home() {
         onViewAll={() => router.push("/search")}
       /> */}
 
-      <PersonalizedOffersSection onOfferClick={handleOfferClick} />
+      <PersonalizedOffersSection
+        onOfferClick={handleOfferClick}
+        userMemberships={userMemberships}
+        userCredentials={userCredentials}
+      />
 
       <TrendingSection
         discounts={trendingDiscounts}

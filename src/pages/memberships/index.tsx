@@ -11,6 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/Share/select";
+import {
+  CreateMembershipData,
+  Membership,
+  MEMBERSHIP_CATEGORIES,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import {
   addCardToMembership,
@@ -22,11 +27,6 @@ import {
   updateCardInMembership,
   updateMembership,
 } from "@/lib/firebase/memberships";
-import {
-  CreateMembershipData,
-  Membership,
-  MEMBERSHIP_CATEGORIES,
-} from "@/types/membership";
 import { Filter, Plus, Search, SortAsc } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -74,18 +74,18 @@ export default function Memberships() {
       );
       if (exists) {
         console.log("⚠️ Membresía ya existe");
-        alert('Ya tienes una membresía con ese nombre en esa categoría');
+        alert("Ya tienes una membresía con ese nombre en esa categoría");
         return;
       }
-      
+
       console.log("🚀 Creando membresía en Firestore:", membershipData);
       await createMembership(membershipData);
       console.log("✅ Membresía creada exitosamente en Firestore");
-      alert('Membresía creada exitosamente');
+      alert("Membresía creada exitosamente");
       loadMemberships();
     } catch (error) {
       console.error("❌ Error al crear la membresía:", error);
-      alert('Error al crear la membresía. Inténtalo de nuevo.');
+      alert("Error al crear la membresía. Inténtalo de nuevo.");
     }
   };
 
@@ -97,11 +97,11 @@ export default function Memberships() {
       console.log("🔄 Actualizando membresía:", membershipId, updateData);
       await updateMembership(membershipId, updateData);
       console.log("✅ Membresía actualizada exitosamente");
-      alert('Membresía actualizada exitosamente');
+      alert("Membresía actualizada exitosamente");
       loadMemberships();
     } catch (error) {
       console.error("❌ Error al actualizar la membresía:", error);
-      alert('Error al actualizar la membresía. Inténtalo de nuevo.');
+      alert("Error al actualizar la membresía. Inténtalo de nuevo.");
     }
   };
 
@@ -110,11 +110,11 @@ export default function Memberships() {
       console.log("🗑️ Eliminando membresía:", membershipId);
       await deleteMembership(membershipId);
       console.log("✅ Membresía eliminada exitosamente");
-      alert('Membresía eliminada exitosamente');
+      alert("Membresía eliminada exitosamente");
       loadMemberships();
     } catch (error) {
       console.error("❌ Error al eliminar la membresía:", error);
-      alert('Error al eliminar la membresía. Inténtalo de nuevo.');
+      alert("Error al eliminar la membresía. Inténtalo de nuevo.");
     }
   };
 
@@ -128,10 +128,15 @@ export default function Memberships() {
     cardId: string
   ) => {
     try {
-      console.log("🗑️ Eliminando tarjeta:", cardId, "de membresía:", membershipId);
+      console.log(
+        "🗑️ Eliminando tarjeta:",
+        cardId,
+        "de membresía:",
+        membershipId
+      );
       const result = await deleteCardFromMembership(membershipId, cardId);
       console.log("📋 Resultado de eliminación:", result);
-      
+
       if (result.membershipDeleted) {
         // Si se eliminó la membresía completa, recargar la lista
         console.log("🏦 Membresía eliminada completamente - Recargando lista");
@@ -139,7 +144,9 @@ export default function Memberships() {
         return result;
       } else {
         // Si solo se eliminó la tarjeta, recargar para actualizar contadores
-        console.log("💳 Solo tarjeta eliminada - Recargando para actualizar contadores");
+        console.log(
+          "💳 Solo tarjeta eliminada - Recargando para actualizar contadores"
+        );
         loadMemberships();
         return result;
       }

@@ -71,7 +71,8 @@ export default function DiscountDetail() {
             title={discountData.title || discountData.name || "Sin título"}
             image={discountData.image || "/primary_image.jpg"}
             description={discountData.description || "Sin descripción"}
-            applyWith={discountData.membershipRequired || ["Sin requisitos"]}
+            availableMemberships={discountData.availableMemberships}
+            availableCredentials={discountData.availableCredentials}
             category={discountData.category || "Sin categoría"}
             points={6} // Valor por defecto
             countComments={0} // Valor por defecto

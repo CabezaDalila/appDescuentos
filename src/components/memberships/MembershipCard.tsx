@@ -1,7 +1,7 @@
 import { ChevronRight, CreditCard, Star } from "lucide-react";
 import Image from "next/image";
 import React from "react";
-import { Membership } from "../../types/membership";
+import { Membership } from "../../constants/membership";
 import { Badge } from "../Share/badge";
 import { Card, CardContent } from "../Share/card";
 
