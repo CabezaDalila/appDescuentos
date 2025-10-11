@@ -20,7 +20,7 @@ import {
   loginWithGoogle,
   loginWithGoogleNative,
   register,
-} from "@/lib/firebase-auth";
+} from "@/lib/firebase/firebase-auth";
 import { Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";

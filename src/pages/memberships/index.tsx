@@ -1,4 +1,4 @@
-import AddMembershipModal from "@/components/memberships/AddMembershipModal";
+import AddMembershipUnifiedModal from "@/components/memberships/AddMembershipUnifiedModal";
 import MembershipDetailModal from "@/components/memberships/MembershipDetailModal";
 import MembershipList from "@/components/memberships/MembershipList";
 import { Button } from "@/components/Share/button";
@@ -64,22 +64,28 @@ export default function Memberships() {
   };
 
   const handleCreateMembership = async (
-    membershipData: CreateMembershipData
+    membershipData: CreateMembershipData & { cards?: any[] }
   ) => {
     try {
+      console.log("🔍 Verificando si la membresía ya existe...");
       const exists = await checkMembershipExists(
         membershipData.name,
         membershipData.category
       );
       if (exists) {
-        // toast.error('Ya tienes una membresía con ese nombre en esa categoría');
+        console.log("⚠️ Membresía ya existe");
+        alert('Ya tienes una membresía con ese nombre en esa categoría');
         return;
       }
+      
+      console.log("🚀 Creando membresía en Firestore:", membershipData);
       await createMembership(membershipData);
-      // toast.success('Membresía creada exitosamente');
+      console.log("✅ Membresía creada exitosamente en Firestore");
+      alert('Membresía creada exitosamente');
       loadMemberships();
     } catch (error) {
-      // toast.error('Error al crear la membresía');
+      console.error("❌ Error al crear la membresía:", error);
+      alert('Error al crear la membresía. Inténtalo de nuevo.');
     }
   };
 
@@ -88,21 +94,27 @@ export default function Memberships() {
     updateData: any
   ) => {
     try {
+      console.log("🔄 Actualizando membresía:", membershipId, updateData);
       await updateMembership(membershipId, updateData);
-      // toast.success('Membresía actualizada exitosamente');
+      console.log("✅ Membresía actualizada exitosamente");
+      alert('Membresía actualizada exitosamente');
       loadMemberships();
     } catch (error) {
-      // toast.error('Error al actualizar la membresía');
+      console.error("❌ Error al actualizar la membresía:", error);
+      alert('Error al actualizar la membresía. Inténtalo de nuevo.');
     }
   };
 
   const handleDeleteMembership = async (membershipId: string) => {
     try {
+      console.log("🗑️ Eliminando membresía:", membershipId);
       await deleteMembership(membershipId);
-      // toast.success('Membresía eliminada exitosamente');
+      console.log("✅ Membresía eliminada exitosamente");
+      alert('Membresía eliminada exitosamente');
       loadMemberships();
     } catch (error) {
-      // toast.error('Error al eliminar la membresía');
+      console.error("❌ Error al eliminar la membresía:", error);
+      alert('Error al eliminar la membresía. Inténtalo de nuevo.');
     }
   };
 
@@ -115,7 +127,26 @@ export default function Memberships() {
     membershipId: string,
     cardId: string
   ) => {
-    await deleteCardFromMembership(membershipId, cardId);
+    try {
+      console.log("🗑️ Eliminando tarjeta:", cardId, "de membresía:", membershipId);
+      const result = await deleteCardFromMembership(membershipId, cardId);
+      console.log("📋 Resultado de eliminación:", result);
+      
+      if (result.membershipDeleted) {
+        // Si se eliminó la membresía completa, recargar la lista
+        console.log("🏦 Membresía eliminada completamente - Recargando lista");
+        loadMemberships();
+        return result;
+      } else {
+        // Si solo se eliminó la tarjeta, recargar para actualizar contadores
+        console.log("💳 Solo tarjeta eliminada - Recargando para actualizar contadores");
+        loadMemberships();
+        return result;
+      }
+    } catch (error) {
+      console.error("❌ Error al eliminar tarjeta de Firestore:", error);
+      throw error; // Re-lanzar para que el modal maneje el error
+    }
   };
 
   // Filtrar y ordenar membresías
@@ -190,10 +221,10 @@ export default function Memberships() {
           </h1>
           <Button
             onClick={() => setShowAddModal(true)}
-            className="rounded-full px-5 py-2 font-semibold text-white bg-violet-600 hover:bg-violet-700 shadow-none"
+            className="rounded-full px-6 py-2 font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-none"
             size="sm"
           >
-            <Plus className="h-5 w-5 mr-1" /> Añadir
+            <Plus className="h-5 w-5 mr-2" /> Agregar
           </Button>
         </div>
         {/* Filtros y buscador */}
@@ -292,8 +323,8 @@ export default function Memberships() {
         onUpdateCard={updateCardInMembership}
         onDeleteCard={handleDeleteCardFromMembership}
       />
-      {/* Modal para agregar membresía */}
-      <AddMembershipModal
+      {/* Modal unificado para agregar membresía */}
+      <AddMembershipUnifiedModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onCreate={handleCreateMembership}

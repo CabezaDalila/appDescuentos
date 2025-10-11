@@ -236,7 +236,7 @@ export const updateManualDiscount = async (
     }
 
     // Preparar los datos de actualización
-    const updateData: Record<string, unknown> = {
+    const updateData: any = {
       ...updates,
       updatedAt: Timestamp.now(),
     };

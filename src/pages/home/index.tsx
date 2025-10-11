@@ -1,8 +1,25 @@
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
+import { useNotifications } from "@/hooks/useNotifications";
 import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+
+// Tipo específico para los descuentos de la página de inicio
+interface HomePageDiscount {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  discountPercentage: string;
+  points: number;
+  distance: string;
+  expiration: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
+}
 
 // Componentes de la página de inicio
 import { QuickActionsSection } from "@/components/home/categories-section";
@@ -15,14 +32,14 @@ import { TrendingSection } from "@/components/home/trending-section";
 
 export default function Home() {
   const router = useRouter();
+  const { getUnreadCount } = useNotifications();
 
   const [greeting, setGreeting] = useState("Buenas noches");
-  const [notificationCount, setNotificationCount] = useState(3);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Discount[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [discounts, setDiscounts] = useState<HomePageDiscount[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Determinar saludo según la hora del día
@@ -83,7 +100,6 @@ export default function Home() {
     }
   };
 
-  // Función para limpiar búsqueda
   const clearSearch = () => {
     setSearchTerm("");
     setSearchResults([]);
@@ -91,7 +107,6 @@ export default function Home() {
   };
 
   const handleCategoryClick = (categoryId: string) => {
-    // Navegar a la página de búsqueda con el filtro de categoría
     router.push(`/search?category=${categoryId}`);
   };
 
@@ -100,11 +115,6 @@ export default function Home() {
   //   router.push(`/search?bank=${bankId}`);
   // };
 
-  const handleOfferClick = (offerId: string) => {
-    // Navegar al detalle de la oferta
-    router.push(`/discount/${offerId}`);
-  };
-
   const handleNavigateToDetail = (discountId: string) => {
     router.push(`/discount/${discountId}`);
   };
@@ -112,8 +122,11 @@ export default function Home() {
   const handleSelectSearchResult = (discount: Discount) => {
     setSearchTerm(discount.name);
     setShowSearchResults(false);
-    // Aquí puedes navegar al detalle del descuento si quieres
     router.push(`/discount/${discount.id}`);
+  };
+
+  const handleOfferClick = (discountId: string) => {
+    router.push(`/discount/${discountId}`);
   };
 
   const selectedCategories = EXPLORE_CATEGORIES.filter((category) =>
@@ -127,7 +140,7 @@ export default function Home() {
     <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden">
       <Header
         greeting={greeting}
-        notificationCount={notificationCount}
+        notificationCount={getUnreadCount()}
         onNotificationClick={() => router.push("/notifications")}
         onThemeToggle={() => console.log("Toggle theme")}
       />

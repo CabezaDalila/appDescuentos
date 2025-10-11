@@ -4,9 +4,9 @@ import toast from "react-hot-toast";
 import {
   CARD_BRANDS,
   CARD_TYPES,
-  CARD_LEVELS as VALIDATION_CARD_LEVELS,
-  validateCardWithDuplicates,
-} from "../../lib/validation/cardValidation";
+  CARD_LEVELS,
+} from "../../types/membership";
+import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
 import { Card, CardLevel, Membership } from "../../types/membership";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
@@ -34,7 +34,7 @@ interface MembershipDetailModalProps {
     cardId: string,
     cardData: Partial<Card>
   ) => Promise<void>;
-  onDeleteCard?: (membershipId: string, cardId: string) => Promise<void>;
+  onDeleteCard?: (membershipId: string, cardId: string) => Promise<{membershipDeleted: boolean; message: string}>;
 }
 
 const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
@@ -59,6 +59,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
+    expiry: "",
   });
 
   const [localStatus, setLocalStatus] =
@@ -108,6 +109,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
+      expiry: "",
     });
     setShowAddCardModal(true);
   };
@@ -119,9 +121,11 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: card.brand,
       level: card.level,
       name: card.name || "",
+      expiry: card.expiry || "",
     });
     setShowEditCardModal(true);
   };
+
 
   const handleSaveCard = async () => {
     if (!localMembership) {
@@ -129,13 +133,41 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       return;
     }
 
-    // Validar tarjeta con Yup y verificar duplicados
-    const validation = await validateCardWithDuplicates(
-      cardFormData,
-      localMembership.cards
+    // Validar datos de la tarjeta
+    const errors: string[] = [];
+    
+    if (!cardFormData.type) {
+      errors.push("Debe seleccionar un tipo de tarjeta");
+    }
+    
+    if (!cardFormData.brand) {
+      errors.push("Debe seleccionar una marca de tarjeta");
+    }
+    
+    if (!cardFormData.level) {
+      errors.push("Debe seleccionar un nivel de tarjeta");
+    }
+    
+    // Validar formato de fecha de vencimiento
+    if (cardFormData.expiry && !validateExpiry(cardFormData.expiry)) {
+      errors.push("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
+    }
+    
+    // Verificar duplicados
+    const isDuplicate = localMembership.cards.some(
+      (card) =>
+        card.type === cardFormData.type &&
+        card.brand === cardFormData.brand &&
+        card.level === cardFormData.level &&
+        (!selectedCard || card.id !== selectedCard.id)
     );
-    if (!validation.isValid) {
-      validation.errors.forEach((error) => toast.error(error));
+    
+    if (isDuplicate) {
+      errors.push("Ya existe una tarjeta con estas características");
+    }
+    
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
       return;
     }
 
@@ -157,35 +189,67 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
+      expiry: "",
     });
 
     try {
       if (showEditCardModal && selectedCard && onUpdateCard) {
+        console.log("🔄 Actualizando tarjeta:", selectedCard.id, cardFormData);
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
         toast.success("Tarjeta actualizada correctamente");
+        console.log("✅ Tarjeta actualizada exitosamente");
       } else if (showAddCardModal && onAddCard) {
+        console.log("➕ Agregando nueva tarjeta:", newCard);
         await onAddCard(localMembership.id, newCard);
         toast.success("Tarjeta agregada correctamente");
+        console.log("✅ Tarjeta agregada exitosamente");
       }
     } catch (error) {
+      // Revertir actualización optimista en caso de error
       setLocalMembership(membership);
-      console.error("Error al guardar tarjeta:", error);
-      toast.error("Error al guardar la tarjeta");
+      console.error("❌ Error al guardar tarjeta:", error);
+      toast.error("Error al guardar la tarjeta. Inténtalo de nuevo.");
     }
   };
 
   const handleDeleteCard = async (cardId: string) => {
     if (!localMembership || !onDeleteCard) return;
+    
+    const remainingCards = localMembership.cards.filter((card) => card.id !== cardId);
+    const isLastCard = remainingCards.length === 0;
+    const isBank = localMembership.category === "banco";
+    
+    console.log("🗑️ Eliminando tarjeta:", cardId);
+    console.log("📊 Tarjetas restantes:", remainingCards.length);
+    console.log("🏦 Es banco:", isBank);
+    console.log("🔚 Es última tarjeta:", isLastCard);
+    
+    // Actualización optimista
     const prevCards = localMembership.cards;
     setLocalMembership({
       ...localMembership,
-      cards: localMembership.cards.filter((card) => card.id !== cardId),
+      cards: remainingCards,
     });
+    
     try {
-      await onDeleteCard(localMembership.id, cardId);
+      const result = await onDeleteCard(localMembership.id, cardId);
+      console.log("📋 Resultado de eliminación:", result);
+      
+      if (result.membershipDeleted) {
+        // Si se eliminó la membresía completa, cerrar el modal
+        toast.success(result.message);
+        onClose(); // Cerrar el modal
+      } else {
+        // Si solo se eliminó la tarjeta, mostrar mensaje
+        toast.success(result.message);
+      }
+      
+      console.log("✅ Operación completada exitosamente");
     } catch (error) {
+      // Revertir actualización optimista en caso de error
       setLocalMembership({ ...localMembership, cards: prevCards });
-      console.error("Error al eliminar tarjeta:", error);
+      console.error("❌ Error al eliminar tarjeta:", error);
+      toast.error("Error al eliminar la tarjeta. Inténtalo de nuevo.");
     }
   };
 
@@ -274,6 +338,11 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                             <p className="text-sm text-gray-700 font-medium">
                               {card.brand} {card.level}
                             </p>
+                            {card.expiry && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Vence: {card.expiry}
+                              </p>
+                            )}
                           </div>
                           <div className="flex gap-1">
                             <Button
@@ -394,8 +463,8 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                     Selecciona el tipo
                   </option>
                   {CARD_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                    <option key={type.value} value={type.value}>
+                      {type.label}
                     </option>
                   ))}
                 </select>
@@ -419,8 +488,8 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                     Selecciona la marca
                   </option>
                   {CARD_BRANDS.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
+                    <option key={brand.value} value={brand.value}>
+                      {brand.label}
                     </option>
                   ))}
                 </select>
@@ -443,7 +512,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                   <option value="" disabled className="text-gray-600">
                     Selecciona un nivel
                   </option>
-                  {VALIDATION_CARD_LEVELS.map((lvl) => (
+                  {CARD_LEVELS.map((lvl) => (
                     <option key={lvl.value} value={lvl.value}>
                       {lvl.label}
                     </option>
@@ -460,6 +529,20 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                     setCardFormData({ ...cardFormData, name: e.target.value })
                   }
                   placeholder="Ej: Mi tarjeta principal"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cardExpiry">Vencimiento (opcional)</Label>
+                <Input
+                  id="cardExpiry"
+                  placeholder="MM/YY"
+                  value={cardFormData.expiry}
+                  onChange={(e) => {
+                    const formatted = formatExpiryInput(e.target.value);
+                    setCardFormData({ ...cardFormData, expiry: formatted });
+                  }}
+                  maxLength={5}
                 />
               </div>
 

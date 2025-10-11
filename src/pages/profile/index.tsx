@@ -1,5 +1,6 @@
 import { ProfileAppBar } from "@/components/home/profile-app-bar";
 import MembershipCard from "@/components/memberships/MembershipCard";
+import NotificationButton from "@/components/NotificationButton";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
@@ -150,6 +151,23 @@ export default function Profile() {
                 </Button>
               </div>
             )}
+
+            {/* Sección de Notificaciones */}
+            <div className="pb-4 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-base text-gray-900">Notificaciones</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Mantente al día con las mejores ofertas y descuentos
+                  </p>
+                </div>
+              </div>
+              <NotificationButton 
+                variant="outline" 
+                size="default"
+                className="w-full"
+              />
+            </div>
 
             {/* Carrousel de membresías activas */}
             <div>

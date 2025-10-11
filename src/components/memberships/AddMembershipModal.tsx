@@ -11,7 +11,8 @@ import {
   CARD_BRANDS,
   CARD_LEVELS,
   CARD_TYPES,
-} from "../../lib/validation/cardValidation";
+} from "../../types/membership";
+import { validateExpiry, formatExpiryInput } from "../../lib/card-utils";
 import {
   Card,
   CardLevel,
@@ -65,6 +66,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
+    expiry: "",
   });
 
   // Colores predefinidos para cada categoría
@@ -135,21 +137,32 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
           "#6366f1",
         ...(logoUrl ? { logoUrl } : {}),
         ...(gradient ? { gradient } : {}),
-        ...(selectedCategory === "banco" ? { cards } : {}),
+        // Siempre incluir las tarjetas, incluso si está vacío
+        cards: selectedCategory === "banco" ? cards : [],
       };
 
+      console.log("🚀 Creando membresía con datos:", membershipData);
       await onCreate(membershipData);
+      console.log("✅ Membresía creada exitosamente");
       handleClose();
     } catch (error) {
-      console.error("Error al crear membresía:", error);
+      console.error("❌ Error al crear membresía:", error);
+      alert("Error al crear la membresía. Inténtalo de nuevo.");
     } finally {
       setIsCreating(false);
     }
   };
 
+
   const handleAddCard = () => {
     if (!newCard.type || !newCard.brand || !newCard.level) {
-      alert("Por favor completa todos los campos de la tarjeta");
+      alert("Por favor completa todos los campos obligatorios de la tarjeta");
+      return;
+    }
+
+    // Validar fecha de vencimiento si se proporciona
+    if (newCard.expiry && !validateExpiry(newCard.expiry)) {
+      alert("La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada");
       return;
     }
 
@@ -159,6 +172,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: newCard.brand,
       level: newCard.level,
       name: newCard.name || "",
+      expiry: newCard.expiry || "",
     };
 
     setCards([...cards, card]);
@@ -167,6 +181,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
+      expiry: "",
     });
   };
 
@@ -187,6 +202,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
+      expiry: "",
     });
     onClose();
   };
@@ -407,6 +423,11 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                           <span className="text-sm text-gray-600 ml-2">
                             ({card.type})
                           </span>
+                          {card.expiry && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Vence: {card.expiry}
+                            </div>
+                          )}
                         </div>
                         <Button
                           size="sm"
@@ -463,12 +484,12 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                       >
                         {CARD_TYPES.map((type) => (
                           <SelectItem
-                            key={type}
-                            value={type}
+                            key={type.value}
+                            value={type.value}
                             className="hover:bg-purple-50 focus:bg-purple-50 focus:text-purple-900"
                             style={{ color: "#374151" }}
                           >
-                            {type}
+                            {type.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -508,12 +529,12 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                       >
                         {CARD_BRANDS.map((brand) => (
                           <SelectItem
-                            key={brand}
-                            value={brand}
+                            key={brand.value}
+                            value={brand.value}
                             className="hover:bg-purple-50 focus:bg-purple-50 focus:text-purple-900"
                             style={{ color: "#374151" }}
                           >
-                            {brand}
+                            {brand.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -577,6 +598,27 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                     onChange={(e) =>
                       setNewCard({ ...newCard, name: e.target.value })
                     }
+                    className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                    style={{ borderColor: "#D1D5DB" }}
+                  />
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="cardExpiry"
+                    style={{ color: "#374151", fontWeight: "500" }}
+                  >
+                    Vencimiento (opcional)
+                  </Label>
+                  <Input
+                    id="cardExpiry"
+                    placeholder="MM/YY"
+                    value={newCard.expiry || ""}
+                    onChange={(e) => {
+                      const formatted = formatExpiryInput(e.target.value);
+                      setNewCard({ ...newCard, expiry: formatted });
+                    }}
+                    maxLength={5}
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
                     style={{ borderColor: "#D1D5DB" }}
                   />

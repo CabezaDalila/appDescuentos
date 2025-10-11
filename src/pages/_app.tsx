@@ -3,12 +3,27 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { LayoutHome } from "@/layouts/layout-home";
 import { initializeGoogleAuth } from "@/lib/google-auth-init";
+import { initializeOneSignal } from "@/lib/onesignal-config";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
+
+// Tipos para OneSignal
+interface OneSignal {
+  init: (options: any) => Promise<void>;
+  showNativePrompt: () => Promise<void>;
+  isPushNotificationsEnabled: () => Promise<boolean>;
+  getUserId: () => Promise<string | null>;
+}
+
+declare global {
+  interface Window {
+    OneSignal?: OneSignal;
+  }
+}
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { user, loading } = useAuth();
@@ -18,6 +33,9 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     initializeGoogleAuth();
+    
+    // Inicializar OneSignal para móvil
+    initializeOneSignal();
 
     if (!loading && !user && !["/login"].includes(router.pathname)) {
       router.push("/login");
@@ -30,6 +48,59 @@ function MyApp({ Component, pageProps }: AppProps) {
       }
     }
   }, [user, loading, adminLoading, isAdmin, isMobile, router]);
+
+  // Inicializar OneSignal solo una vez
+  useEffect(() => {
+    let isInitializing = false;
+    
+    const initOneSignal = async () => {
+      const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+      
+      if (!appId || appId === 'your_onesignal_app_id_here') {
+        console.log('⚠️ OneSignal App ID no configurado');
+        return;
+      }
+
+      // Verificar si ya se está inicializando o ya se inicializó
+      if (isInitializing || (window as any).OneSignalInitialized) {
+        console.log('⚠️ OneSignal ya fue inicializado o se está inicializando');
+        return;
+      }
+
+      isInitializing = true;
+
+      try {
+        // Esperar a que OneSignal se cargue
+        if (typeof window !== 'undefined' && window.OneSignal) {
+          console.log('🚀 Inicializando OneSignal...');
+          
+          await window.OneSignal.init({
+            appId: appId,
+            allowLocalhostAsSecureOrigin: true
+          });
+          
+          // Marcar como inicializado
+          (window as any).OneSignalInitialized = true;
+          console.log('✅ OneSignal inicializado correctamente');
+        } else {
+          console.log('⏳ Esperando a que OneSignal se cargue...');
+          isInitializing = false;
+          // Reintentar después de 500ms
+          setTimeout(initOneSignal, 500);
+          return;
+        }
+        
+      } catch (error) {
+        console.error('❌ Error inicializando OneSignal:', error);
+        isInitializing = false;
+      }
+    };
+
+    // Solo ejecutar si no está inicializado
+    if (!(window as any).OneSignalInitialized) {
+      initOneSignal();
+    }
+  }, []);
 
   if (
     (!user || (user && router.pathname === "/login")) &&
