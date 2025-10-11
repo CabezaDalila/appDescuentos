@@ -65,7 +65,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
   ) {
     return (
       <div className="h-screen flex flex-col">
-        <div className="flex-1 overflow-hidden">{children}</div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
         <NavigationBar
           tabs={tabs}
           activeTab={activeTab}

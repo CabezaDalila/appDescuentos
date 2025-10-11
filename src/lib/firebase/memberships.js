@@ -290,6 +290,66 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
   }
 };
 
+// Obtener membresías inactivas del usuario
+export const getInactiveMemberships = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const membershipsRef = collection(db, `users/${user.uid}/memberships`);
+    const q = query(membershipsRef, where("status", "!=", "active"));
+    const querySnapshot = await getDocs(q);
+
+    const memberships = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      memberships.push({
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      });
+    });
+
+    return memberships.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  } catch (error) {
+    console.error("Error al obtener membresías inactivas:", error);
+    throw error;
+  }
+};
+
+// Obtener una membresía específica por ID (función genérica)
+export const getMembershipById = async (membershipId) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const membershipRef = doc(
+      db,
+      `users/${user.uid}/memberships/${membershipId}`
+    );
+    const membershipDoc = await getDoc(membershipRef);
+
+    if (!membershipDoc.exists()) {
+      throw new Error("Membresía no encontrada");
+    }
+
+    const data = membershipDoc.data();
+    return {
+      id: membershipDoc.id,
+      ...data,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    };
+  } catch (error) {
+    console.error("Error al obtener membresía por ID:", error);
+    throw error;
+  }
+};
+
 // Verificar si una entidad ya existe para el usuario
 export const checkMembershipExists = async (name, category) => {
   try {

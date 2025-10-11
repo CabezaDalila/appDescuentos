@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/Share/card";
+import { Notification, useNotifications } from "@/hooks/useNotifications";
 import {
+  AlertTriangle,
   ArrowLeft,
   Bell,
   Calendar,
@@ -8,15 +10,20 @@ import {
   Filter,
   Percent,
   Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
-import { useNotifications, Notification } from "@/hooks/useNotifications";
+import { useState } from "react";
 
 export default function Notifications() {
   const router = useRouter();
-  const { notifications, loading, error, markAsRead, deleteNotification, getUnreadCount } = useNotifications();
+  const {
+    notifications,
+    loading,
+    error,
+    markAsRead,
+    deleteNotification,
+    getUnreadCount,
+  } = useNotifications();
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{
     unreadOnly: boolean;
@@ -54,6 +61,59 @@ export default function Notifications() {
     });
   };
 
+  const getNotificationIcon = (notification: Notification) => {
+    switch (notification.type) {
+      case "vencimiento_tarjeta":
+        return (
+          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </div>
+        );
+      case "promocion":
+        return (
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <Percent className="h-4 w-4 text-green-600" />
+          </div>
+        );
+      case "recordatorio":
+        return (
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <Bell className="h-4 w-4 text-blue-600" />
+          </div>
+        );
+      case "sistema":
+        return (
+          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+            <CreditCard className="h-4 w-4 text-purple-600" />
+          </div>
+        );
+      case "success":
+        return (
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+            <Check className="h-4 w-4 text-green-600" />
+          </div>
+        );
+      case "warning":
+        return (
+          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+          </div>
+        );
+      case "error":
+        return (
+          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+          </div>
+        );
+      default:
+        return (
+          <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+            <Bell className="h-4 w-4 text-gray-600" />
+          </div>
+        );
+    }
+  };
+
   // Filtrar notificaciones según los filtros activos
   const filteredNotifications = notifications.filter((notification) => {
     // Filtro por no leídas
@@ -65,25 +125,25 @@ export default function Notifications() {
     if (activeFilters.category !== "all") {
       if (
         activeFilters.category === "offers" &&
-        notification.type !== "info"
+        notification.type !== "promocion"
       ) {
         return false;
       }
       if (
         activeFilters.category === "account" &&
-        notification.type !== "success"
+        notification.type !== "sistema"
       ) {
         return false;
       }
       if (
         activeFilters.category === "expiring" &&
-        notification.type !== "card_expiry"
+        notification.type !== "vencimiento_tarjeta"
       ) {
         return false;
       }
       if (
-        activeFilters.category === "system" &&
-        notification.type !== "warning"
+        activeFilters.category === "reminders" &&
+        notification.type !== "recordatorio"
       ) {
         return false;
       }
@@ -92,42 +152,9 @@ export default function Notifications() {
     return true;
   });
 
-  const getNotificationIcon = (notification: Notification) => {
-    switch (notification.type) {
-      case "card_expiry":
-        return (
-          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </div>
-        );
-      case "success":
-        return (
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <CreditCard className="h-4 w-4 text-green-600" />
-          </div>
-        );
-      case "warning":
-        return (
-          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-            <Calendar className="h-4 w-4 text-orange-600" />
-          </div>
-        );
-      case "info":
-        return (
-          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <Percent className="h-4 w-4 text-blue-600" />
-          </div>
-        );
-      default:
-        return (
-          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-            <Bell className="h-4 w-4 text-purple-600" />
-          </div>
-        );
-    }
-  };
-
   const formatTimeAgo = (date: Date) => {
+    if (!date) return "0m";
+    
     const now = new Date();
     const diffInMinutes = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60)
@@ -143,6 +170,8 @@ export default function Notifications() {
   };
 
   const formatTimeDisplay = (date: Date) => {
+    if (!date) return "Fecha no disponible";
+    
     const now = new Date();
     const diffInDays = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
@@ -161,6 +190,8 @@ export default function Notifications() {
   };
 
   const getTimeSection = (date: Date) => {
+    if (!date) return "ANTERIOR";
+    
     const now = new Date();
     const diffInDays = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
@@ -360,9 +391,7 @@ export default function Notifications() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Error al cargar notificaciones
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {error}
-              </p>
+              <p className="text-sm text-gray-600 mb-4">{error}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
@@ -426,7 +455,7 @@ export default function Notifications() {
                               </p>
                               <div className="flex items-center justify-between mt-3">
                                 <span className="text-xs text-gray-600">
-                                  {formatTimeDisplay(notification.createdAt)}
+                                  {formatTimeDisplay(notification.timestamp)}
                                 </span>
                                 <div className="flex items-center gap-2">
                                   {!notification.read && (
@@ -437,18 +466,20 @@ export default function Notifications() {
                                       className="flex items-center gap-1 text-blue-500 hover:text-blue-600 transition-colors"
                                     >
                                       <Check className="h-3 w-3" />
-                                      <span className="text-xs">Marcar leída</span>
+                                      <span className="text-xs">
+                                        Marcar leída
+                                      </span>
                                     </button>
                                   )}
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteNotification(notification.id)
-                                    }
-                                    className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                    <span className="text-xs">Eliminar</span>
-                                  </button>
+                                <button
+                                  onClick={() =>
+                                    handleDeleteNotification(notification.id)
+                                  }
+                                  className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  <span className="text-xs">Eliminar</span>
+                                </button>
                                 </div>
                               </div>
                             </div>

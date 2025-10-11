@@ -1,26 +1,33 @@
-import { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/firebase';
-import { useAuth } from './useAuth';
+import { db } from "@/lib/firebase/firebase";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useAuth } from "./useAuth";
 
 export interface Notification {
   id: string;
+  userId: string;
   title: string;
   message: string;
-  type: 'card_expiry' | 'info' | 'warning' | 'success' | 'error';
-  data?: {
-    membershipId?: string;
-    cardId?: string;
-    expiryDate?: string;
-    membershipName?: string;
-    membershipCategory?: string;
-    cardName?: string;
-    cardBrand?: string;
-    cardLevel?: string;
-  };
+  timestamp: any; // Firestore timestamp
   read: boolean;
-  createdAt: any; // Firestore timestamp
-  userId: string;
+  type:
+    | "vencimiento_tarjeta"
+    | "promocion"
+    | "recordatorio"
+    | "sistema"
+    | "info"
+    | "warning"
+    | "success"
+    | "error";
 }
 
 export const useNotifications = () => {
@@ -36,8 +43,14 @@ export const useNotifications = () => {
       return;
     }
 
-    const notificationsRef = collection(db, `users/${user.uid}/notifications`);
-    const q = query(notificationsRef, orderBy('createdAt', 'desc'));
+    // Usar la colección global de notificaciones
+    const notificationsRef = collection(db, "notifications");
+    // Filtrar solo las notificaciones del usuario actual
+    const q = query(
+      notificationsRef,
+      where("userId", "==", user.uid),
+      orderBy("timestamp", "desc")
+    );
 
     const unsubscribe = onSnapshot(
       q,
@@ -45,10 +58,29 @@ export const useNotifications = () => {
         const notificationsData: Notification[] = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
+          // Convertir timestamp a Date de manera segura
+          let timestamp: Date;
+          if (data.timestamp?.toDate) {
+            // Timestamp de Firestore
+            timestamp = data.timestamp.toDate();
+          } else if (data.timestamp instanceof Date) {
+            // Ya es un Date
+            timestamp = data.timestamp;
+          } else if (typeof data.timestamp === 'string') {
+            // String de fecha
+            timestamp = new Date(data.timestamp);
+          } else if (data.timestamp && typeof data.timestamp === 'object' && data.timestamp.seconds) {
+            // Timestamp de Firestore como objeto
+            timestamp = new Date(data.timestamp.seconds * 1000);
+          } else {
+            // Fallback: usar fecha actual
+            timestamp = new Date();
+          }
+
           notificationsData.push({
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+            timestamp,
           } as Notification);
         });
         setNotifications(notificationsData);
@@ -56,8 +88,8 @@ export const useNotifications = () => {
         setError(null);
       },
       (err) => {
-        console.error('Error obteniendo notificaciones:', err);
-        setError('Error al cargar notificaciones');
+        console.error("Error obteniendo notificaciones:", err);
+        setError("Error al cargar notificaciones");
         setLoading(false);
       }
     );
@@ -69,12 +101,12 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const notificationRef = doc(db, `users/${user.uid}/notifications/${notificationId}`);
+      const notificationRef = doc(db, `notifications/${notificationId}`);
       await updateDoc(notificationRef, {
         read: true,
       });
     } catch (error) {
-      console.error('Error marcando notificación como leída:', error);
+      console.error("Error marcando notificación como leída:", error);
     }
   };
 
@@ -82,13 +114,16 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const unreadNotifications = notifications.filter(n => !n.read);
-      const updatePromises = unreadNotifications.map(notification => 
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      const updatePromises = unreadNotifications.map((notification) =>
         markAsRead(notification.id)
       );
       await Promise.all(updatePromises);
     } catch (error) {
-      console.error('Error marcando todas las notificaciones como leídas:', error);
+      console.error(
+        "Error marcando todas las notificaciones como leídas:",
+        error
+      );
     }
   };
 
@@ -96,19 +131,19 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
-      const notificationRef = doc(db, `users/${user.uid}/notifications/${notificationId}`);
+      const notificationRef = doc(db, `notifications/${notificationId}`);
       await deleteDoc(notificationRef);
     } catch (error) {
-      console.error('Error eliminando notificación:', error);
+      console.error("Error eliminando notificación:", error);
     }
   };
 
   const getUnreadCount = () => {
-    return notifications.filter(n => !n.read).length;
+    return notifications.filter((n) => !n.read).length;
   };
 
   const getNotificationsByType = (type: string) => {
-    return notifications.filter(n => n.type === type);
+    return notifications.filter((n) => n.type === type);
   };
 
   return {

@@ -1,3 +1,4 @@
+import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { Button } from "@/components/Share/button";
 import {
   Card,
@@ -6,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { useAdmin } from "@/hooks/useAdmin";
 import { LayoutAdmin } from "@/layouts/layout-admin";
 import { Shield } from "lucide-react";
@@ -72,6 +72,7 @@ export default function AdminPage() {
 
         {/* Dashboard con métricas */}
         <AdminDashboard />
+
       </div>
     </LayoutAdmin>
   );

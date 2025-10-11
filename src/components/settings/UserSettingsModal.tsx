@@ -64,15 +64,25 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
         if (!user?.uid) return;
         const preferences = await getUserPreferences(user.uid);
         if (preferences) {
-          setFormData(preferences);
-          if (!initialPrefs) setInitialPrefs(preferences);
+          const safePreferences = {
+            language: preferences.language || "es",
+            region: preferences.region || "",
+            useLocation: preferences.useLocation || false,
+          };
+          setFormData(safePreferences);
+          if (!initialPrefs) setInitialPrefs(safePreferences);
         } else {
           // Fallback: intentar cargar de localStorage
           const local = localStorage.getItem(`user-prefs-${user.uid}`);
           if (local) {
             const localPrefs = JSON.parse(local);
-            setFormData(localPrefs);
-            if (!initialPrefs) setInitialPrefs(localPrefs);
+            const safeLocalPrefs = {
+              language: localPrefs.language || "es",
+              region: localPrefs.region || "",
+              useLocation: localPrefs.useLocation || false,
+            };
+            setFormData(safeLocalPrefs);
+            if (!initialPrefs) setInitialPrefs(safeLocalPrefs);
           } else {
             const lang = navigator.language.startsWith("es") ? "es" : "en";
             const defaultPrefs: UserPreferences = {
@@ -129,7 +139,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
     }, [isOpen]);
 
     useEffect(() => {
-      if (formData.region.trim() === "") {
+      if (!formData.region || formData.region.trim() === "") {
         setRegionError("La región no puede estar vacía");
       } else {
         setRegionError(null);

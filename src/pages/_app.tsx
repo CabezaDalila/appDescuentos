@@ -3,11 +3,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { LayoutHome } from "@/layouts/layout-home";
 import { initializeGoogleAuth } from "@/lib/google-auth-init";
-import { initializeOneSignal } from "@/lib/onesignal-config";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import Script from "next/script";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 
@@ -17,11 +17,27 @@ interface OneSignal {
   showNativePrompt: () => Promise<void>;
   isPushNotificationsEnabled: () => Promise<boolean>;
   getUserId: () => Promise<string | null>;
+  on?: (event: string, callback: (data: any) => void) => void;
+  addEventListener?: (event: string, callback: (data: any) => void) => void;
+  event?: {
+    on: (event: string, callback: (data: any) => void) => void;
+  };
+}
+
+// Tipos para Google API
+interface GoogleAuth {
+  init: (options: { client_id: string }) => Promise<void>;
+  getAuthInstance: () => any;
+}
+
+interface Gapi {
+  auth2: GoogleAuth;
 }
 
 declare global {
   interface Window {
     OneSignal?: OneSignal;
+    gapi?: Gapi;
   }
 }
 
@@ -33,9 +49,38 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     initializeGoogleAuth();
-    
-    // Inicializar OneSignal para móvil
-    initializeOneSignal();
+
+    // Inicializar Google Auth correctamente
+    const loadGapi = async () => {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const check = () => {
+            if (
+              typeof window !== "undefined" &&
+              window.gapi &&
+              window.gapi.auth2
+            ) {
+              resolve();
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+        });
+
+        if (!window.gapi!.auth2.getAuthInstance()) {
+          await window.gapi!.auth2.init({
+            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+          });
+          console.log("✅ Google Auth inicializado");
+        }
+      } catch (err) {
+        console.error("❌ Error al inicializar Google Auth:", err);
+      }
+    };
+
+    loadGapi();
+
 
     if (!loading && !user && !["/login"].includes(router.pathname)) {
       router.push("/login");
@@ -49,6 +94,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, [user, loading, adminLoading, isAdmin, isMobile, router]);
 
+<<<<<<< Updated upstream
   // Inicializar OneSignal solo una vez
   useEffect(() => {
     let isInitializing = false;
@@ -96,6 +142,8 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, []);
 
+=======
+>>>>>>> Stashed changes
   if (
     (!user || (user && router.pathname === "/login")) &&
     ["/login"].includes(router.pathname)
@@ -108,6 +156,20 @@ function MyApp({ Component, pageProps }: AppProps) {
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
           />
         </Head>
+        {/* Scripts de Google para autenticación */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://apis.google.com/js/platform.js"
+          strategy="beforeInteractive"
+        />
+        {/* Script de OneSignal para web */}
+        <Script
+          src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
+          strategy="beforeInteractive"
+        />
         <Component {...pageProps} />
       </>
     );
@@ -121,6 +183,20 @@ function MyApp({ Component, pageProps }: AppProps) {
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
           />
         </Head>
+        {/* Scripts de Google para autenticación */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://apis.google.com/js/platform.js"
+          strategy="beforeInteractive"
+        />
+        {/* Script de OneSignal para web */}
+        <Script
+          src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
+          strategy="beforeInteractive"
+        />
         <Component {...pageProps} />
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       </>
@@ -135,6 +211,15 @@ function MyApp({ Component, pageProps }: AppProps) {
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
       </Head>
+      {/* Scripts de Google para autenticación */}
+      <Script
+        src="https://accounts.google.com/gsi/client"
+        strategy="beforeInteractive"
+      />
+      <Script
+        src="https://apis.google.com/js/platform.js"
+        strategy="beforeInteractive"
+      />
       <LayoutHome>
         <Component {...pageProps} />
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
