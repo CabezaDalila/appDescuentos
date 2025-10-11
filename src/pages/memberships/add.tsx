@@ -15,13 +15,18 @@ import {
   SelectValue,
 } from "@/components/Share/select";
 import { Textarea } from "@/components/Share/textarea";
+import {
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
+  ENTITIES_BY_CATEGORY,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
 import { ArrowLeft, ArrowRight, Building2 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import toast from "react-hot-toast";
-
 export default function AddMembershipPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -39,7 +44,7 @@ export default function AddMembershipPage() {
   // Datos específicos para bancos
   const [bankData, setBankData] = useState({
     bank: "",
-    cardType: "", // crédito o débito
+    type: "", // crédito o débito
     brand: "", // visa, mastercard, etc
     level: "", // classic, gold, platinum, etc
     expiryDate: "",
@@ -47,33 +52,11 @@ export default function AddMembershipPage() {
     cardName: "",
   });
 
-  const banks = [
-    "Galicia",
-    "Santander",
-    "Nación",
-    "Provincia",
-    "Ciudad",
-    "Macro",
-    "Itaú",
-    "HSBC",
-    "BBVA",
-    "Supervielle",
-  ];
-
-  const cardTypes = ["Crédito", "Débito"];
-
-  const brands = ["Visa", "Mastercard", "American Express", "Diners Club"];
-
-  const levels = [
-    "Classic",
-    "Gold",
-    "Platinum",
-    "Black",
-    "Signature",
-    "Infinite",
-    "Internacional",
-    "Nacional",
-  ];
+  // Usar las constantes de membership.ts para consistencia
+  const banks = ENTITIES_BY_CATEGORY.banco;
+  const cardTypes = CARD_TYPES.map((type) => type.value);
+  const brands = CARD_BRANDS.map((brand) => brand.value);
+  const levels = CARD_LEVELS.map((level) => level.value);
 
   const isBank = formData.category === "banco";
 
@@ -94,7 +77,7 @@ export default function AddMembershipPage() {
       case 1:
         return bankData.bank !== "";
       case 2:
-        return bankData.cardType !== "";
+        return bankData.type !== "";
       case 3:
         return bankData.brand !== "";
       case 4:
@@ -119,13 +102,21 @@ export default function AddMembershipPage() {
             name: bankData.bank,
             category: "banco",
             tier: bankData.level,
-            description: `Tarjeta ${bankData.brand} ${bankData.cardType}`,
+            description: `Tarjeta ${bankData.brand} ${bankData.type}`,
             color: "#6B7280",
             cards: [
               {
-                ...bankData,
                 id: Date.now().toString(),
-                addedAt: new Date(),
+                type: bankData.type as "Crédito" | "Débito",
+                brand: bankData.brand as
+                  | "Visa"
+                  | "Mastercard"
+                  | "American Express"
+                  | "Diners Club"
+                  | "Otro",
+                level: bankData.level as any,
+                name: bankData.cardName || "",
+                expiryDate: bankData.expiryDate || "",
               },
             ],
           }
@@ -381,10 +372,10 @@ export default function AddMembershipPage() {
                           key={type}
                           type="button"
                           onClick={() =>
-                            setBankData((prev) => ({ ...prev, cardType: type }))
+                            setBankData((prev) => ({ ...prev, type: type }))
                           }
                           className={`p-3 border rounded-lg text-center transition-colors ${
-                            bankData.cardType === type
+                            bankData.type === type
                               ? "border-blue-500 bg-blue-50 text-blue-700"
                               : "border-gray-300 hover:border-gray-400"
                           }`}
@@ -711,7 +702,7 @@ export default function AddMembershipPage() {
                         **** **** **** ****
                       </div>
                       <div className="text-sm opacity-90">
-                        {bankData.bank} • {bankData.cardType}
+                        {bankData.bank} • {bankData.type}
                       </div>
                     </div>
 

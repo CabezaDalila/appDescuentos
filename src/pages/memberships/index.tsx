@@ -1,34 +1,24 @@
 import { Button } from "@/components/Share/button";
 import { Input } from "@/components/Share/input";
-<<<<<<< Updated upstream
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/Share/select";
 import {
   CreateMembershipData,
   Membership,
   MEMBERSHIP_CATEGORIES,
 } from "@/constants/membership";
-=======
->>>>>>> Stashed changes
 import { useAuth } from "@/hooks/useAuth";
 import {
+  checkMembershipExists,
+  createMembership,
+  deleteCardFromMembership,
+  deleteMembership,
   getActiveMemberships,
   getInactiveMemberships,
+  updateMembership,
 } from "@/lib/firebase/memberships";
-<<<<<<< Updated upstream
-import { Filter, Plus, Search, SortAsc } from "lucide-react";
-=======
-import { Membership } from "@/types/membership";
-import { ArrowLeft, ChevronDown, Filter, Plus, Search } from "lucide-react";
->>>>>>> Stashed changes
-import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
 
+import { ArrowLeft, ChevronDown, Filter, Plus, Search } from "lucide-react";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useRef, useState } from "react";
 type TabType = "all" | "active" | "inactive";
 
 export default function MembershipsPage() {
@@ -37,7 +27,7 @@ export default function MembershipsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<string>("");
+  // const [selectedFilter, setSelectedFilter] = useState<string>("");
   const filterRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
 
@@ -49,24 +39,35 @@ export default function MembershipsPage() {
 
   const allMemberships = [...activeMemberships, ...inactiveMemberships];
 
-  useEffect(() => {
-    if (!user || loading) return;
+  const loadMemberships = useCallback(async () => {
+    if (!user) return;
 
-    const loadMemberships = async () => {
+    try {
       setLoadingMemberships(true);
-<<<<<<< Updated upstream
-      const data = await getUserMemberships();
-      setMemberships(data);
-    } catch {
+      const [active, inactive] = await Promise.all([
+        getActiveMemberships(),
+        getInactiveMemberships(),
+      ]);
+      setActiveMemberships(active);
+      setInactiveMemberships(inactive);
+    } catch (error) {
+      console.error("Error al cargar las membresías:", error);
       // toast.error('Error al cargar las membresías');
     } finally {
       setLoadingMemberships(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || loading) return;
+    loadMemberships();
+  }, [user, loading, loadMemberships]);
 
   const handleCreateMembership = async (
-    membershipData: CreateMembershipData & { cards?: any[] }
+    membershipData: CreateMembershipData & { cards?: unknown[] }
   ) => {
+    if (!user) return;
+
     try {
       const exists = await checkMembershipExists(
         membershipData.name,
@@ -76,7 +77,7 @@ export default function MembershipsPage() {
         return;
       }
 
-      await createMembership(membershipData);
+      await createMembership({ ...membershipData, userId: user.uid });
       loadMemberships();
     } catch (err) {
       console.error("❌ Error al crear la membresía:", err);
@@ -85,7 +86,7 @@ export default function MembershipsPage() {
 
   const handleUpdateMembership = async (
     membershipId: string,
-    updateData: any
+    updateData: Record<string, unknown>
   ) => {
     try {
       await updateMembership(membershipId, updateData);
@@ -103,55 +104,18 @@ export default function MembershipsPage() {
       console.error("❌ Error al eliminar la membresía:", error);
     }
   };
-=======
-      try {
-        const [active, inactive] = await Promise.all([
-          getActiveMemberships(),
-          getInactiveMemberships(),
-        ]);
-        setActiveMemberships(active);
-        setInactiveMemberships(inactive);
-      } catch (error) {
-        console.error("Error cargando membresías:", error);
-      } finally {
-        setLoadingMemberships(false);
-      }
-    };
 
-    loadMemberships();
-  }, [user, loading]);
+  const handleScroll = () => {
+    setScrollY(window.scrollY);
+  };
 
-  // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filterRef.current &&
-        !filterRef.current.contains(event.target as Node)
-      ) {
-        setShowFilters(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Efecto de scroll para la barra
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
->>>>>>> Stashed changes
-
     window.addEventListener("scroll", handleScroll);
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-<<<<<<< Updated upstream
   const handleDeleteCardFromMembership = async (
     membershipId: string,
     cardId: string
@@ -171,23 +135,26 @@ export default function MembershipsPage() {
     } catch (error) {
       console.error("❌ Error al eliminar tarjeta de Firestore:", error);
       throw error; // Re-lanzar para que el modal maneje el error
-=======
+    }
+  };
+
   const getFilteredMemberships = () => {
     let filtered = allMemberships;
 
-    if (activeTab === "active") {
-      filtered = activeMemberships;
-    } else if (activeTab === "inactive") {
-      filtered = inactiveMemberships;
-    }
-
-    if (searchQuery.trim()) {
+    // Filtrar por búsqueda
+    if (searchQuery) {
       filtered = filtered.filter(
         (membership) =>
           membership.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           membership.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
->>>>>>> Stashed changes
+    }
+
+    // Filtrar por tab activo
+    if (activeTab === "active") {
+      filtered = activeMemberships;
+    } else if (activeTab === "inactive") {
+      filtered = inactiveMemberships;
     }
 
     return filtered;
@@ -275,7 +242,7 @@ export default function MembershipsPage() {
                     <button
                       key={option.id}
                       onClick={() => {
-                        setSelectedFilter(option.id);
+                        // setSelectedFilter(option.id);
                         setShowFilters(false);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
@@ -454,21 +421,20 @@ function MembershipListItem({
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
 
-  const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "bank":
+  const getCategoryIcon = (category: Membership["category"]) => {
+    switch (category) {
       case "banco":
         return "🏦";
       case "club":
         return "🏆";
-      case "health":
       case "salud":
         return "❤️";
-      case "university":
-      case "universidad":
-      case "education":
       case "educacion":
         return "🎓";
+      case "seguro":
+        return "🛡️";
+      case "telecomunicacion":
+        return "📱";
       default:
         return "🏢";
     }
@@ -476,13 +442,11 @@ function MembershipListItem({
 
   const getStatusText = () => {
     if (isActive) return "Activa";
-    if (membership.status === "graduated") return "Graduado";
     return "Inactiva";
   };
 
   const getStatusColor = () => {
     if (isActive) return "bg-green-100 text-green-800";
-    if (membership.status === "graduated") return "bg-gray-100 text-gray-800";
     return "bg-gray-100 text-gray-800";
   };
 
@@ -494,17 +458,94 @@ function MembershipListItem({
     return name.substring(0, 2).toUpperCase();
   };
 
-  const getCardColor = (name: string) => {
-    // Colores específicos para nombres conocidos
+  const getCardColor = (name: string, category: Membership["category"]) => {
+    // Colores específicos para entidades conocidas usando las constantes
     const colorMap: { [key: string]: string } = {
+      // Bancos
       "banco galicia": "bg-orange-500",
+      "banco santander": "bg-red-600",
+      "banco nación": "bg-blue-700",
+      "banco provincia": "bg-green-600",
+      "banco ciudad": "bg-blue-500",
+      "banco macro": "bg-yellow-600",
+      "banco itaú": "bg-red-500",
+      "banco hsbc": "bg-red-700",
+      "banco bbva": "bg-blue-600",
+      "banco supervielle": "bg-green-700",
+
+      // Clubs
       "club la nación": "bg-blue-600",
-      "universidad de buenos aires": "bg-purple-500",
+      "club clarín": "bg-orange-600",
+      "club personal": "bg-red-500",
+      "club movistar": "bg-blue-500",
+      "club claro": "bg-red-600",
+      "club despegar": "bg-green-600",
+      "club mercado libre": "bg-yellow-500",
+
+      // Salud
       osde: "bg-green-500",
+      "swiss medical": "bg-blue-500",
+      medicus: "bg-green-600",
+      galeno: "bg-blue-600",
+      omint: "bg-purple-500",
+      "accord salud": "bg-green-700",
+      "sancor salud": "bg-blue-700",
+
+      // Educación
+      "universidad de buenos aires": "bg-purple-500",
+      "universidad nacional de la plata": "bg-blue-600",
+      "universidad nacional de córdoba": "bg-red-600",
+      "universidad de palermo": "bg-purple-600",
+      "universidad de san andrés": "bg-blue-700",
+      "universidad católica argentina": "bg-yellow-600",
+
+      // Seguros
+      "la caja": "bg-orange-500",
+      "federación patronal": "bg-blue-600",
+      "sancor seguros": "bg-green-600",
+      allianz: "bg-red-500",
+      zurich: "bg-blue-700",
+      mapfre: "bg-red-600",
+      "provincia seguros": "bg-green-700",
+
+      // Telecomunicaciones
+      personal: "bg-red-500",
+      movistar: "bg-blue-500",
+      claro: "bg-red-600",
+      telecom: "bg-blue-600",
+      fibertel: "bg-orange-500",
+      cablevisión: "bg-blue-700",
+      directv: "bg-purple-600",
     };
 
     const lowerName = name.toLowerCase();
-    return colorMap[lowerName] || "bg-gray-500";
+    return colorMap[lowerName] || getCategoryDefaultColor(category);
+  };
+
+  const getCategoryDefaultColor = (category: Membership["category"]) => {
+    switch (category) {
+      case "banco":
+        return "bg-blue-500";
+      case "club":
+        return "bg-green-500";
+      case "salud":
+        return "bg-red-500";
+      case "educacion":
+        return "bg-purple-500";
+      case "seguro":
+        return "bg-orange-500";
+      case "telecomunicacion":
+        return "bg-blue-600";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getCategoryLabel = (category: Membership["category"]) => {
+    const categoryObj = MEMBERSHIP_CATEGORIES.find(
+      (cat: { value: string; label: string }) => cat.value === category
+    );
+    return categoryObj?.label || category;
   };
 
   return (
@@ -514,7 +555,8 @@ function MembershipListItem({
           {/* Icono */}
           <div
             className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0 ${getCardColor(
-              membership.name
+              membership.name,
+              membership.category
             )}`}
           >
             {getInitials(membership.name)}
@@ -528,12 +570,30 @@ function MembershipListItem({
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-gray-600 flex items-center gap-1">
                 {getCategoryIcon(membership.category)}
-                {membership.category}
+                {getCategoryLabel(membership.category)}
               </span>
-              {membership.tier && (
+              {membership.cards.length > 0 && (
                 <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
-                  {membership.tier}
+                  {membership.cards.length} tarjeta
+                  {membership.cards.length > 1 ? "s" : ""}
                 </span>
+              )}
+              {membership.cards.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {membership.cards.slice(0, 2).map((card, index) => (
+                    <span
+                      key={card.id || index}
+                      className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded"
+                    >
+                      {card.brand} {card.level}
+                    </span>
+                  ))}
+                  {membership.cards.length > 2 && (
+                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">
+                      +{membership.cards.length - 2} más
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>

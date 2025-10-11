@@ -14,7 +14,7 @@ export interface Card {
   brand: "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Otro";
   level: CardLevel;
   name?: string;
-  expiry?: string; // Formato MM/YY
+  expiryDate?: string; // Formato MM/YY - Fecha de vencimiento de la tarjeta
 }
 
 export interface Membership {

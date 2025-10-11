@@ -50,9 +50,18 @@ export function PersonalizedOffersSection({
       }
 
       try {
+        console.log("🔍 Debug - Llamando getPersonalizedDiscounts con:");
+        console.log("  - userMemberships:", userMemberships);
+        console.log("  - userCredentials:", userCredentials);
+
         const discounts = await getPersonalizedDiscounts(
           userMemberships || [],
           userCredentials || []
+        );
+
+        console.log(
+          "🔍 Debug - Descuentos personalizados encontrados:",
+          discounts
         );
         setPersonalizedOffers(discounts);
       } catch (error) {

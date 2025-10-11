@@ -4,22 +4,10 @@ import ProfileSection, {
 } from "@/components/profile/ProfileSection";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
-<<<<<<< Updated upstream
-import { Card, CardContent } from "@/components/Share/card";
-import { Membership } from "@/constants/membership";
-import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import { checkAdminRole } from "@/lib/admin";
-import { getActiveMemberships } from "@/lib/firebase/memberships";
-import { User } from "firebase/auth";
-import { Pencil, Shield } from "lucide-react";
-import Image from "next/image";
-=======
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { checkAdminRole } from "@/lib/admin";
 import { Shield } from "lucide-react";
->>>>>>> Stashed changes
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -76,26 +64,6 @@ export default function Profile() {
           onEditPhoto={() => setSettingsOpen(true)}
         />
 
-<<<<<<< Updated upstream
-            {/* Sección de Notificaciones */}
-            <div className="pb-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-base text-gray-900">
-                    Notificaciones
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Mantente al día con las mejores ofertas y descuentos
-                  </p>
-                </div>
-              </div>
-              <NotificationButton
-                variant="outline"
-                size="default"
-                className="w-full"
-              />
-            </div>
-=======
         {/* Botón de Administración para Admins (solo en desktop) */}
         {isAdmin && !isMobile && (
           <div className="mb-6">
@@ -108,7 +76,6 @@ export default function Profile() {
             </Button>
           </div>
         )}
->>>>>>> Stashed changes
 
         {/* Secciones del perfil */}
         <ProfileSection

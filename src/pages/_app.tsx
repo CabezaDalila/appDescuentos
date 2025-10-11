@@ -81,7 +81,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     loadGapi();
 
-
     if (!loading && !user && !["/login"].includes(router.pathname)) {
       router.push("/login");
     }
@@ -94,15 +93,14 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, [user, loading, adminLoading, isAdmin, isMobile, router]);
 
-<<<<<<< Updated upstream
   // Inicializar OneSignal solo una vez
   useEffect(() => {
     let isInitializing = false;
-    
+
     const initOneSignal = async () => {
       const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-      
-      if (!appId || appId === 'your_onesignal_app_id_here') {
+
+      if (!appId || appId === "your_onesignal_app_id_here") {
         return;
       }
 
@@ -115,12 +113,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 
       try {
         // Esperar a que OneSignal se cargue
-        if (typeof window !== 'undefined' && window.OneSignal) {
+        if (typeof window !== "undefined" && window.OneSignal) {
           await window.OneSignal.init({
             appId: appId,
-            allowLocalhostAsSecureOrigin: true
+            allowLocalhostAsSecureOrigin: true,
           });
-          
+
           // Marcar como inicializado
           (window as any).OneSignalInitialized = true;
         } else {
@@ -129,9 +127,8 @@ function MyApp({ Component, pageProps }: AppProps) {
           setTimeout(initOneSignal, 500);
           return;
         }
-        
       } catch (error) {
-        console.error('❌ Error inicializando OneSignal:', error);
+        console.error("❌ Error inicializando OneSignal:", error);
         isInitializing = false;
       }
     };
@@ -142,8 +139,6 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }, []);
 
-=======
->>>>>>> Stashed changes
   if (
     (!user || (user && router.pathname === "/login")) &&
     ["/login"].includes(router.pathname)

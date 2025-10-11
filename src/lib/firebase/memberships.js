@@ -11,7 +11,6 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db } from "./firebase.js";
-
 // Obtener todas las membresías del usuario
 export const getUserMemberships = async () => {
   try {
@@ -110,6 +109,25 @@ export const createMembership = async (membershipData) => {
     const user = auth.currentUser;
     if (!user) throw new Error("Usuario no autenticado");
 
+    // Para bancos, verificar si ya existe una membresía con el mismo nombre
+    if (membershipData.category === "banco") {
+      const existingMembership = await findMembershipByName(
+        membershipData.name
+      );
+
+      if (existingMembership) {
+        // Si ya existe, agregar las tarjetas a la membresía existente
+        console.log(
+          `🔄 Membresía "${membershipData.name}" ya existe, agregando tarjetas...`
+        );
+        return await addCardsToExistingMembership(
+          existingMembership.id,
+          membershipData.cards
+        );
+      }
+    }
+
+    // Si no existe o no es banco, crear nueva membresía
     const membershipsRef = collection(db, `users/${user.uid}/memberships`);
     const newMembership = {
       ...membershipData,
@@ -118,7 +136,7 @@ export const createMembership = async (membershipData) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
-    
+
     const docRef = await addDoc(membershipsRef, newMembership);
     return {
       id: docRef.id,
@@ -126,6 +144,71 @@ export const createMembership = async (membershipData) => {
     };
   } catch (error) {
     console.error("Error al crear membresía:", error);
+    throw error;
+  }
+};
+
+// Función helper para encontrar membresía por nombre
+const findMembershipByName = async (membershipName) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const membershipsRef = collection(db, `users/${user.uid}/memberships`);
+    const q = query(membershipsRef, where("name", "==", membershipName));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error al buscar membresía por nombre:", error);
+    return null;
+  }
+};
+
+// Función helper para agregar tarjetas a membresía existente
+const addCardsToExistingMembership = async (membershipId, newCards) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const membershipRef = doc(
+      db,
+      `users/${user.uid}/memberships/${membershipId}`
+    );
+    const membershipDoc = await getDoc(membershipRef);
+
+    if (!membershipDoc.exists()) {
+      throw new Error("Membresía no encontrada");
+    }
+
+    const membership = membershipDoc.data();
+    const existingCards = membership.cards || [];
+
+    // Combinar tarjetas existentes con las nuevas
+    const allCards = [...existingCards, ...newCards];
+
+    await updateDoc(membershipRef, {
+      cards: allCards,
+      updatedAt: serverTimestamp(),
+    });
+
+    console.log(
+      `✅ Agregadas ${newCards.length} tarjetas a "${membership.name}"`
+    );
+    return {
+      id: membershipId,
+      ...membership,
+      cards: allCards,
+    };
+  } catch (error) {
+    console.error("Error al agregar tarjetas a membresía existente:", error);
     throw error;
   }
 };
@@ -261,15 +344,15 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
     }
 
     const membership = membershipDoc.data();
-    const updatedCards = membership.cards.filter((card) => card.id !== cardId    );
+    const updatedCards = membership.cards.filter((card) => card.id !== cardId);
 
     // Si es un banco y no quedan tarjetas, eliminar la membresía completa
     if (membership.category === "banco" && updatedCards.length === 0) {
       await deleteDoc(membershipRef);
-      return { 
-        success: true, 
+      return {
+        success: true,
         membershipDeleted: true,
-        message: "Banco eliminado (no quedaban tarjetas)"
+        message: "Banco eliminado (no quedaban tarjetas)",
       };
     } else {
       // Actualizar la membresía con las tarjetas restantes
@@ -278,10 +361,10 @@ export const deleteCardFromMembership = async (membershipId, cardId) => {
         updatedAt: serverTimestamp(),
       });
       return {
-        success: true, 
+        success: true,
         membershipDeleted: false,
         remainingCards: updatedCards.length,
-        message: `Tarjeta eliminada. Quedan ${updatedCards.length} tarjeta(s)`
+        message: `Tarjeta eliminada. Quedan ${updatedCards.length} tarjeta(s)`,
       };
     }
   } catch (error) {
@@ -367,6 +450,100 @@ export const checkMembershipExists = async (name, category) => {
     return !querySnapshot.empty;
   } catch (error) {
     console.error("Error al verificar membresía existente:", error);
+    throw error;
+  }
+};
+
+// Función para consolidar membresías duplicadas del mismo banco
+export const consolidateDuplicateMemberships = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const membershipsRef = collection(db, `users/${user.uid}/memberships`);
+    const querySnapshot = await getDocs(membershipsRef);
+
+    const membershipsByName = {};
+    const duplicates = [];
+
+    // Agrupar membresías por nombre
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const membership = { id: doc.id, ...data };
+
+      if (!membershipsByName[membership.name]) {
+        membershipsByName[membership.name] = [];
+      }
+      membershipsByName[membership.name].push(membership);
+    });
+
+    // Identificar duplicados
+    Object.entries(membershipsByName).forEach(([name, memberships]) => {
+      if (memberships.length > 1) {
+        duplicates.push({ name, memberships });
+      }
+    });
+
+    console.log(
+      `🔄 Encontrados ${duplicates.length} grupos de membresías duplicadas`
+    );
+
+    let consolidated = 0;
+    let deleted = 0;
+
+    // Consolidar cada grupo de duplicados
+    for (const { name, memberships } of duplicates) {
+      // Ordenar por fecha de creación (mantener la más antigua)
+      memberships.sort(
+        (a, b) =>
+          new Date(a.createdAt?.toDate?.() || 0) -
+          new Date(b.createdAt?.toDate?.() || 0)
+      );
+
+      const [keepMembership, ...deleteMemberships] = memberships;
+
+      // Consolidar todas las tarjetas en la membresía principal
+      const allCards = [];
+      memberships.forEach((membership) => {
+        if (membership.cards && membership.cards.length > 0) {
+          allCards.push(...membership.cards);
+        }
+      });
+
+      // Actualizar la membresía principal con todas las tarjetas
+      const membershipRef = doc(
+        db,
+        `users/${user.uid}/memberships/${keepMembership.id}`
+      );
+      await updateDoc(membershipRef, {
+        cards: allCards,
+        updatedAt: serverTimestamp(),
+      });
+
+      // Eliminar las membresías duplicadas
+      for (const membership of deleteMemberships) {
+        const docRef = doc(
+          db,
+          `users/${user.uid}/memberships/${membership.id}`
+        );
+        await deleteDoc(docRef);
+        deleted++;
+      }
+
+      consolidated++;
+      console.log(
+        `✅ Consolidado "${name}": ${memberships.length} → 1 membresía con ${allCards.length} tarjetas`
+      );
+    }
+
+    return {
+      success: true,
+      consolidated,
+      deleted,
+      message: `Consolidación completada: ${consolidated} grupos consolidados, ${deleted} membresías eliminadas`,
+    };
+  } catch (error) {
+    console.error("Error en consolidación de membresías:", error);
     throw error;
   }
 };
