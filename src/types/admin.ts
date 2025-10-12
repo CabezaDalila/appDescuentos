@@ -1,93 +1,17 @@
 // ===== TIPOS PARA SCRAPING SCRIPTS =====
-
-export interface ScrapingScript {
-  id: string;
-  siteName: string;
-  script: string;
-  frequency: ScrapingFrequency;
-  isActive: boolean;
-  lastExecuted?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type ScrapingFrequency = "manual" | "hourly" | "daily" | "weekly";
+// Los tipos de scraping se mantienen sin tipado estricto como solicitado
 
 // ===== TIPOS PARA DESCUENTOS MANUALES =====
-
-export interface ManualDiscount {
-  id?: string;
-  title: string;
-  origin: string;
-  category: string;
-  expirationDate: Date;
-  description: string;
-  discountPercentage?: number;
-  discountAmount?: number;
-  imageUrl?: string;
-  isVisible: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
-  availableMemberships?: string[];
-  createdAt?: Date;
-  updatedAt?: Date;
-  validUntil?: Date;
-}
-
-export interface CreateManualDiscountData {
-  title: string;
-  origin: string;
-  category: string;
-  expirationDate: Date;
-  description: string;
-  discountPercentage?: number;
-  discountAmount?: number;
-  imageUrl?: string;
-  isVisible: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
-  availableMemberships?: string[];
-}
-
-export interface UpdateManualDiscountData {
-  title?: string;
-  origin?: string;
-  category?: string;
-  expirationDate?: Date;
-  description?: string;
-  discountPercentage?: number;
-  discountAmount?: number;
-  imageUrl?: string;
-  isVisible?: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
-  availableMemberships?: string[];
-}
+// Re-exportar tipos desde database.ts
+export type {
+  CreateDiscountData as CreateManualDiscountData,
+  Discount as ManualDiscount,
+  UpdateDiscountData as UpdateManualDiscountData,
+} from "./database";
 
 // ===== TIPOS PARA USUARIOS ADMIN =====
-
-export interface AdminUser {
-  uid: string;
-  email: string;
-  role: UserRole;
-  permissions: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type UserRole = "admin" | "user";
+// Re-exportar tipos desde database.ts
+export type { User as AdminUser, UserRole } from "./database";
 
 // ===== TIPOS PARA ESTADOS DE COMPONENTES =====
 

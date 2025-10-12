@@ -1,78 +1,20 @@
-export type CardLevel =
-  | "Classic"
-  | "Gold"
-  | "Platinum"
-  | "Black"
-  | "Signature"
-  | "Infinite"
-  | "Internacional"
-  | "Nacional";
+// Re-exportar tipos desde database.ts para mantener compatibilidad
+export type {
+  Card,
+  CardBrand,
+  CardLevel,
+  CardType,
+  CreateCardData,
+  CreateMembershipData,
+  Membership,
+  MembershipCategory,
+  MembershipStatus,
+  UpdateCardData,
+  UpdateMembershipData,
+} from "../types/database";
 
-export interface Card {
-  id: string;
-  type: "Crédito" | "Débito";
-  brand: "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Otro";
-  level: CardLevel;
-  name?: string;
-  expiryDate?: string; // Formato MM/YY - Fecha de vencimiento de la tarjeta
-}
-
-export interface Membership {
-  id: string;
-  name: string;
-  category:
-    | "banco"
-    | "club"
-    | "salud"
-    | "educacion"
-    | "seguro"
-    | "telecomunicacion";
-  status: "active" | "inactive";
-  color: string;
-  cards: Card[];
-  createdAt: Date;
-  updatedAt: Date;
-  logoUrl?: string;
-}
-
-export interface CreateMembershipData {
-  name: string;
-  category: Membership["category"];
-  color: string;
-}
-
-export interface UpdateMembershipData {
-  name?: string;
-  category?: Membership["category"];
-  status?: Membership["status"];
-  color?: string;
-}
-
-export interface CreateCardData {
-  type: Card["type"];
-  brand: Card["brand"];
-  level: CardLevel;
-  name?: string;
-  expiry?: string; // Formato MM/YY
-}
-
-export interface UpdateCardData {
-  type?: Card["type"];
-  brand?: Card["brand"];
-  level?: CardLevel;
-  name?: string;
-  expiry?: string; // Formato MM/YY
-}
-
-// Categorías disponibles para el selector
-export const MEMBERSHIP_CATEGORIES = [
-  { value: "banco", label: "Bancos" },
-  { value: "club", label: "Clubes de beneficios" },
-  { value: "salud", label: "Salud" },
-  { value: "educacion", label: "Educación" },
-  { value: "seguro", label: "Seguros" },
-  { value: "telecomunicacion", label: "Telecomunicaciones" },
-] as const;
+// Re-exportar constantes desde database.ts
+export { MEMBERSHIP_CATEGORIES } from "../types/database";
 
 // Entidades predefinidas por categoría (esto puede venir de una API o BD)
 export const ENTITIES_BY_CATEGORY = {
@@ -134,26 +76,5 @@ export const ENTITIES_BY_CATEGORY = {
   ],
 } as const;
 
-export const CARD_TYPES: { value: Card["type"]; label: string }[] = [
-  { value: "Crédito", label: "Crédito" },
-  { value: "Débito", label: "Débito" },
-];
-
-export const CARD_BRANDS: { value: Card["brand"]; label: string }[] = [
-  { value: "Visa", label: "Visa" },
-  { value: "Mastercard", label: "Mastercard" },
-  { value: "American Express", label: "American Express" },
-  { value: "Diners Club", label: "Diners Club" },
-  { value: "Otro", label: "Otro" },
-];
-
-export const CARD_LEVELS: { value: CardLevel; label: string }[] = [
-  { value: "Classic", label: "Classic" },
-  { value: "Gold", label: "Gold" },
-  { value: "Platinum", label: "Platinum" },
-  { value: "Black", label: "Black" },
-  { value: "Signature", label: "Signature" },
-  { value: "Infinite", label: "Infinite" },
-  { value: "Internacional", label: "Internacional" },
-  { value: "Nacional", label: "Nacional" },
-];
+// Re-exportar constantes desde database.ts
+export { CARD_BRANDS, CARD_LEVELS, CARD_TYPES } from "../types/database";

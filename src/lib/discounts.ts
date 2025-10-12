@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase/firebase";
-import { Discount } from "@/types/discount";
+import { Discount } from "@/types/database";
 import { getImageByCategory } from "@/utils/category-mapping";
 import {
   addDoc,
@@ -14,6 +14,11 @@ import {
   where,
 } from "firebase/firestore";
 
+// Importar tipo FirestoreDiscount desde database.ts
+import { FirestoreDiscount } from "@/types/database";
+
+// Remover interfaz local ya que se importa desde database.ts
+/*
 interface FirestoreDiscount {
   name: string;
   description?: string;
@@ -50,6 +55,7 @@ interface FirestoreDiscount {
     bank: string;
   }>;
 }
+*/
 
 // Obtener todos los descuentos
 export const getDiscounts = async (): Promise<Discount[]> => {
