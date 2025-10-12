@@ -1,7 +1,7 @@
-import { Filter, Search, ShoppingCart } from "lucide-react";
+import { Filter, MapPin, Search, ShoppingCart } from "lucide-react";
 
 interface EmptyStateProps {
-  type: "no-discounts" | "no-results" | "filtered-empty";
+  type: "no-discounts" | "no-results" | "filtered-empty" | "no-nearby";
   categoryName?: string;
   onClearFilter?: () => void;
   onViewAll?: () => void;
@@ -39,6 +39,16 @@ export function EmptyState({
           title: `Sin descuentos en ${categoryName}`,
           description:
             "No encontramos descuentos en esta categoría. Prueba explorando otras opciones.",
+          showButton: true,
+          buttonText: "Ver todos los descuentos",
+        };
+
+      case "no-nearby":
+        return {
+          icon: MapPin,
+          title: "No hay descuentos cerca de ti",
+          description:
+            "No encontramos descuentos en un radio de 50km. Prueba explorando todas las ofertas disponibles.",
           showButton: true,
           buttonText: "Ver todos los descuentos",
         };

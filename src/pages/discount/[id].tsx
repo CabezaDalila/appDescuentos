@@ -1,16 +1,23 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
 import { BackButton } from "@/components/Share/back-button";
 import { getImageByCategory } from "@/constants/image-categories";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { getDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
+import { getRealDistance } from "@/utils/real-distance";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function DiscountDetail() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, distance: urlDistance } = router.query;
   const [discountData, setDiscountData] = useState<Discount | null>(null);
   const [loading, setLoading] = useState(true);
+  const [distance, setDistance] = useState<string>("Calculando...");
+  const [distanceLoading, setDistanceLoading] = useState(true);
+
+  // Hook para obtener la ubicación del usuario
+  const { position, getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
     const loadDiscount = async () => {
@@ -30,6 +37,24 @@ export default function DiscountDetail() {
             ...discount,
             image: image,
           });
+
+          // Si tenemos la distancia en la URL, usarla directamente
+          if (urlDistance && typeof urlDistance === "string") {
+            setDistance(urlDistance);
+            setDistanceLoading(false);
+          } else if (discount.location) {
+            // Si no hay distancia en URL pero el descuento tiene ubicación, calcular
+            try {
+              await getCurrentPosition();
+            } catch (error) {
+              console.error("Error obteniendo ubicación:", error);
+              setDistance("Ubicación no disponible");
+              setDistanceLoading(false);
+            }
+          } else {
+            setDistance("Sin ubicación");
+            setDistanceLoading(false);
+          }
         } else {
           // Si no se encuentra, redirigir a 404 o mostrar error
           router.push("/404");
@@ -46,6 +71,43 @@ export default function DiscountDetail() {
       loadDiscount();
     }
   }, [id, router]);
+
+  // Calcular distancia cuando se obtiene la ubicación del usuario (solo si no viene en URL)
+  useEffect(() => {
+    const calculateDistance = async () => {
+      // Si ya tenemos la distancia de la URL, no calcular
+      if (urlDistance) return;
+
+      if (!position || !discountData?.location) return;
+
+      try {
+        setDistanceLoading(true);
+
+        // 🔍 LOG: Calculando distancia en página de detalle
+
+        const result = await getRealDistance(
+          { lat: position.latitude, lng: position.longitude },
+          {
+            lat: discountData.location.latitude,
+            lng: discountData.location.longitude,
+          }
+        );
+
+        if (result) {
+          setDistance(result.distanceText);
+        } else {
+          setDistance("Error calculando distancia");
+        }
+      } catch (error) {
+        console.error("Error calculando distancia:", error);
+        setDistance("Error calculando distancia");
+      } finally {
+        setDistanceLoading(false);
+      }
+    };
+
+    calculateDistance();
+  }, [position, discountData, urlDistance]);
 
   return (
     <div className="min-h-screen">
@@ -76,7 +138,7 @@ export default function DiscountDetail() {
             category={discountData.category || "Sin categoría"}
             points={6} // Valor por defecto
             countComments={0} // Valor por defecto
-            distance="1.2km" // Valor por defecto
+            distance={distanceLoading ? "Calculando..." : distance}
             expiration={
               discountData.validUntil?.toLocaleDateString("es-ES") ||
               "Sin fecha"

@@ -10,6 +10,7 @@ interface DiscountFormData {
   discountPercentage: string;
   discountAmount: string;
   imageUrl: string;
+  url: string;
   isVisible: boolean;
   availableCredentials: Array<{
     brand: string;
@@ -24,6 +25,8 @@ interface DiscountFormData {
   availableMemberships: string[];
   newMembershipCategory: string;
   newMembershipEntity: string;
+  locationAddress: string;
+  locationCoordinates?: { lat: number; lng: number };
 }
 
 interface UseDiscountFormReturn {
@@ -47,6 +50,7 @@ const initialFormData: DiscountFormData = {
   discountPercentage: "",
   discountAmount: "",
   imageUrl: "",
+  url: "",
   isVisible: true,
   availableCredentials: [],
   newCredentialType: "",
@@ -56,6 +60,8 @@ const initialFormData: DiscountFormData = {
   availableMemberships: [],
   newMembershipCategory: "",
   newMembershipEntity: "",
+  locationAddress: "",
+  locationCoordinates: undefined,
 };
 
 export function useDiscountForm(): UseDiscountFormReturn {
@@ -87,6 +93,7 @@ export function useDiscountForm(): UseDiscountFormReturn {
       discountPercentage: discount.discountPercentage?.toString() || "",
       discountAmount: discount.discountAmount?.toString() || "",
       imageUrl: discount.imageUrl || "",
+      url: discount.url || "",
       isVisible: discount.isVisible ?? true,
       availableCredentials:
         (
@@ -108,6 +115,15 @@ export function useDiscountForm(): UseDiscountFormReturn {
           .availableMemberships || [],
       newMembershipCategory: "",
       newMembershipEntity: "",
+      // Campo de ubicación simplificado
+      locationAddress:
+        (discount as unknown as ManualDiscount).location?.address || "",
+      locationCoordinates: (() => {
+        const location = (discount as unknown as ManualDiscount).location;
+        return location?.latitude && location?.longitude
+          ? { lat: location.latitude, lng: location.longitude }
+          : undefined;
+      })(),
     });
     setShowForm(true);
   }, []);

@@ -14,6 +14,11 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 interface TrendingSectionProps {
@@ -50,6 +55,7 @@ export function TrendingSection({
               distance={discount.distance}
               expiration={discount.expiration}
               discountPercentage={discount.discountPercentage}
+              discountLocation={discount.location}
               onNavigateToDetail={() => onOfferClick(discount.id)}
             />
           ))}
