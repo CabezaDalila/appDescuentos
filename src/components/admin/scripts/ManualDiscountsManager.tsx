@@ -137,6 +137,18 @@ export function ManualDiscountsManager() {
           formData.imageUrl.trim() !== "" && {
             imageUrl: formData.imageUrl.trim(),
           }),
+        ...(formData.url &&
+          formData.url.trim() !== "" && {
+            url: formData.url.trim(),
+          }),
+        ...(formData.locationAddress &&
+          formData.locationCoordinates && {
+            location: {
+              latitude: formData.locationCoordinates.lat,
+              longitude: formData.locationCoordinates.lng,
+              address: formData.locationAddress,
+            },
+          }),
       };
 
       if (editingDiscount) {

@@ -22,6 +22,11 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 // Componentes de la página de inicio
@@ -171,6 +176,7 @@ export default function Home() {
   };
 
   const handleCategoryClick = (categoryId: string) => {
+    // Navegar a búsqueda para categorías normales
     router.push(`/search?category=${categoryId}`);
   };
 
@@ -196,9 +202,6 @@ export default function Home() {
   const selectedCategories = EXPLORE_CATEGORIES.filter((category) =>
     ["food", "fashion", "technology", "home"].includes(category.id)
   );
-
-  // Obtener descuentos de tendencias (máximo 3 para que quepan bien en el ancho)
-  const trendingDiscounts = discounts.slice(0, 3);
 
   return (
     <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden pb-24 lg:pb-0">
@@ -250,7 +253,7 @@ export default function Home() {
           />
 
           <TrendingSection
-            discounts={trendingDiscounts}
+            discounts={discounts.slice(0, 3)}
             onOfferClick={handleOfferClick}
           />
 

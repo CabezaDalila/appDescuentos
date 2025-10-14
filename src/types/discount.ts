@@ -33,6 +33,12 @@ export interface Discount {
   points?: number;
   distance?: string;
   expiration?: string;
+
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 export interface CreateDiscountData {
@@ -46,6 +52,11 @@ export interface CreateDiscountData {
   membershipRequired?: string[];
   terms?: string;
   imageUrl?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 export const DISCOUNT_CATEGORIES = [

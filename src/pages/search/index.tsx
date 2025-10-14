@@ -1,30 +1,59 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { EmptyState } from "@/components/home/empty-state";
 import { getCategoryById } from "@/constants/categories";
-import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
+import {
+  getDiscountsBySearch,
+  getHomePageDiscounts,
+  getNearbyDiscounts,
+} from "@/lib/discounts";
 import { Discount } from "@/types/discount";
 import { filterDiscountsByCategory } from "@/utils/category-mapping";
 import { ArrowLeft, Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
+// Tipo para descuentos de la página de inicio
+type HomePageDiscount = {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  discountPercentage: string;
+  points: number;
+  distance: string;
+  expiration: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
+};
+
+type SearchDiscount = Discount | HomePageDiscount;
+
 export default function Search() {
   const router = useRouter();
-  const { category, q } = router.query;
+  const { category, q, location, lat, lng } = router.query;
 
-  const [filteredDiscounts, setFilteredDiscounts] = useState<Discount[]>([]);
+  const [filteredDiscounts, setFilteredDiscounts] = useState<SearchDiscount[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isLocationFilter, setIsLocationFilter] = useState(false);
 
-  // Función para aplicar filtros
-  const applyFilters = (data: Discount[], categoryParam?: string) => {
+  const applyFilters = (data: SearchDiscount[], categoryParam?: string) => {
     let filtered = data;
 
-    // Aplicar filtro de categoría si existe
     if (categoryParam && typeof categoryParam === "string") {
       setSelectedCategory(categoryParam);
-      filtered = filterDiscountsByCategory(data, categoryParam);
+
+      if (data.length > 0 && "name" in data[0]) {
+        filtered = filterDiscountsByCategory(
+          data as Discount[],
+          categoryParam
+        ) as SearchDiscount[];
+      }
     } else {
       setSelectedCategory(null);
     }
@@ -37,14 +66,21 @@ export default function Search() {
     const loadDiscounts = async () => {
       try {
         setLoading(true);
-        let data: Discount[] = [];
+        let data: SearchDiscount[] = [];
 
-        if (q && typeof q === "string") {
-          // Si hay término de búsqueda, buscar por texto
+        // Verificar si hay filtro de ubicación
+        const hasLocationFilter = location === "true" && lat && lng;
+        setIsLocationFilter(!!hasLocationFilter);
+
+        if (hasLocationFilter) {
+          const latitude = parseFloat(lat as string);
+          const longitude = parseFloat(lng as string);
+
+          data = await getNearbyDiscounts(latitude, longitude, 50);
+        } else if (q && typeof q === "string") {
           data = await getDiscountsBySearch(q);
           setSearchTerm(q);
         } else {
-          // Si no hay término de búsqueda, cargar todos los descuentos
           data = await getHomePageDiscounts();
         }
 
@@ -58,7 +94,7 @@ export default function Search() {
     };
 
     loadDiscounts();
-  }, [q, category]);
+  }, [q, category, location, lat, lng]);
 
   const handleClearCategory = () => {
     router.push("/search");
@@ -68,8 +104,16 @@ export default function Search() {
     router.push("/search");
   };
 
-  const handleDiscountClick = (discountId: string) => {
-    router.push(`/discount/${discountId}`);
+  const handleClearLocation = () => {
+    router.push("/search");
+  };
+
+  const handleDiscountClick = (discountId: string, distance?: string) => {
+    // Si tenemos la distancia calculada, la pasamos como parámetro
+    const url = distance
+      ? `/discount/${discountId}?distance=${encodeURIComponent(distance)}`
+      : `/discount/${discountId}`;
+    router.push(url);
   };
 
   const categoryInfo = selectedCategory
@@ -93,7 +137,7 @@ export default function Search() {
       </div>
 
       {/* Filtros activos */}
-      {(selectedCategory || searchTerm) && (
+      {(selectedCategory || searchTerm || isLocationFilter) && (
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center gap-2 flex-wrap">
             {searchTerm && (
@@ -121,6 +165,19 @@ export default function Search() {
                 </button>
               </span>
             )}
+
+            {isLocationFilter && (
+              <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                <Filter className="w-3 h-3" />
+                Cerca de ti (50km)
+                <button
+                  onClick={handleClearLocation}
+                  className="ml-1 hover:bg-green-200 rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -135,14 +192,22 @@ export default function Search() {
         ) : filteredDiscounts.length === 0 ? (
           <EmptyState
             type={
-              selectedCategory
+              isLocationFilter
+                ? "no-nearby"
+                : selectedCategory
                 ? "filtered-empty"
                 : searchTerm
                 ? "no-results"
                 : "no-discounts"
             }
             categoryName={categoryInfo?.name}
-            onClearFilter={selectedCategory ? handleClearCategory : undefined}
+            onClearFilter={
+              isLocationFilter
+                ? handleClearLocation
+                : selectedCategory
+                ? handleClearCategory
+                : undefined
+            }
           />
         ) : (
           <div className="space-y-4">
@@ -155,21 +220,56 @@ export default function Search() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDiscounts.map((discount) => (
-                <CardDiscountCompact
-                  key={discount.id}
-                  title={discount.name || discount.title || ""}
-                  image={discount.imageUrl || discount.image || ""}
-                  category={discount.category || ""}
-                  points={0} // Ajustar según tu estructura de datos
-                  distance="0.5 km" // Ajustar según tu estructura de datos
-                  expiration="30 días" // Ajustar según tu estructura de datos
-                  discountPercentage={
-                    discount.discountPercentage?.toString() || "0"
-                  }
-                  onNavigateToDetail={() => handleDiscountClick(discount.id)}
-                />
-              ))}
+              {filteredDiscounts.map((discount) => {
+                // Determinar si es un HomePageDiscount o Discount
+                const isHomePageDiscount = "title" in discount;
+
+                return (
+                  <CardDiscountCompact
+                    key={discount.id}
+                    title={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).title
+                        : (discount as Discount).name || ""
+                    }
+                    image={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).image
+                        : (discount as Discount).imageUrl || ""
+                    }
+                    category={discount.category || ""}
+                    points={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).points
+                        : 0
+                    }
+                    distance={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).distance
+                        : "0.5 km"
+                    }
+                    expiration={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).expiration
+                        : "30 días"
+                    }
+                    discountPercentage={
+                      isHomePageDiscount
+                        ? (discount as HomePageDiscount).discountPercentage ||
+                          "0"
+                        : (
+                            discount as Discount
+                          ).discountPercentage?.toString() || "0"
+                    }
+                    onNavigateToDetail={() => {
+                      const distance = isHomePageDiscount
+                        ? (discount as HomePageDiscount).distance
+                        : undefined;
+                      handleDiscountClick(discount.id, distance);
+                    }}
+                  />
+                );
+              })}
             </div>
           </div>
         )}

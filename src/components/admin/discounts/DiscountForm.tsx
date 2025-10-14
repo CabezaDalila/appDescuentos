@@ -29,6 +29,7 @@ import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
 import { Edit, Gift, Save, X } from "lucide-react";
 import React, { useState } from "react";
+import { AddressSearch } from "./addressSearch";
 
 interface DiscountFormData {
   title: string;
@@ -39,6 +40,7 @@ interface DiscountFormData {
   discountPercentage: string;
   discountAmount: string;
   imageUrl: string;
+  url: string;
   isVisible: boolean;
   availableCredentials: Array<{
     brand: string;
@@ -53,6 +55,8 @@ interface DiscountFormData {
   availableMemberships: string[];
   newMembershipCategory: string;
   newMembershipEntity: string;
+  locationAddress: string;
+  locationCoordinates?: { lat: number; lng: number };
 }
 
 interface DiscountFormProps {
@@ -166,7 +170,6 @@ export function DiscountForm({
                 <p className="text-red-500 text-sm">{formErrors.title}</p>
               )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="origin">Origen/Tienda *</Label>
               <Select
@@ -201,7 +204,6 @@ export function DiscountForm({
                 <p className="text-red-500 text-sm">{formErrors.origin}</p>
               )}
             </div>
-
             <div className="col-span-2">
               <Label className="text-base font-medium block ">
                 Tarjetas que aplican para este descuento
@@ -598,7 +600,6 @@ export function DiscountForm({
                 )}
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="expirationDate">Fecha de Expiración *</Label>
               <Input
@@ -636,7 +637,39 @@ export function DiscountForm({
                 placeholder="https://ejemplo.com/imagen.jpg"
               />
             </div>
-
+            <div className="space-y-2">
+              <Label htmlFor="url">URL del Descuento (opcional)</Label>
+              <Input
+                id="url"
+                type="url"
+                value={formData.url}
+                onChange={(e) =>
+                  onFormDataChange({ ...formData, url: e.target.value })
+                }
+                placeholder="https://ejemplo.com/descuento"
+              />
+            </div>
+            {/* Sección de Ubicación Simplificada */}
+            <div className="col-span-2 space-y-4">
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Ubicación del Descuento
+                </h3>
+                <AddressSearch
+                  value={formData.locationAddress}
+                  onChange={(address, coordinates) => {
+                    onFormDataChange({
+                      ...formData,
+                      locationAddress: address,
+                      locationCoordinates: coordinates,
+                    });
+                  }}
+                  placeholder="Buscar dirección del descuento..."
+                  label="Dirección del Establecimiento"
+                  required={false}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="discountAmount">Monto de Descuento</Label>
               <Input
@@ -653,7 +686,6 @@ export function DiscountForm({
                 placeholder="Ej: 1000"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="discountPercentage">
                 Porcentaje de Descuento
