@@ -31,23 +31,23 @@ export function DiscountsSection({
   onViewAll,
 }: DiscountsSectionProps) {
   return (
-    <div className="w-full px-3 sm:px-4 mb-4 sm:mb-6">
-      <div className="flex justify-between items-center mb-2 sm:mb-3">
-        <h2 className="text-sm sm:text-base font-semibold text-gray-900">
+    <div className="w-full px-3 sm:px-4 lg:px-0 mb-4 sm:mb-6 lg:mb-8">
+      <div className="flex justify-between items-center mb-2 sm:mb-3 lg:mb-4">
+        <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
           Promociones destacadas
         </h2>
         <button
           onClick={onViewAll}
-          className="flex items-center gap-1 text-purple-600 text-xs font-medium hover:text-purple-700"
+          className="flex items-center gap-1 text-purple-600 text-xs lg:text-sm font-medium hover:text-purple-700 transition-colors"
         >
-          Ver todas <ArrowRight className="w-3 h-3" />
+          Ver todas <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
         </button>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
         {loading ? (
-          <div className="col-span-full text-center py-6 sm:py-8">
-            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-primary mx-auto mb-3 sm:mb-4"></div>
-            <p className="text-sm sm:text-base text-gray-600">
+          <div className="col-span-full text-center py-6 sm:py-8 lg:py-12">
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 border-b-2 border-primary mx-auto mb-3 sm:mb-4 lg:mb-6"></div>
+            <p className="text-sm sm:text-base lg:text-lg text-gray-600">
               Cargando descuentos...
             </p>
           </div>
