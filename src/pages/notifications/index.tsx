@@ -154,7 +154,7 @@ export default function Notifications() {
 
   const formatTimeAgo = (date: Date) => {
     if (!date) return "0m";
-    
+
     const now = new Date();
     const diffInMinutes = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60)
@@ -171,7 +171,7 @@ export default function Notifications() {
 
   const formatTimeDisplay = (date: Date) => {
     if (!date) return "Fecha no disponible";
-    
+
     const now = new Date();
     const diffInDays = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
@@ -191,7 +191,7 @@ export default function Notifications() {
 
   const getTimeSection = (date: Date) => {
     if (!date) return "ANTERIOR";
-    
+
     const now = new Date();
     const diffInDays = Math.floor(
       (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
@@ -212,7 +212,7 @@ export default function Notifications() {
     const groups: { [key: string]: Notification[] } = {};
 
     filteredNotifications.forEach((notification) => {
-      const section = getTimeSection(notification.createdAt);
+      const section = getTimeSection(notification.timestamp);
       if (!groups[section]) {
         groups[section] = [];
       }
@@ -471,15 +471,15 @@ export default function Notifications() {
                                       </span>
                                     </button>
                                   )}
-                                <button
-                                  onClick={() =>
-                                    handleDeleteNotification(notification.id)
-                                  }
-                                  className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                  <span className="text-xs">Eliminar</span>
-                                </button>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteNotification(notification.id)
+                                    }
+                                    className="flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    <span className="text-xs">Eliminar</span>
+                                  </button>
                                 </div>
                               </div>
                             </div>

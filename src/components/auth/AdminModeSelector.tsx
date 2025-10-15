@@ -100,7 +100,7 @@ export default function AdminModeSelector({
                     </li>
                     <li className="flex items-center">
                       <ArrowRight className="h-4 w-4 text-primary mr-2" />
-                      Configurar scripts de scraping
+                      Configurar script
                     </li>
                     <li className="flex items-center">
                       <ArrowRight className="h-4 w-4 text-primary mr-2" />

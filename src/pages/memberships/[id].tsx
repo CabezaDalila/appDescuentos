@@ -1,8 +1,8 @@
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
+import { Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { getMembershipById } from "@/lib/firebase/memberships";
-import { Membership } from "@/types/membership";
 import { ArrowLeft, Copy, Edit, Eye, Share, Trash2, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -21,7 +21,7 @@ export default function MembershipDetailPage() {
       setLoadingMembership(true);
       try {
         const membershipData = await getMembershipById(id as string);
-        setMembership(membershipData);
+        setMembership(membershipData as Membership);
       } catch (error) {
         console.error("Error cargando membresía:", error);
         router.push("/memberships");
@@ -50,18 +50,22 @@ export default function MembershipDetailPage() {
   }
 
   const getInitials = (name: string) => {
-    return name.split(" ").map(word => word[0]).join("").substring(0, 2);
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .substring(0, 2);
   };
 
   const getStatusColor = () => {
-    if (membership.isActive) return "bg-green-500";
-    if (membership.status === "graduated") return "bg-gray-500";
+    if (membership.status === "active") return "bg-green-500";
+    if (membership.status === "inactive") return "bg-gray-500";
     return "bg-gray-500";
   };
 
   const getStatusText = () => {
-    if (membership.isActive) return "Activa";
-    if (membership.status === "graduated") return "Graduado";
+    if (membership.status === "active") return "Activa";
+    if (membership.status === "inactive") return "Inactiva";
     return "Inactiva";
   };
 
@@ -92,7 +96,7 @@ export default function MembershipDetailPage() {
           <CardContent className="p-6">
             {/* Header de la membresía */}
             <div className="flex items-center gap-4 mb-6">
-              <div 
+              <div
                 className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl"
                 style={{ backgroundColor: membership.color || "#6B7280" }}
               >
@@ -112,14 +116,16 @@ export default function MembershipDetailPage() {
             <div className="space-y-3 mb-6">
               <div className="flex items-center justify-between">
                 <span className="text-gray-700 font-medium">Estado</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor()} text-white`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor()} text-white`}
+                >
                   {getStatusText()}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-700 font-medium">Categoría</span>
                 <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-                  {membership.tier || membership.category}
+                  {membership.category}
                 </span>
               </div>
             </div>
@@ -130,10 +136,14 @@ export default function MembershipDetailPage() {
             {/* Sección de tarjetas */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Tarjetas</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Tarjetas
+                </h3>
                 <Button
                   size="sm"
-                  onClick={() => router.push(`/memberships/${membership.id}/add-card`)}
+                  onClick={() =>
+                    router.push(`/memberships/${membership.id}/add-card`)
+                  }
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <span className="mr-1">+</span>
@@ -168,9 +178,7 @@ export default function MembershipDetailPage() {
                     </div>
 
                     {/* Fecha de vencimiento */}
-                    <div className="text-right text-sm">
-                      12/28
-                    </div>
+                    <div className="text-right text-sm">12/28</div>
                   </div>
 
                   {/* Acciones de la tarjeta */}
@@ -206,7 +214,9 @@ export default function MembershipDetailPage() {
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => router.push(`/memberships/${membership.id}/edit`)}
+                onClick={() =>
+                  router.push(`/memberships/${membership.id}/edit`)
+                }
               >
                 <Edit className="h-4 w-4 mr-3" />
                 Editar información

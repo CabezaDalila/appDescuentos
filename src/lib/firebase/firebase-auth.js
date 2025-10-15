@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -30,6 +31,17 @@ export const login = async (email, password) => {
 
 export const logout = async () => {
   return signOut(auth);
+};
+
+export const resetPassword = async (email) => {
+  const actionCodeSettings = {
+    // URL a la que se redirigirá después de hacer clic en el enlace
+    url: `${window.location.origin}/reset-password`,
+    // Configuración adicional
+    handleCodeInApp: true,
+  };
+
+  return sendPasswordResetEmail(auth, email, actionCodeSettings);
 };
 
 const saveUserToFirestore = async (user) => {

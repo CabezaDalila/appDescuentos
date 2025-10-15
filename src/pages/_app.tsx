@@ -85,9 +85,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       router.push("/login");
     }
     if (user && !loading && router.pathname === "/login") {
-      if (!isMobile) {
-        router.push("/admin");
-      } else {
+      // Solo redirigir automáticamente usuarios no-admin o admins en móvil
+      // Los admins en escritorio verán el selector de modo en AuthForm
+      if (isMobile || !isAdmin) {
         router.push("/home");
       }
     }
@@ -105,7 +105,11 @@ function MyApp({ Component, pageProps }: AppProps) {
       }
 
       // Verificar si ya se está inicializando o ya se inicializó
-      if (isInitializing || (window as any).OneSignalInitialized) {
+      if (
+        isInitializing ||
+        (window as unknown as { OneSignalInitialized: boolean })
+          .OneSignalInitialized
+      ) {
         return;
       }
 
@@ -119,22 +123,23 @@ function MyApp({ Component, pageProps }: AppProps) {
             allowLocalhostAsSecureOrigin: true,
           });
 
-          // Marcar como inicializado
-          (window as any).OneSignalInitialized = true;
+          (
+            window as unknown as { OneSignalInitialized: boolean }
+          ).OneSignalInitialized = true;
         } else {
           isInitializing = false;
-          // Reintentar después de 500ms
           setTimeout(initOneSignal, 500);
           return;
         }
-      } catch (error) {
-        console.error("❌ Error inicializando OneSignal:", error);
+      } catch {
         isInitializing = false;
       }
     };
 
-    // Solo ejecutar si no está inicializado
-    if (!(window as any).OneSignalInitialized) {
+    if (
+      !(window as unknown as { OneSignalInitialized: boolean })
+        .OneSignalInitialized
+    ) {
       initOneSignal();
     }
   }, []);

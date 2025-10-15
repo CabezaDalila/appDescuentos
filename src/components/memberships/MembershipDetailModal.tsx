@@ -64,7 +64,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
-    expiry: "",
+    expiryDate: "",
   });
 
   const [localStatus, setLocalStatus] =
@@ -114,7 +114,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
     setShowAddCardModal(true);
   };
@@ -126,7 +126,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: card.brand,
       level: card.level,
       name: card.name || "",
-      expiry: card.expiry || "",
+      expiryDate: card.expiryDate || "",
     });
     setShowEditCardModal(true);
   };
@@ -153,7 +153,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     }
 
     // Validar formato de fecha de vencimiento
-    if (cardFormData.expiry && !validateExpiry(cardFormData.expiry)) {
+    if (cardFormData.expiryDate && !validateExpiry(cardFormData.expiryDate)) {
       errors.push(
         "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
       );
@@ -195,7 +195,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
 
     try {
@@ -334,9 +334,9 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                             <p className="text-sm text-gray-700 font-medium">
                               {card.brand} {card.level}
                             </p>
-                            {card.expiry && (
+                            {card.expiryDate && (
                               <p className="text-xs text-gray-500 mt-1">
-                                Vence: {card.expiry}
+                                Vence: {card.expiryDate}
                               </p>
                             )}
                           </div>
@@ -533,10 +533,10 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 <Input
                   id="cardExpiry"
                   placeholder="MM/YY"
-                  value={cardFormData.expiry}
+                  value={cardFormData.expiryDate}
                   onChange={(e) => {
                     const formatted = formatExpiryInput(e.target.value);
-                    setCardFormData({ ...cardFormData, expiry: formatted });
+                    setCardFormData({ ...cardFormData, expiryDate: formatted });
                   }}
                   maxLength={5}
                 />

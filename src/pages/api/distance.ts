@@ -20,7 +20,7 @@ export default async function handler(
     const url = new URL(
       "https://api.openrouteservice.org/v2/directions/driving-car"
     );
-    url.searchParams.set("api_key", OPENROUTE_API_KEY);
+    url.searchParams.set("api_key", OPENROUTE_API_KEY || "");
     url.searchParams.set("start", start as string);
     url.searchParams.set("end", end as string);
     url.searchParams.set("preference", "fastest");

@@ -70,7 +70,10 @@ export function DiscountApprovalManager({
       title: editingDiscount.title || editingDiscount.name || "",
       description: editingDiscount.description || "",
       category: editingDiscount.category || "",
-      discountPercentage: editingDiscount.discountPercentage,
+      discountPercentage:
+        typeof editingDiscount.discountPercentage === "string"
+          ? parseFloat(editingDiscount.discountPercentage) || undefined
+          : editingDiscount.discountPercentage,
       discountAmount: editingDiscount.discountAmount,
       validUntil: editingDiscount.validUntil,
     };

@@ -11,7 +11,7 @@ export function RealDistanceDisplay({
   userLocation,
   discountLocation,
 }: distanceProps) {
-  const { calculateDistance, loading, error } = useOpenRouteDistance();
+  const { getDistance, loading, error } = useOpenRouteDistance();
   const [distance, setDistance] = useState<{
     distance: number;
     duration: number;
@@ -20,9 +20,9 @@ export function RealDistanceDisplay({
   } | null>(null);
 
   useEffect(() => {
-    const getDistance = async () => {
+    const calculateDistance = async () => {
       try {
-        const result = await calculateDistance(
+        const result = await getDistance(
           { lat: userLocation.latitude, lng: userLocation.longitude },
           { lat: discountLocation.latitude, lng: discountLocation.longitude }
         );
@@ -35,8 +35,8 @@ export function RealDistanceDisplay({
       }
     };
 
-    getDistance();
-  }, [userLocation, discountLocation, calculateDistance]);
+    calculateDistance();
+  }, [userLocation, discountLocation, getDistance]);
 
   if (loading) {
     return (
