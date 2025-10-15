@@ -81,7 +81,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     loadGapi();
 
-    if (!loading && !user && !["/login"].includes(router.pathname)) {
+    if (!loading && !user && !["/login", "/reset-password"].includes(router.pathname)) {
       router.push("/login");
     }
     if (user && !loading && router.pathname === "/login") {
