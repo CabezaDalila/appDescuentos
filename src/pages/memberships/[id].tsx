@@ -1,13 +1,20 @@
 import { Button } from "@/components/Share/button";
-import { Card, CardContent } from "@/components/Share/card";
+import { Switch } from "@/components/Share/switch";
+import { Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
-import { getMembershipById } from "@/lib/firebase/memberships";
-import { Membership } from "@/types/membership";
-import { ArrowLeft, Copy, Edit, Eye, Share, Trash2, Wifi } from "lucide-react";
+import { db } from "@/lib/firebase/firebase";
+import {
+  deleteCardFromMembership,
+  deleteMembership,
+  getMembershipById,
+} from "@/lib/firebase/memberships";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { ArrowLeft, Eye, Pencil, Trash2, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-export default function MembershipDetailPage() {
+export default function MembershipDetailsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { id } = router.query;
@@ -15,216 +22,560 @@ export default function MembershipDetailPage() {
   const [loadingMembership, setLoadingMembership] = useState(true);
 
   useEffect(() => {
-    if (!id || !user || loading) return;
+    if (id && typeof id === "string") {
+      loadMembership(id);
+    }
+  }, [id]);
 
-    const loadMembership = async () => {
+  const loadMembership = async (membershipId: string) => {
+    try {
       setLoadingMembership(true);
-      try {
-        const membershipData = await getMembershipById(id as string);
-        setMembership(membershipData);
-      } catch (error) {
-        console.error("Error cargando membresía:", error);
-        router.push("/memberships");
-      } finally {
-        setLoadingMembership(false);
-      }
+      const membershipData = await getMembershipById(membershipId);
+      setMembership(membershipData);
+    } catch (error) {
+      console.error("Error al cargar membresía:", error);
+      toast.error("Error al cargar la membresía");
+    } finally {
+      setLoadingMembership(false);
+    }
+  };
+
+  const getCardColor = (name: string, category: Membership["category"]) => {
+    const colorMap: { [key: string]: string } = {
+      // Bancos
+      "banco galicia": "bg-orange-500",
+      "banco santander": "bg-red-600",
+      "banco nación": "bg-blue-700",
+      "banco provincia": "bg-green-600",
+      "banco ciudad": "bg-blue-500",
+      "banco macro": "bg-yellow-600",
+      "banco itaú": "bg-red-500",
+      "banco hsbc": "bg-red-700",
+      "banco bbva": "bg-blue-600",
+      "banco supervielle": "bg-green-700",
     };
 
-    loadMembership();
-  }, [id, user, loading, router]);
+    const lowerName = name.toLowerCase();
+    return colorMap[lowerName] || "bg-blue-500";
+  };
+
+  const getInitials = (name: string) => {
+    const words = name.split(" ");
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getStatusColor = () => {
+    if (membership?.status === "active")
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    return "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
+  const getCategoryLabel = () => {
+    if (!membership) return "";
+
+    switch (membership.category) {
+      case "banco":
+        return "Bancos";
+      case "club":
+        return "Clubes";
+      case "salud":
+        return "Salud";
+      case "educacion":
+        return "Educación";
+      case "seguro":
+        return "Seguros";
+      case "telecomunicacion":
+        return "Telecomunicaciones";
+      default:
+        return membership.category;
+    }
+  };
+
+  const handleToggleCardStatus = async (
+    cardId: string,
+    currentStatus: string
+  ) => {
+    if (!membership) return;
+
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+    try {
+      // Actualizar el estado de la tarjeta
+      const updatedCards = membership.cards.map((card) =>
+        card.id === cardId ? { ...card, status: newStatus } : card
+      );
+
+      // Determinar el nuevo estado de la membresía basado en las tarjetas
+      const newMembershipStatus = getMembershipStatusFromCards(updatedCards);
+
+      // Actualizar el estado localmente primero
+      setMembership({
+        ...membership,
+        status: newMembershipStatus,
+        cards: updatedCards,
+      });
+
+      // Actualizar en Firebase
+      await updateMembershipStatus(newMembershipStatus, updatedCards);
+
+      // Mensaje informativo
+      let message = `Tarjeta ${
+        newStatus === "active" ? "activada" : "desactivada"
+      } exitosamente`;
+
+      // Si el estado de la membresía cambió, agregarlo al mensaje
+      if (newMembershipStatus !== membership.status) {
+        message += `. Membresía ${
+          newMembershipStatus === "active" ? "activada" : "desactivada"
+        } automáticamente`;
+      }
+
+      toast.success(message);
+    } catch (error) {
+      console.error("Error al cambiar estado de tarjeta:", error);
+      toast.error("Error al cambiar el estado de la tarjeta");
+
+      // Revertir el cambio local en caso de error
+      const revertedCards = membership.cards.map((card) =>
+        card.id === cardId ? { ...card, status: currentStatus } : card
+      );
+      setMembership({
+        ...membership,
+        cards: revertedCards,
+      });
+    }
+  };
+
+  // Función para determinar el estado de la membresía basado en las tarjetas
+  const getMembershipStatusFromCards = (cards: any[]) => {
+    if (cards.length === 0) return "inactive";
+    return cards.some((card) => card.status === "active")
+      ? "active"
+      : "inactive";
+  };
+
+  // Función para actualizar el estado de la membresía en Firebase
+  const updateMembershipStatus = async (newStatus: string, cards?: any[]) => {
+    const membershipRef = doc(
+      db,
+      `users/${user?.uid}/memberships/${membership.id}`
+    );
+
+    const updateData: any = {
+      status: newStatus,
+      updatedAt: serverTimestamp(),
+    };
+
+    if (cards) {
+      updateData.cards = cards;
+    }
+
+    await updateDoc(membershipRef, updateData);
+  };
+
+  const handleMembershipStatusToggle = async () => {
+    if (!membership) return;
+
+    const newStatus = membership.status === "active" ? "inactive" : "active";
+
+    try {
+      // Si se está desactivando la membresía, también desactivar todas las tarjetas
+      const updatedCards =
+        newStatus === "inactive"
+          ? membership.cards.map((card) => ({ ...card, status: "inactive" }))
+          : membership.cards; // Si se activa, mantener el estado actual de las tarjetas
+
+      // Actualizar el estado localmente primero
+      setMembership({
+        ...membership,
+        status: newStatus,
+        cards: updatedCards,
+      });
+
+      // Actualizar en Firebase
+      await updateMembershipStatus(newStatus, updatedCards);
+
+      const message =
+        newStatus === "inactive"
+          ? "Membresía y todas las tarjetas desactivadas exitosamente"
+          : "Membresía activada exitosamente";
+
+      toast.success(message);
+    } catch (error) {
+      console.error("Error al cambiar estado de membresía:", error);
+      toast.error("Error al cambiar el estado de la membresía");
+
+      // Revertir el cambio local en caso de error
+      setMembership({
+        ...membership,
+        status: membership.status,
+        cards: membership.cards,
+      });
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!membership) {
+      toast.error("No se pudo cargar la membresía");
+      return;
+    }
+
+    // Encontrar la tarjeta para mostrar información
+    const cardToDelete = membership.cards.find((card) => card.id === cardId);
+    if (!cardToDelete) {
+      toast.error("Tarjeta no encontrada");
+      return;
+    }
+
+    // Confirmación de eliminación
+    const cardInfo = `${cardToDelete.brand} ${cardToDelete.level || ""}`.trim();
+    if (
+      !confirm(`¿Estás seguro de que quieres eliminar la tarjeta ${cardInfo}?`)
+    ) {
+      return;
+    }
+
+    // Si es la última tarjeta, preguntar si eliminar toda la membresía
+    if (membership.cards.length === 1) {
+      const confirmDelete = confirm(
+        "Esta es la última tarjeta de la membresía. ¿Quieres eliminar toda la membresía?"
+      );
+
+      if (!confirmDelete) {
+        return; // Usuario canceló
+      }
+    }
+
+    try {
+      const result = await deleteCardFromMembership(membership.id, cardId);
+
+      if (result.membershipDeleted) {
+        // La membresía fue eliminada completamente
+        toast.success("Membresía eliminada exitosamente");
+        router.push("/memberships");
+      } else {
+        // Solo se eliminó la tarjeta, actualizar la vista
+        await loadMembership(membership.id);
+        toast.success(result.message || "Tarjeta eliminada exitosamente");
+      }
+    } catch (error) {
+      console.error("Error al eliminar tarjeta:", error);
+      toast.error(
+        "Error al eliminar la tarjeta: " +
+          (error.message || "Error desconocido")
+      );
+    }
+  };
 
   if (loading || loadingMembership) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-600">
-        Cargando membresía...
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando...</p>
+        </div>
       </div>
     );
   }
 
   if (!membership) {
     return (
-      <div className="flex justify-center items-center h-40 text-gray-600">
-        Membresía no encontrada
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Membresía no encontrada
+            </h1>
+            <Button onClick={() => router.push("/memberships")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a membresías
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const getInitials = (name: string) => {
-    return name.split(" ").map(word => word[0]).join("").substring(0, 2);
-  };
-
-  const getStatusColor = () => {
-    if (membership.isActive) return "bg-green-500";
-    if (membership.status === "graduated") return "bg-gray-500";
-    return "bg-gray-500";
-  };
-
-  const getStatusText = () => {
-    if (membership.isActive) return "Activa";
-    if (membership.status === "graduated") return "Graduado";
-    return "Inactiva";
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="max-w-md mx-auto bg-white min-h-screen pb-24">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <button
             onClick={() => router.push("/memberships")}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Detalles</h1>
-          <button
-            onClick={() => router.push("/memberships")}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
 
-      <div className="px-4 py-6">
-        {/* Tarjeta principal de membresía */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            {/* Header de la membresía */}
-            <div className="flex items-center gap-4 mb-6">
-              <div 
-                className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-bold text-xl"
-                style={{ backgroundColor: membership.color || "#6B7280" }}
+          <div className="flex-1 mx-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${getCardColor(
+                  membership.name,
+                  membership.category
+                )}`}
               >
                 {getInitials(membership.name)}
               </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 mb-1">
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">
                   {membership.name}
-                </h2>
-                <p className="text-gray-600 text-sm">
+                </h1>
+                <p className="text-gray-600 text-xs">
                   Gestiona tu membresía y tarjetas asociadas
                 </p>
               </div>
             </div>
+          </div>
 
-            {/* Estado y categoría */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700 font-medium">Estado</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor()} text-white`}>
-                  {getStatusText()}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-700 font-medium">Categoría</span>
-                <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
-                  {membership.tier || membership.category}
-                </span>
-              </div>
-            </div>
+          <button
+            onClick={() => router.push("/memberships")}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <span className="text-lg font-bold text-gray-600">×</span>
+          </button>
+        </div>
 
-            {/* Separador */}
-            <div className="border-t border-gray-200 mb-6"></div>
+        {/* Información de la membresía */}
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-gray-900 font-medium">Estado</span>
+            <button
+              onClick={handleMembershipStatusToggle}
+              className={`px-4 py-2 text-sm rounded-full font-semibold border transition-colors hover:opacity-80 ${getStatusColor()}`}
+            >
+              {membership.status === "active" ? "Activa" : "Inactiva"}
+            </button>
+          </div>
 
-            {/* Sección de tarjetas */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Tarjetas</h3>
-                <Button
-                  size="sm"
-                  onClick={() => router.push(`/memberships/${membership.id}/add-card`)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <span className="mr-1">+</span>
-                  Añadir
-                </Button>
-              </div>
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-gray-900 font-medium">Categoría</span>
+            <span className="px-4 py-2 text-sm rounded-full font-medium bg-white border border-gray-200 text-gray-900">
+              {getCategoryLabel()}
+            </span>
+          </div>
+        </div>
 
-              {/* Tarjeta de ejemplo */}
-              {membership.name === "Banco Galicia" && (
-                <div className="relative mb-4">
-                  <div className="bg-gradient-to-r from-orange-400 to-orange-600 rounded-xl p-6 text-white">
-                    {/* Header de la tarjeta */}
+        {/* Tarjetas */}
+        <div className="px-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Tarjetas</h2>
+            {membership.category === "banco" && (
+              <button
+                onClick={() =>
+                  router.push(`/memberships/${membership.id}/add-card`)
+                }
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <span className="text-lg">+</span>
+                Añadir
+              </button>
+            )}
+          </div>
+
+          {membership.cards.length === 0 ? (
+            <div className="space-y-4">
+              {/* Tarjeta placeholder */}
+              <div
+                className="relative rounded-2xl p-6 text-white mb-0 z-0 flex flex-col"
+                style={{
+                  backgroundColor: membership.color || "#6B7280",
+                }}
+              >
+                {membership.category === "banco" ? (
+                  // Tarjeta bancaria completa
+                  <>
                     <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-bold">VI</span>
-                        <span className="bg-orange-500 text-white px-2 py-1 rounded text-xs font-medium">
-                          Gold
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl font-bold text-white">
+                            {membership.name.substring(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">
+                            {membership.name}
+                          </h3>
+                          <p className="text-sm opacity-90">
+                            {getCategoryLabel()}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Wifi className="h-5 w-5 text-white" />
-                        <Eye className="h-5 w-5 text-white" />
                       </div>
                     </div>
 
-                    {/* Número de tarjeta */}
                     <div className="mb-6">
                       <div className="text-xl font-mono tracking-wider mb-2">
-                        **** **** **** ****
+                        •••• •••• •••• ••••
                       </div>
-                      <div className="text-sm opacity-90">Crédito</div>
+                      <div className="text-sm opacity-90">Tarjeta bancaria</div>
                     </div>
 
-                    {/* Fecha de vencimiento */}
-                    <div className="text-right text-sm">
-                      12/28
+                    <div className="text-right text-sm">MM/AA</div>
+                  </>
+                ) : (
+                  // Membresía simple (solo nombre)
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                        <span className="text-2xl font-bold text-white">
+                          {membership.name.substring(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{membership.name}</h3>
+                        <p className="text-sm opacity-90">
+                          {getCategoryLabel()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Wifi className="h-5 w-5 text-white" />
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Acciones de la tarjeta */}
-                  <div className="flex items-center justify-between mt-4 px-2">
-                    <div className="flex items-center gap-4">
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        <Copy className="h-4 w-4" />
-                        <span className="text-sm">Copiar</span>
-                      </button>
-                      <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        <Share className="h-4 w-4" />
-                        <span className="text-sm">Compartir</span>
-                      </button>
-                    </div>
-                    <button className="text-red-600 hover:text-red-800 transition-colors">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Mensaje si no hay tarjetas */}
-              {membership.name !== "Banco Galicia" && (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="mb-2">No tienes tarjetas asociadas</p>
-                  <p className="text-sm">Agrega una tarjeta para comenzar</p>
+              {/* Mensaje informativo solo para bancos */}
+              {membership.category === "banco" && (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="text-sm">
+                    Agrega tu primera tarjeta para comenzar
+                  </p>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="space-y-6">
+              {membership.cards.map((card, index) => (
+                <div key={card.id || index} className="mb-6">
+                  {/* Card Visual */}
+                  <div
+                    className="relative rounded-2xl p-6 text-white mb-0 z-0 flex flex-col"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                    }}
+                  >
+                    {/* Contactless Icon */}
+                    <div className="absolute top-4 right-4">
+                      <Wifi className="h-5 w-5 text-white opacity-80" />
+                    </div>
 
-            {/* Acciones generales */}
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => router.push(`/memberships/${membership.id}/edit`)}
-              >
-                <Edit className="h-4 w-4 mr-3" />
-                Editar información
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
-                onClick={() => {
-                  // TODO: Implementar eliminación
-                  console.log("Eliminar membresía:", membership.id);
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-3" />
-                Eliminar membresía
-              </Button>
+                    {/* Eye Icon */}
+                    <div className="absolute top-12 right-4">
+                      <Eye className="h-4 w-4 text-white opacity-80" />
+                    </div>
+
+                    {/* Card Brand and Level */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-xl font-bold">
+                        {card.brand || "**"}
+                      </span>
+                      {card.level && (
+                        <span className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-semibold">
+                          {card.level}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Card Number */}
+                    <div className="text-lg font-mono tracking-wider mb-4">
+                      **** **** **** ****
+                    </div>
+
+                    {/* Cardholder Name */}
+                    {card.name && (
+                      <div className="text-sm opacity-90 mb-2">{card.name}</div>
+                    )}
+
+                    {/* Card Type and Expiry Date */}
+                    <div className="flex justify-between items-center mt-auto">
+                      <div className="text-base">{card.type}</div>
+                      <div className="text-sm opacity-90">
+                        {card.expiryDate || "MM/AA"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 flex items-center justify-between -mt-3 relative z-10">
+                    {/* Switch de estado */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {card.status === "active" ? "Activa" : "Inactiva"}
+                      </span>
+                      <Switch
+                        checked={card.status === "active"}
+                        onCheckedChange={() =>
+                          handleToggleCardStatus(
+                            card.id || "",
+                            card.status || "active"
+                          )
+                        }
+                      />
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/memberships/${membership.id}/cards/${card.id}/edit`
+                          )
+                        }
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Editar tarjeta"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCard(card.id || "")}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Eliminar tarjeta"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
+
+        {/* Acciones de la membresía */}
+        <div className="p-4 space-y-3 mt-8 pb-6">
+          <button
+            onClick={async () => {
+              if (
+                confirm("¿Estás seguro de que quieres eliminar esta membresía?")
+              ) {
+                try {
+                  await deleteMembership(membership.id);
+                  toast.success("Membresía eliminada exitosamente");
+                  router.push("/memberships");
+                } catch (error) {
+                  console.error("Error al eliminar membresía:", error);
+                  toast.error(
+                    "Error al eliminar la membresía: " +
+                      (error.message || "Error desconocido")
+                  );
+                }
+              }
+            }}
+            className="w-full flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-xl hover:bg-red-50 hover:border-red-200 transition-colors"
+          >
+            <Trash2 className="h-5 w-5 text-red-600" />
+            <span className="text-red-600 font-medium">Eliminar membresía</span>
+          </button>
+        </div>
       </div>
     </div>
   );

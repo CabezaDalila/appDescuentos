@@ -15,6 +15,7 @@ export interface Card {
   level: CardLevel;
   name?: string;
   expiryDate?: string; // Formato MM/YY - Fecha de vencimiento de la tarjeta
+  status?: "active" | "inactive"; // Estado individual de la tarjeta
 }
 
 export interface Membership {
@@ -107,12 +108,12 @@ export const ENTITIES_BY_CATEGORY = {
     "SanCor Salud",
   ],
   educacion: [
-    "Universidad de Buenos Aires",
-    "Universidad Nacional de La Plata",
-    "Universidad Nacional de Córdoba",
-    "Universidad de Palermo",
-    "Universidad de San Andrés",
-    "Universidad Católica Argentina",
+    "Univ de Buenos Aires",
+    "Univ Nacional de La Plata",
+    "Univ Nacional de Córdoba",
+    "Univ de Palermo",
+    "Univ de San Andrés",
+    "Univ Católica Argentina",
   ],
   seguro: [
     "La Caja",

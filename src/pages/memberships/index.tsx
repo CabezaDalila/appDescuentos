@@ -16,25 +16,34 @@ import {
   updateMembership,
 } from "@/lib/firebase/memberships";
 
-import { ArrowLeft, ChevronDown, Filter, Plus, Search } from "lucide-react";
+import { ArrowLeft, Plus, Search } from "lucide-react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 type TabType = "all" | "active" | "inactive";
+
+// Tipo para elementos que pueden ser membresías o tarjetas individuales
+type MembershipItem = Membership & {
+  isCard?: boolean;
+  membershipId?: string;
+  membershipName?: string;
+  membershipCategory?: string;
+  card?: any;
+};
 
 export default function MembershipsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  // const [selectedFilter, setSelectedFilter] = useState<string>("");
-  const filterRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
 
-  const [activeMemberships, setActiveMemberships] = useState<Membership[]>([]);
-  const [inactiveMemberships, setInactiveMemberships] = useState<Membership[]>(
+  const [activeMemberships, setActiveMemberships] = useState<MembershipItem[]>(
     []
   );
+  const [inactiveMemberships, setInactiveMemberships] = useState<
+    MembershipItem[]
+  >([]);
   const [loadingMemberships, setLoadingMemberships] = useState(true);
 
   const allMemberships = [...activeMemberships, ...inactiveMemberships];
@@ -96,17 +105,35 @@ export default function MembershipsPage() {
     }
   };
 
-  const handleDeleteMembership = async (membershipId: string) => {
+  const handleDeleteMembership = async (
+    membershipId: string,
+    membershipName: string
+  ) => {
+    if (
+      !confirm(
+        `¿Estás seguro de que quieres eliminar la membresía "${membershipName}"?`
+      )
+    ) {
+      return;
+    }
+
     try {
       await deleteMembership(membershipId);
       loadMemberships();
+      toast.success("Membresía eliminada exitosamente");
     } catch (error) {
       console.error("❌ Error al eliminar la membresía:", error);
+      toast.error("Error al eliminar la membresía");
     }
   };
 
   const handleScroll = () => {
     setScrollY(window.scrollY);
+  };
+
+  // Función para calcular el total de elementos (tarjetas + membresías)
+  const getTotalItemsCount = () => {
+    return activeMemberships.length + inactiveMemberships.length;
   };
 
   useEffect(() => {
@@ -138,29 +165,37 @@ export default function MembershipsPage() {
     }
   };
 
-  const getFilteredMemberships = () => {
-    let filtered = allMemberships;
+  const filteredMemberships = useMemo(() => {
+    let filtered;
 
-    // Filtrar por búsqueda
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (membership) =>
-          membership.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          membership.category.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filtrar por tab activo
+    // Filtrar por tab activo primero
     if (activeTab === "active") {
       filtered = activeMemberships;
     } else if (activeTab === "inactive") {
       filtered = inactiveMemberships;
+    } else {
+      // Para "Todas": combinar activas e inactivas manteniendo el orden
+      filtered = [...activeMemberships, ...inactiveMemberships];
+    }
+
+    // Luego filtrar por búsqueda
+    if (searchQuery) {
+      filtered = filtered.filter((membership) => {
+        const name = membership.isCard
+          ? membership.membershipName || ""
+          : membership.name || "";
+        const category = membership.isCard
+          ? membership.membershipCategory || ""
+          : membership.category || "";
+        return (
+          name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          category.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      });
     }
 
     return filtered;
-  };
-
-  const filteredMemberships = getFilteredMemberships();
+  }, [activeTab, activeMemberships, inactiveMemberships, searchQuery]);
 
   if (loading || loadingMemberships) {
     return (
@@ -169,12 +204,6 @@ export default function MembershipsPage() {
       </div>
     );
   }
-
-  const filterOptions = [
-    { id: "type", label: "Por tipo", icon: "🏷️" },
-    { id: "status", label: "Por estado", icon: "📊" },
-    { id: "recent", label: "Más recientes", icon: "🕒" },
-  ];
 
   const headerOpacity = Math.max(0.7, 1 - scrollY / 200);
 
@@ -212,51 +241,14 @@ export default function MembershipsPage() {
 
       {/* Barra de búsqueda y filtros */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar membresías..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-          <div className="relative" ref={filterRef}>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 border-gray-300 hover:border-gray-400"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-
-            {/* Dropdown de filtros */}
-            {showFilters && (
-              <div className="absolute top-10 right-0 bg-white rounded-lg shadow-lg border border-gray-200 z-20 min-w-48">
-                <div className="py-2">
-                  {filterOptions.map((option) => (
-                    <button
-                      key={option.id}
-                      onClick={() => {
-                        // setSelectedFilter(option.id);
-                        setShowFilters(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <span className="text-sm">{option.icon}</span>
-                      <span className="text-sm text-gray-900">
-                        {option.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Buscar membresías..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          />
         </div>
       </div>
 
@@ -271,7 +263,7 @@ export default function MembershipsPage() {
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            Todas ({allMemberships.length})
+            Todas ({getTotalItemsCount()})
           </button>
           <button
             onClick={() => setActiveTab("active")}
@@ -321,105 +313,45 @@ export default function MembershipsPage() {
             )}
           </div>
         ) : (
-          <div className="space-y-6">
-            {activeTab === "all" && (
-              <>
-                {activeMemberships.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        Activas
-                      </h3>
-                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                        {activeMemberships.length}
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {activeMemberships.map((membership) => (
-                        <MembershipListItem
-                          key={membership.id}
-                          membership={membership}
-                          isActive={true}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {inactiveMemberships.length > 0 && (
-                  <div className={activeMemberships.length > 0 ? "mt-8" : ""}>
-                    <div className="flex items-center gap-2 mb-4">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        Inactivas
-                      </h3>
-                      <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded-full">
-                        {inactiveMemberships.length}
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {inactiveMemberships.map((membership) => (
-                        <MembershipListItem
-                          key={membership.id}
-                          membership={membership}
-                          isActive={false}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {activeTab === "active" && (
-              <div className="space-y-3">
-                {activeMemberships.map((membership) => (
-                  <MembershipListItem
-                    key={membership.id}
-                    membership={membership}
-                    isActive={true}
-                  />
-                ))}
-              </div>
-            )}
-
-            {activeTab === "inactive" && (
-              <div className="space-y-3">
-                {inactiveMemberships.map((membership) => (
-                  <MembershipListItem
-                    key={membership.id}
-                    membership={membership}
-                    isActive={false}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="space-y-3">
+            {filteredMemberships.map((membership) => (
+              <MembershipListItem
+                key={`${membership.id}-${activeTab}`}
+                membership={membership}
+                isActive={
+                  membership.isCard
+                    ? membership.card?.status === "active" ||
+                      membership.card?.status === undefined
+                    : membership.status === "active" ||
+                      membership.status === undefined
+                }
+                onDelete={handleDeleteMembership}
+                onEdit={(id) => router.push(`/memberships/${id}/edit`)}
+                onView={(id) => router.push(`/memberships/${id}`)}
+              />
+            ))}
           </div>
         )}
-
-        {/* Espacio adicional para poder hacer scroll y probar el efecto */}
-        <div className="h-96 bg-gradient-to-b from-transparent to-gray-100 rounded-lg mt-8 flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <div className="text-sm">
-              Scroll hacia abajo para ver el efecto de desvanecimiento
-            </div>
-            <div className="text-xs mt-2">La barra se atenúa gradualmente</div>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
 
-// Componente para mostrar cada membresía en la lista
+// Componente para mostrar cada membresía o tarjeta en la lista
 function MembershipListItem({
   membership,
   isActive,
+  onDelete,
+  onEdit,
+  onView,
 }: {
-  membership: Membership;
+  membership: MembershipItem;
   isActive: boolean;
+  onDelete: (id: string, name: string) => void;
+  onEdit: (id: string) => void;
+  onView: (id: string) => void;
 }) {
   const router = useRouter();
-  const [showMenu, setShowMenu] = useState(false);
 
   const getCategoryIcon = (category: Membership["category"]) => {
     switch (category) {
@@ -446,8 +378,8 @@ function MembershipListItem({
   };
 
   const getStatusColor = () => {
-    if (isActive) return "bg-green-100 text-green-800";
-    return "bg-gray-100 text-gray-800";
+    if (isActive) return "bg-green-50 text-green-700 border-green-200";
+    return "bg-gray-50 text-gray-600 border-gray-200";
   };
 
   const getInitials = (name: string) => {
@@ -456,6 +388,58 @@ function MembershipListItem({
       return (words[0][0] + words[1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  };
+
+  const truncateName = (name: string, maxLength: number = 18) => {
+    if (name.length <= maxLength) return name;
+
+    // Estrategias de truncado inteligente
+    const words = name.split(" ");
+
+    // Si es un banco, mantener "Banco" + primera palabra del nombre
+    if (name.toLowerCase().includes("banco")) {
+      const bankName = words.find(
+        (word) =>
+          !word.toLowerCase().includes("banco") &&
+          !word.toLowerCase().includes("de") &&
+          !word.toLowerCase().includes("la") &&
+          !word.toLowerCase().includes("el") &&
+          word.length > 2
+      );
+      if (bankName) {
+        return `Banco ${bankName}`;
+      }
+    }
+
+    // Para universidades, mantener "U" + primeras letras
+    if (name.toLowerCase().includes("universidad")) {
+      const city = words.find(
+        (word) =>
+          !word.toLowerCase().includes("universidad") &&
+          !word.toLowerCase().includes("de") &&
+          !word.toLowerCase().includes("nacional") &&
+          word.length > 2
+      );
+      if (city) {
+        return `U ${city}`;
+      }
+    }
+
+    // Para otros casos, mantener las primeras palabras importantes
+    const importantWords = words.filter(
+      (word) =>
+        word.length > 2 &&
+        !["de", "la", "el", "y", "del", "los", "las"].includes(
+          word.toLowerCase()
+        )
+    );
+
+    if (importantWords.length >= 2) {
+      return `${importantWords[0]} ${importantWords[1]}`;
+    }
+
+    // Fallback: truncar con puntos suspensivos
+    return name.substring(0, maxLength - 3) + "...";
   };
 
   const getCardColor = (name: string, category: Membership["category"]) => {
@@ -548,114 +532,219 @@ function MembershipListItem({
     return categoryObj?.label || category;
   };
 
+  // Función para normalizar el nombre del banco (agregar "Banco" si no lo tiene)
+  const normalizeBankName = (
+    name: string,
+    category: Membership["category"]
+  ) => {
+    if (category === "banco" && !name.toLowerCase().startsWith("banco")) {
+      return `Banco ${name}`;
+    }
+    return name;
+  };
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          {/* Icono */}
+    <div
+      className={`rounded-xl border p-3 transition-colors duration-200 cursor-pointer ${
+        isActive
+          ? "bg-white border-gray-200 hover:shadow-md hover:shadow-gray-200/30 hover:border-gray-300"
+          : "bg-gray-50 border-gray-100 hover:bg-gray-100 opacity-75"
+      }`}
+      onClick={() =>
+        onView(
+          membership.isCard
+            ? membership.membershipId || ""
+            : membership.id || ""
+        )
+      }
+    >
+      <div className="flex items-center justify-between h-[70px]">
+        <div className="flex items-center gap-3 flex-1">
+          {/* Icono más pequeño */}
           <div
-            className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg flex-shrink-0 ${getCardColor(
-              membership.name,
-              membership.category
-            )}`}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0 ${
+              isActive
+                ? `${getCardColor(
+                    normalizeBankName(
+                      membership.isCard
+                        ? membership.membershipName || ""
+                        : membership.name || "",
+                      (membership.isCard
+                        ? membership.membershipCategory
+                        : membership.category) as Membership["category"]
+                    ),
+                    (membership.isCard
+                      ? membership.membershipCategory
+                      : membership.category) as Membership["category"]
+                  )} text-white shadow-md`
+                : `${getCardColor(
+                    normalizeBankName(
+                      membership.isCard
+                        ? membership.membershipName || ""
+                        : membership.name || "",
+                      (membership.isCard
+                        ? membership.membershipCategory
+                        : membership.category) as Membership["category"]
+                    ),
+                    (membership.isCard
+                      ? membership.membershipCategory
+                      : membership.category) as Membership["category"]
+                  )} text-white opacity-60`
+            }`}
           >
-            {getInitials(membership.name)}
+            {getInitials(
+              membership.isCard
+                ? normalizeBankName(
+                    membership.membershipName || "",
+                    membership.membershipCategory as Membership["category"]
+                  )
+                : normalizeBankName(
+                    membership.name || "",
+                    membership.category as Membership["category"]
+                  )
+            )}
           </div>
 
           {/* Información */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate text-base leading-tight">
-              {membership.name}
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-gray-600 flex items-center gap-1">
-                {getCategoryIcon(membership.category)}
-                {getCategoryLabel(membership.category)}
+          <div className="flex-1 min-w-0 flex flex-col justify-center">
+            {/* Nombre principal con marca de tarjeta */}
+            <div className="flex items-center gap-2 mb-1">
+              <h3
+                className={`font-semibold text-sm leading-tight ${
+                  isActive ? "text-gray-900" : "text-gray-500"
+                }`}
+                title={
+                  membership.isCard
+                    ? `${normalizeBankName(
+                        membership.membershipName || "",
+                        membership.membershipCategory as Membership["category"]
+                      )} - ${membership.card.brand} ${membership.card.level}`
+                    : normalizeBankName(
+                        membership.name || "",
+                        membership.category as Membership["category"]
+                      )
+                }
+              >
+                {membership.isCard
+                  ? truncateName(
+                      normalizeBankName(
+                        membership.membershipName || "",
+                        membership.membershipCategory as Membership["category"]
+                      )
+                    )
+                  : truncateName(
+                      normalizeBankName(
+                        membership.name || "",
+                        membership.category as Membership["category"]
+                      )
+                    )}
+              </h3>
+              {membership.isCard && membership.card?.brand && (
+                <span
+                  className={`px-2 py-0.5 text-xs rounded font-medium ${
+                    isActive
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {membership.card.brand}
+                </span>
+              )}
+            </div>
+
+            {/* Información secundaria */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs ${
+                  isActive ? "text-gray-600" : "text-gray-400"
+                }`}
+              >
+                {getCategoryLabel(
+                  (membership.isCard
+                    ? membership.membershipCategory
+                    : membership.category) as Membership["category"]
+                )}
               </span>
-              {membership.cards.length > 0 && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium">
+
+              {membership.isCard ? (
+                <>
+                  {membership.card?.level && (
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded font-medium ${
+                        isActive
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {membership.card.level}
+                    </span>
+                  )}
+                  {membership.card?.type && (
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded font-medium ${
+                        isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {membership.card.type}
+                    </span>
+                  )}
+                </>
+              ) : membership.cards && membership.cards.length > 0 ? (
+                <span
+                  className={`px-2 py-0.5 text-xs rounded font-medium ${
+                    isActive
+                      ? "bg-orange-100 text-orange-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
                   {membership.cards.length} tarjeta
                   {membership.cards.length > 1 ? "s" : ""}
                 </span>
-              )}
-              {membership.cards.length > 0 && (
+              ) : null}
+            </div>
+
+            {/* Detalles adicionales de tarjetas (solo para membresías completas) */}
+            {!membership.isCard &&
+              membership.cards &&
+              membership.cards.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {membership.cards.slice(0, 2).map((card, index) => (
                     <span
                       key={card.id || index}
-                      className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded"
+                      className={`px-1.5 py-0.5 text-xs rounded ${
+                        isActive
+                          ? "bg-gray-100 text-gray-700"
+                          : "bg-gray-50 text-gray-400"
+                      }`}
                     >
                       {card.brand} {card.level}
                     </span>
                   ))}
                   {membership.cards.length > 2 && (
-                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded">
+                    <span
+                      className={`px-1.5 py-0.5 text-xs rounded ${
+                        isActive
+                          ? "bg-gray-100 text-gray-700"
+                          : "bg-gray-50 text-gray-400"
+                      }`}
+                    >
                       +{membership.cards.length - 2} más
                     </span>
                   )}
                 </div>
               )}
-            </div>
           </div>
         </div>
 
-        {/* Estado y menú */}
+        {/* Estado */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <span
-            className={`px-3 py-1 text-xs rounded-full font-medium ${getStatusColor()}`}
+            className={`px-4 py-2 text-xs rounded-full font-semibold border ${getStatusColor()}`}
           >
             {getStatusText()}
           </span>
-
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <div className="flex flex-col gap-1">
-                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-              </div>
-            </button>
-
-            {showMenu && (
-              <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-48">
-                <div className="py-2">
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      router.push(`/memberships/${membership.id}`);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    <span className="text-gray-600">👁️</span>
-                    <span className="text-sm text-gray-900">Ver detalles</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      router.push(`/memberships/${membership.id}/edit`);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    <span className="text-gray-600">✏️</span>
-                    <span className="text-sm text-gray-900">Editar</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      // TODO: Implementar eliminación
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition-colors text-left"
-                  >
-                    <span className="text-red-600">🗑️</span>
-                    <span className="text-sm text-red-600">Eliminar</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

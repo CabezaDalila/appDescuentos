@@ -1,11 +1,26 @@
 import { Button } from "@/components/Share/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/Share/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Share/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
-import { addCardToMembership, getMembershipById } from "@/lib/firebase/memberships";
-import { ArrowLeft, CreditCard, Wifi, ArrowRight } from "lucide-react";
+import {
+  addCardToMembership,
+  getMembershipById,
+} from "@/lib/firebase/memberships";
+import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
+import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -18,6 +33,7 @@ export default function AddCardPage() {
   const [loadingMembership, setLoadingMembership] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [expiryError, setExpiryError] = useState<string>("");
 
   // Datos para tarjetas de banco
   const [bankData, setBankData] = useState({
@@ -46,6 +62,14 @@ export default function AddCardPage() {
       try {
         const membershipData = await getMembershipById(id as string);
         setMembership(membershipData);
+
+        // Si es un banco, pre-llenar el nombre del banco
+        if (membershipData?.category === "banco") {
+          setBankData((prev) => ({
+            ...prev,
+            bank: membershipData.name,
+          }));
+        }
       } catch (error) {
         console.error("Error cargando membresía:", error);
         toast.error("Error cargando membresía");
@@ -59,17 +83,31 @@ export default function AddCardPage() {
   }, [id, user, loading, router]);
 
   const banks = [
-    "Galicia", "Santander", "Nación", "Provincia", "Ciudad", 
-    "Macro", "Itaú", "HSBC", "BBVA", "Supervielle"
+    "Galicia",
+    "Santander",
+    "Nación",
+    "Provincia",
+    "Ciudad",
+    "Macro",
+    "Itaú",
+    "HSBC",
+    "BBVA",
+    "Supervielle",
   ];
 
   const cardTypes = ["Crédito", "Débito"];
-  
+
   const brands = ["Visa", "Mastercard", "American Express", "Diners Club"];
-  
+
   const levels = [
-    "Classic", "Gold", "Platinum", "Black", "Signature", 
-    "Infinite", "Internacional", "Nacional"
+    "Classic",
+    "Gold",
+    "Platinum",
+    "Black",
+    "Signature",
+    "Infinite",
+    "Internacional",
+    "Nacional",
   ];
 
   const isBank = membership?.category === "banco";
@@ -80,15 +118,25 @@ export default function AddCardPage() {
 
     setSaving(true);
     try {
-      const cardData = isBank ? {
-        ...bankData,
-        id: Date.now().toString(),
-        addedAt: new Date(),
-      } : {
-        ...formData,
-        id: Date.now().toString(),
-        addedAt: new Date(),
-      };
+      const cardData = isBank
+        ? {
+            id: Date.now().toString(),
+            type: bankData.cardType,
+            brand: bankData.brand,
+            level: bankData.level,
+            name: bankData.cardName,
+            expiryDate: bankData.expiryDate,
+            status: "active",
+          }
+        : {
+            id: Date.now().toString(),
+            type: formData.cardType,
+            brand: formData.brand,
+            level: formData.level,
+            name: formData.cardName,
+            expiryDate: formData.expiryDate,
+            status: "active",
+          };
 
       await addCardToMembership(membership.id, cardData);
 
@@ -105,7 +153,7 @@ export default function AddCardPage() {
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
     const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || "";
+    const match = (matches && matches[0]) || "";
     const parts = [];
 
     for (let i = 0, len = match.length; i < len; i += 4) {
@@ -119,16 +167,15 @@ export default function AddCardPage() {
     }
   };
 
-  const formatExpiryDate = (value: string) => {
-    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "");
-    if (v.length >= 2) {
-      return v.substring(0, 2) + "/" + v.substring(2, 4);
-    }
-    return v;
+  const handleExpiryDateChange = (value: string) => {
+    const result = validateAndFormatExpiryInput(value);
+    setExpiryError(result.isValid ? "" : result.error || "");
+    setBankData((prev) => ({ ...prev, expiryDate: result.formatted }));
   };
 
   const nextStep = () => {
-    if (currentStep < 6) {
+    const maxSteps = isBank ? 5 : 6; // Si es banco, solo 5 pasos (omite selección de banco)
+    if (currentStep < maxSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -140,21 +187,40 @@ export default function AddCardPage() {
   };
 
   const isStepComplete = (step: number) => {
-    switch (step) {
-      case 1:
-        return bankData.bank !== "";
-      case 2:
-        return bankData.cardType !== "";
-      case 3:
-        return bankData.brand !== "";
-      case 4:
-        return bankData.level !== "";
-      case 5:
-        return bankData.expiryDate !== "";
-      case 6:
-        return bankData.cardNumber !== "" && bankData.cardName !== "";
-      default:
-        return false;
+    if (isBank) {
+      // Para bancos, omitimos el paso 1 (selección de banco)
+      switch (step) {
+        case 1:
+          return bankData.cardType !== ""; // Tipo de tarjeta
+        case 2:
+          return bankData.brand !== ""; // Marca
+        case 3:
+          return bankData.level !== ""; // Nivel
+        case 4:
+          return bankData.expiryDate !== "" && !expiryError; // Fecha de vencimiento
+        case 5:
+          return bankData.cardName !== ""; // Número y nombre
+        default:
+          return false;
+      }
+    } else {
+      // Para membresías no bancarias
+      switch (step) {
+        case 1:
+          return bankData.bank !== "";
+        case 2:
+          return bankData.cardType !== "";
+        case 3:
+          return bankData.brand !== "";
+        case 4:
+          return bankData.level !== "";
+        case 5:
+          return bankData.expiryDate !== "" && !expiryError;
+        case 6:
+          return bankData.cardName !== "";
+        default:
+          return false;
+      }
     }
   };
 
@@ -177,60 +243,70 @@ export default function AddCardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white border-b border-gray-200 px-4 py-5">
+        <div className="flex items-center justify-between">
           <button
             onClick={() => router.push(`/memberships/${id}`)}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Agregar Tarjeta</h1>
+          <div className="flex-1 text-center">
+            <h1 className="text-lg font-semibold text-gray-900">
+              {isBank
+                ? `Agregar Tarjeta - ${membership?.name}`
+                : "Agregar Tarjeta"}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Paso {currentStep} de {isBank ? 5 : 6}
+            </p>
+          </div>
           <button
             onClick={() => router.push("/memberships")}
-            className="text-gray-600 hover:text-gray-800"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            ✕
+            <span className="text-gray-600 hover:text-gray-800">✕</span>
           </button>
         </div>
       </div>
 
-      <div className="px-4 py-6">
-        {/* Información de la membresía */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              {membership.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 text-sm">
-              {isBank ? "Agrega una nueva tarjeta de banco" : "Agrega una nueva tarjeta a tu membresía"}
-            </p>
-          </CardContent>
-        </Card>
-
+      <div className="px-4 py-8 pb-20">
         {isBank ? (
           /* Flujo para tarjetas de banco */
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Agregar Tarjeta de Banco</span>
-                <span className="text-sm text-gray-500">Paso {currentStep} de 6</span>
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">
+                Agregar Tarjeta - {membership?.name}
               </CardTitle>
               {/* Progress bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentStep / 6) * 100}%` }}
+                  style={{ width: `${(currentStep / 5) * 100}%` }}
                 ></div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4">
+              {isBank && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <CreditCard className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-blue-900">
+                        Agregando tarjeta a {membership?.name}
+                      </h3>
+                      <p className="text-sm text-blue-700">
+                        Selecciona los detalles de tu nueva tarjeta
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <form onSubmit={handleSubmit}>
-                {/* Paso 1: Seleccionar Banco */}
-                {currentStep === 1 && (
+                {/* Paso 1: Seleccionar Banco (solo para no bancos) */}
+                {!isBank && currentStep === 1 && (
                   <div className="space-y-4">
                     <Label>Selecciona el banco</Label>
                     <div className="grid grid-cols-2 gap-3">
@@ -238,10 +314,12 @@ export default function AddCardPage() {
                         <button
                           key={bank}
                           type="button"
-                          onClick={() => setBankData(prev => ({ ...prev, bank }))}
+                          onClick={() =>
+                            setBankData((prev) => ({ ...prev, bank }))
+                          }
                           className={`p-3 border rounded-lg text-left transition-colors ${
-                            bankData.bank === bank 
-                              ? "border-blue-500 bg-blue-50 text-blue-700" 
+                            bankData.bank === bank
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
@@ -252,8 +330,9 @@ export default function AddCardPage() {
                   </div>
                 )}
 
-                {/* Paso 2: Tipo de Tarjeta */}
-                {currentStep === 2 && (
+                {/* Paso 1 (bancos) / Paso 2 (no bancos): Tipo de Tarjeta */}
+                {((isBank && currentStep === 1) ||
+                  (!isBank && currentStep === 2)) && (
                   <div className="space-y-4">
                     <Label>Tipo de tarjeta</Label>
                     <div className="grid grid-cols-2 gap-3">
@@ -261,10 +340,12 @@ export default function AddCardPage() {
                         <button
                           key={type}
                           type="button"
-                          onClick={() => setBankData(prev => ({ ...prev, cardType: type }))}
+                          onClick={() =>
+                            setBankData((prev) => ({ ...prev, cardType: type }))
+                          }
                           className={`p-3 border rounded-lg text-center transition-colors ${
-                            bankData.cardType === type 
-                              ? "border-blue-500 bg-blue-50 text-blue-700" 
+                            bankData.cardType === type
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
@@ -275,8 +356,9 @@ export default function AddCardPage() {
                   </div>
                 )}
 
-                {/* Paso 3: Marca */}
-                {currentStep === 3 && (
+                {/* Paso 2 (bancos) / Paso 3 (no bancos): Marca */}
+                {((isBank && currentStep === 2) ||
+                  (!isBank && currentStep === 3)) && (
                   <div className="space-y-4">
                     <Label>Marca de la tarjeta</Label>
                     <div className="grid grid-cols-2 gap-3">
@@ -284,10 +366,12 @@ export default function AddCardPage() {
                         <button
                           key={brand}
                           type="button"
-                          onClick={() => setBankData(prev => ({ ...prev, brand }))}
+                          onClick={() =>
+                            setBankData((prev) => ({ ...prev, brand }))
+                          }
                           className={`p-3 border rounded-lg text-center transition-colors ${
-                            bankData.brand === brand 
-                              ? "border-blue-500 bg-blue-50 text-blue-700" 
+                            bankData.brand === brand
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
@@ -298,8 +382,9 @@ export default function AddCardPage() {
                   </div>
                 )}
 
-                {/* Paso 4: Nivel */}
-                {currentStep === 4 && (
+                {/* Paso 3 (bancos) / Paso 4 (no bancos): Nivel */}
+                {((isBank && currentStep === 3) ||
+                  (!isBank && currentStep === 4)) && (
                   <div className="space-y-4">
                     <Label>Nivel de la tarjeta</Label>
                     <div className="grid grid-cols-2 gap-3">
@@ -307,10 +392,12 @@ export default function AddCardPage() {
                         <button
                           key={level}
                           type="button"
-                          onClick={() => setBankData(prev => ({ ...prev, level }))}
+                          onClick={() =>
+                            setBankData((prev) => ({ ...prev, level }))
+                          }
                           className={`p-3 border rounded-lg text-center transition-colors ${
-                            bankData.level === level 
-                              ? "border-blue-500 bg-blue-50 text-blue-700" 
+                            bankData.level === level
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
@@ -321,8 +408,9 @@ export default function AddCardPage() {
                   </div>
                 )}
 
-                {/* Paso 5: Fecha de vencimiento */}
-                {currentStep === 5 && (
+                {/* Paso 4 (bancos) / Paso 5 (no bancos): Fecha de vencimiento */}
+                {((isBank && currentStep === 4) ||
+                  (!isBank && currentStep === 5)) && (
                   <div className="space-y-4">
                     <Label htmlFor="expiryDate">Fecha de vencimiento</Label>
                     <Input
@@ -330,34 +418,24 @@ export default function AddCardPage() {
                       type="text"
                       placeholder="MM/AA"
                       value={bankData.expiryDate}
-                      onChange={(e) => {
-                        const formatted = formatExpiryDate(e.target.value);
-                        setBankData(prev => ({ ...prev, expiryDate: formatted }));
-                      }}
+                      onChange={(e) => handleExpiryDateChange(e.target.value)}
                       maxLength={5}
-                      className="text-center text-lg"
+                      className={`text-center text-lg ${
+                        expiryError
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }`}
                     />
+                    {expiryError && (
+                      <p className="text-sm text-red-600 mt-1">{expiryError}</p>
+                    )}
                   </div>
                 )}
 
-                {/* Paso 6: Número y nombre */}
-                {currentStep === 6 && (
+                {/* Paso 5 (bancos) / Paso 6 (no bancos): Nombre */}
+                {((isBank && currentStep === 5) ||
+                  (!isBank && currentStep === 6)) && (
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="cardNumber">Número de tarjeta</Label>
-                      <Input
-                        id="cardNumber"
-                        type="text"
-                        placeholder="1234 5678 9012 3456"
-                        value={bankData.cardNumber}
-                        onChange={(e) => {
-                          const formatted = formatCardNumber(e.target.value);
-                          setBankData(prev => ({ ...prev, cardNumber: formatted }));
-                        }}
-                        maxLength={19}
-                        className="text-center text-lg"
-                      />
-                    </div>
                     <div>
                       <Label htmlFor="cardName">Nombre en la tarjeta</Label>
                       <Input
@@ -365,41 +443,46 @@ export default function AddCardPage() {
                         type="text"
                         placeholder="Nombre como aparece en la tarjeta"
                         value={bankData.cardName}
-                        onChange={(e) => setBankData(prev => ({ ...prev, cardName: e.target.value }))}
+                        onChange={(e) =>
+                          setBankData((prev) => ({
+                            ...prev,
+                            cardName: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
                 )}
 
                 {/* Botones de navegación */}
-                <div className="flex gap-3 pt-6">
+                <div className="flex gap-2 pt-8">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => router.push(`/memberships/${id}`)}
-                    className="flex-1"
+                    className="flex-1 min-w-0"
                   >
                     Cancelar
                   </Button>
-                  
+
                   {currentStep > 1 && (
                     <Button
                       type="button"
                       variant="outline"
                       onClick={prevStep}
-                      className="px-4"
+                      className="flex-1 min-w-0"
                     >
                       <ArrowLeft className="h-4 w-4 mr-1" />
                       Anterior
                     </Button>
                   )}
-                  
-                  {currentStep < 6 ? (
+
+                  {currentStep < (isBank ? 5 : 6) ? (
                     <Button
                       type="button"
                       onClick={nextStep}
                       disabled={!isStepComplete(currentStep)}
-                      className="px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       Siguiente
                       <ArrowRight className="h-4 w-4 ml-1" />
@@ -407,8 +490,8 @@ export default function AddCardPage() {
                   ) : (
                     <Button
                       type="submit"
-                      disabled={saving || !isStepComplete(6)}
-                      className="px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                      disabled={saving || !isStepComplete(isBank ? 5 : 6)}
+                      className="flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {saving ? "Guardando..." : "Crear Tarjeta"}
                     </Button>
@@ -434,7 +517,10 @@ export default function AddCardPage() {
                     value={formData.cardNumber}
                     onChange={(e) => {
                       const formatted = formatCardNumber(e.target.value);
-                      setFormData(prev => ({ ...prev, cardNumber: formatted }));
+                      setFormData((prev) => ({
+                        ...prev,
+                        cardNumber: formatted,
+                      }));
                     }}
                     maxLength={19}
                     required
@@ -450,19 +536,37 @@ export default function AddCardPage() {
                       placeholder="MM/AA"
                       value={formData.expiryDate}
                       onChange={(e) => {
-                        const formatted = formatExpiryDate(e.target.value);
-                        setFormData(prev => ({ ...prev, expiryDate: formatted }));
+                        const result = validateAndFormatExpiryInput(
+                          e.target.value
+                        );
+                        setExpiryError(
+                          result.isValid ? "" : result.error || ""
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          expiryDate: result.formatted,
+                        }));
                       }}
                       maxLength={5}
                       required
+                      className={
+                        expiryError
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
+                      }
                     />
+                    {expiryError && (
+                      <p className="text-sm text-red-600 mt-1">{expiryError}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label htmlFor="cardType">Tipo de Tarjeta</Label>
                     <Select
                       value={formData.cardType}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, cardType: value }))}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, cardType: value }))
+                      }
                       required
                     >
                       <SelectTrigger>
@@ -485,7 +589,12 @@ export default function AddCardPage() {
                     type="text"
                     placeholder="Nombre como aparece en la tarjeta"
                     value={formData.cardName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cardName: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        cardName: e.target.value,
+                      }))
+                    }
                     required
                   />
                 </div>
@@ -523,7 +632,7 @@ export default function AddCardPage() {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
                     <span className="text-white font-bold text-lg">
-                      {bankData.brand?.substring(0, 2).toUpperCase() || "**"}
+                      {bankData.brand || "**"}
                     </span>
                     {bankData.level && (
                       <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
@@ -538,7 +647,7 @@ export default function AddCardPage() {
 
                 <div className="mb-6">
                   <div className="text-xl font-mono tracking-wider mb-2">
-                    {bankData.cardNumber || "**** **** **** ****"}
+                    **** **** **** ****
                   </div>
                   <div className="text-sm opacity-90">
                     {bankData.bank} • {bankData.cardType}

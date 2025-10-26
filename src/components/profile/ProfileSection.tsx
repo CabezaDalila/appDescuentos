@@ -1,4 +1,4 @@
-import { ChevronRight, Pencil, CreditCard, Wallet, Bell, Shield, MapPin, HelpCircle, LogOut } from "lucide-react";
+import { ChevronRight, Pencil, CreditCard, Bell, Shield, MapPin, HelpCircle, LogOut } from "lucide-react";
 import { useRouter } from "next/router";
 
 interface ProfileSectionProps {
@@ -61,26 +61,20 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
 }
 
 // Función helper para crear las secciones del perfil
-export function createProfileSections(router: any, onLogout: () => void, onSettings: () => void) {
+export function createProfileSections(router: any, onLogout: () => void, onSettings: () => void, membershipsCount: number = 0) {
   const miCuentaItems: ProfileItem[] = [
     {
       icon: <Pencil className="h-5 w-5" />,
       title: "Editar perfil",
       description: "Actualiza tu información personal",
-      onClick: onSettings,
+      onClick: () => router.push("/profile/edit"),
     },
     {
       icon: <CreditCard className="h-5 w-5" />,
       title: "Mis membresías",
       description: "Gestiona tus tarjetas y membresías",
-      badge: "3",
+      badge: membershipsCount > 0 ? membershipsCount.toString() : undefined,
       onClick: () => router.push("/memberships"),
-    },
-    {
-      icon: <Wallet className="h-5 w-5" />,
-      title: "Mi billetera",
-      description: "Puntos y recompensas",
-      onClick: () => router.push("/wallet"),
     },
   ];
 

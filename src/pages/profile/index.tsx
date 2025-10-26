@@ -7,6 +7,7 @@ import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { checkAdminRole } from "@/lib/admin";
+import { getUserMemberships } from "@/lib/firebase/memberships";
 import { Shield } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ export default function Profile() {
   const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [membershipsCount, setMembershipsCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +34,21 @@ export default function Profile() {
     };
 
     checkAdmin();
+  }, [user, loading]);
+
+  useEffect(() => {
+    const loadMembershipsCount = async () => {
+      if (user && !loading) {
+        try {
+          // Usar getUserMemberships para obtener todas las membresías únicas
+          const allMemberships = await getUserMemberships();
+          setMembershipsCount(allMemberships.length);
+        } catch (error) {
+          console.error("Error al cargar membresías:", error);
+        }
+      }
+    };
+    loadMembershipsCount();
   }, [user, loading]);
 
   if (loading) {
@@ -51,7 +68,7 @@ export default function Profile() {
   }
 
   const sections = createProfileSections(router, logout, () =>
-    setSettingsOpen(true)
+    setSettingsOpen(true), membershipsCount
   );
 
   return (

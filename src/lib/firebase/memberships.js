@@ -50,21 +50,46 @@ export const getActiveMemberships = async () => {
     if (!user) throw new Error("Usuario no autenticado");
 
     const membershipsRef = collection(db, `users/${user.uid}/memberships`);
-    const q = query(membershipsRef, where("status", "==", "active"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(membershipsRef);
 
-    const memberships = [];
+    const activeItems = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      memberships.push({
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      });
+      
+      // Para bancos: agregar solo las tarjetas activas como elementos separados
+      if (data.category === "banco" && data.cards && data.cards.length > 0) {
+        data.cards.forEach(card => {
+          if (card.status === "active" || card.status === undefined) {
+            activeItems.push({
+              id: `${doc.id}-${card.id}`,
+              membershipId: doc.id,
+              membershipName: data.name,
+              membershipCategory: data.category,
+              card: card,
+              isCard: true, // Marcar que es una tarjeta individual
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+            });
+          }
+        });
+      } else {
+        // Para otras membresías: agregar la membresía completa si está activa
+        if (data.status === "active" || data.status === undefined) {
+          activeItems.push({
+            id: doc.id,
+            membershipId: doc.id,
+            membershipName: data.name,
+            membershipCategory: data.category,
+            isCard: false, // Marcar que es una membresía completa
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+          });
+        }
+      }
     });
 
-    return memberships.sort(
+    return activeItems.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
@@ -380,21 +405,46 @@ export const getInactiveMemberships = async () => {
     if (!user) throw new Error("Usuario no autenticado");
 
     const membershipsRef = collection(db, `users/${user.uid}/memberships`);
-    const q = query(membershipsRef, where("status", "!=", "active"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(membershipsRef);
 
-    const memberships = [];
+    const inactiveItems = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      memberships.push({
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      });
+      
+      // Para bancos: agregar solo las tarjetas inactivas como elementos separados
+      if (data.category === "banco" && data.cards && data.cards.length > 0) {
+        data.cards.forEach(card => {
+          if (card.status === "inactive") {
+            inactiveItems.push({
+              id: `${doc.id}-${card.id}`,
+              membershipId: doc.id,
+              membershipName: data.name,
+              membershipCategory: data.category,
+              card: card,
+              isCard: true, // Marcar que es una tarjeta individual
+              createdAt: data.createdAt?.toDate() || new Date(),
+              updatedAt: data.updatedAt?.toDate() || new Date(),
+            });
+          }
+        });
+      } else {
+        // Para otras membresías: agregar la membresía completa si está inactiva
+        if (data.status === "inactive") {
+          inactiveItems.push({
+            id: doc.id,
+            membershipId: doc.id,
+            membershipName: data.name,
+            membershipCategory: data.category,
+            isCard: false, // Marcar que es una membresía completa
+            ...data,
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date(),
+          });
+        }
+      }
     });
 
-    return memberships.sort(
+    return inactiveItems.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
