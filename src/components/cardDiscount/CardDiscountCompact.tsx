@@ -1,5 +1,7 @@
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { getRealDistance } from "@/utils/real-distance";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 
@@ -8,9 +10,13 @@ interface CardDiscountCompactProps {
   image: string;
   category: string;
   points: number;
-  distance: string;
+  distance?: string; // Hacer opcional
   expiration: string;
   discountPercentage: string;
+  discountLocation?: {
+    latitude: number;
+    longitude: number;
+  };
   onClick?: () => void;
   onNavigateToDetail?: () => void;
 }
@@ -20,13 +26,93 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
   image,
   category,
   points,
-  distance,
+  distance: initialDistance,
   expiration,
   discountPercentage,
+  discountLocation,
   onClick,
   onNavigateToDetail,
 }) => {
   const [isLiked, setIsLiked] = useState(false);
+  const [calculatedDistance, setCalculatedDistance] = useState<string>(
+    initialDistance || "Sin ubicación"
+  );
+  const [distanceLoading, setDistanceLoading] = useState(false);
+  const [hasCalculated, setHasCalculated] = useState(false);
+
+  const { position, getCurrentPosition } = useGeolocation();
+
+  // Calcular distancia automáticamente si hay ubicación del descuento
+  useEffect(() => {
+    const calculateDistance = async () => {
+      // Si ya tenemos una distancia válida, no calcular
+      if (
+        initialDistance &&
+        initialDistance !== "Calculando..." &&
+        initialDistance !== "Sin ubicación"
+      ) {
+        setCalculatedDistance(initialDistance);
+        return;
+      }
+
+      // Si no hay ubicación del descuento, no calcular
+      if (!discountLocation) {
+        setCalculatedDistance("Sin ubicación");
+        return;
+      }
+
+      // Si ya calculó, no volver a calcular
+      if (hasCalculated) {
+        return;
+      }
+
+      try {
+        setDistanceLoading(true);
+        setCalculatedDistance("Calculando...");
+
+        // Obtener ubicación del usuario
+        await getCurrentPosition();
+      } catch (error) {
+        console.error("Error obteniendo ubicación:", error);
+        setCalculatedDistance("Ubicación no disponible");
+        setDistanceLoading(false);
+      }
+    };
+
+    calculateDistance();
+  }, [discountLocation, initialDistance, getCurrentPosition, hasCalculated]);
+
+  // Calcular distancia real cuando se obtiene la posición del usuario
+  useEffect(() => {
+    const calculateRealDistance = async () => {
+      if (!position || !discountLocation || hasCalculated) {
+        return;
+      }
+
+      try {
+        setDistanceLoading(true);
+
+        const result = await getRealDistance(
+          { lat: position.latitude, lng: position.longitude },
+          { lat: discountLocation.latitude, lng: discountLocation.longitude }
+        );
+
+        if (result) {
+          setCalculatedDistance(result.distanceText);
+        } else {
+          setCalculatedDistance("Error calculando distancia");
+        }
+      } catch (error) {
+        console.error("Error calculando distancia:", error);
+        setCalculatedDistance("Error calculando distancia");
+      } finally {
+        setDistanceLoading(false);
+        setHasCalculated(true);
+      }
+    };
+
+    calculateRealDistance();
+  }, [position, discountLocation, hasCalculated]);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,7 +205,14 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
               height={8}
               className="sm:w-[10px] sm:h-[10px]"
             />
-            {distance}
+            {distanceLoading ? (
+              <span className="flex items-center gap-1">
+                <div className="animate-spin rounded-full h-2 w-2 border-b border-gray-400"></div>
+                <span>Calculando...</span>
+              </span>
+            ) : (
+              calculatedDistance
+            )}
           </span>
           <span className="flex items-center gap-0.5 sm:gap-1">
             <Image

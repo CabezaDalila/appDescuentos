@@ -14,7 +14,7 @@ export function useIsMobile() {
         /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
           userAgent
         );
-      const isMobileScreen = window.innerWidth < 1024;
+      const isMobileScreen = window.innerWidth < 600;
 
       setIsMobile(isMobileUserAgent || isMobileScreen);
     };

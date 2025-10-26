@@ -73,6 +73,11 @@ export default function MembershipDetailsPage() {
     return "bg-gray-100 text-gray-800 border-gray-200";
   };
 
+  const getStatusText = () => {
+    if (membership?.status === "active") return "Activa";
+    return "Inactiva";
+  };
+
   const getCategoryLabel = () => {
     if (!membership) return "";
 

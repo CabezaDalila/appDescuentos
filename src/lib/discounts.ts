@@ -49,6 +49,12 @@ interface FirestoreDiscount {
     type: string;
     bank: string;
   }>;
+
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 // Obtener todos los descuentos
@@ -85,6 +91,11 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 // Obtener descuentos para la página principal (solo aprobados)
@@ -126,12 +137,13 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           category,
           discountPercentage,
           points: 6, // Valor por defecto
-          distance: "1.2km", // Valor por defecto
+          distance: data.location ? "Calculando..." : "Sin ubicación", // Calcular si tiene ubicación
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
           isVisible: data.isVisible ?? true, // Incluir campo de visibilidad
+          location: data.location, // Incluir ubicación para el cálculo
         } as HomePageDiscount;
       })
       .filter((discount) => {
@@ -495,3 +507,108 @@ export const getPersonalizedDiscounts = async (
     return [];
   }
 };
+
+// Obtener descuentos cercanos a una ubicación específica (versión gratuita)
+export const getNearbyDiscounts = async (
+  userLatitude: number,
+  userLongitude: number,
+  maxDistanceKm: number = 50
+): Promise<HomePageDiscount[]> => {
+  try {
+    const snapshot = await getDocs(collection(db, "discounts"));
+    const nearbyDiscounts: HomePageDiscount[] = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data() as FirestoreDiscount;
+      const id = doc.id;
+
+      if (
+        data.approvalStatus !== "approved" ||
+        data.isVisible === false ||
+        !data.location
+      ) {
+        return;
+      }
+
+      // Calcular distancia usando la fórmula de Haversine
+      const distance = calculateDistance(
+        { latitude: userLatitude, longitude: userLongitude },
+        { latitude: data.location.latitude, longitude: data.location.longitude }
+      );
+
+      // Solo incluir si está dentro del radio máximo
+      if (distance <= maxDistanceKm) {
+        const title = data.title || data.name || "Sin título";
+        const image =
+          data.imageUrl ||
+          data.image ||
+          getImageByCategory(data.category || "general");
+        const category = data.category || "general";
+        const discountPercentage = data.discountPercentage
+          ? `${data.discountPercentage}%`
+          : "Descuento disponible";
+
+        const expiration =
+          data.validUntil?.toDate?.() ||
+          data.expirationDate?.toDate?.() ||
+          new Date();
+
+        nearbyDiscounts.push({
+          id,
+          title,
+          image,
+          category,
+          discountPercentage,
+          points: 6,
+          distance: formatDistance(distance),
+          expiration: expiration.toLocaleDateString("es-ES"),
+          description: data.description || data.descripcion || "",
+          origin: data.origin || "Origen no especificado",
+          status: data.status || "active",
+          isVisible: data.isVisible ?? true,
+        } as HomePageDiscount);
+      }
+    });
+
+    // Ordenar por distancia (más cercanos primero)
+    return nearbyDiscounts.sort((a, b) => {
+      const distanceA = parseFloat(a.distance.replace(/[^\d.]/g, ""));
+      const distanceB = parseFloat(b.distance.replace(/[^\d.]/g, ""));
+      return distanceA - distanceB;
+    });
+  } catch (error) {
+    console.error("Error al obtener descuentos cercanos:", error);
+    return [];
+  }
+};
+
+// Función auxiliar para calcular distancia (fórmula de Haversine)
+function calculateDistance(
+  point1: { latitude: number; longitude: number },
+  point2: { latitude: number; longitude: number }
+): number {
+  const R = 6371; // Radio de la Tierra en kilómetros
+  const dLat = toRadians(point2.latitude - point1.latitude);
+  const dLon = toRadians(point2.longitude - point1.longitude);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(point1.latitude)) *
+      Math.cos(toRadians(point2.latitude)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRadians(degrees: number): number {
+  return degrees * (Math.PI / 180);
+}
+
+function formatDistance(distance: number): string {
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)} m`;
+  }
+  return `${distance.toFixed(1)} km`;
+}

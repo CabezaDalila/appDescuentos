@@ -16,14 +16,6 @@ export const initializeOneSignal = async (userId?: string) => {
   }
 
   if (Capacitor.isNativePlatform()) {
-<<<<<<< Updated upstream
-    // Para Android/iOS - Inicialización correcta según las instrucciones
-    const OneSignal = (await import('onesignal-cordova-plugin')).default;
-    
-    // Solo se ejecuta una vez al inicio de la app
-    OneSignal.initialize(ONESIGNAL_CONFIG.APP_ID);
-    OneSignal.Notifications.requestPermission(true);
-=======
     // Para Android/iOS
     const OneSignal = (await import("onesignal-cordova-plugin")).default;
     OneSignal.initialize(ONESIGNAL_CONFIG.APP_ID);
@@ -46,7 +38,6 @@ export const initializeOneSignal = async (userId?: string) => {
         console.error("Error inicializando OneSignal:", error);
       }
     }
->>>>>>> Stashed changes
   }
 };
 

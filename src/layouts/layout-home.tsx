@@ -79,9 +79,11 @@ export function LayoutHome({ children }: LayoutHomeProps) {
   if (router.pathname === "/home") {
     return (
       <div className="h-screen flex flex-col">
-        <div className="flex-1 overflow-hidden">
-          <main className="w-full max-w-2xl mx-auto">
-            <ScrollArea className="h-[calc(100vh-60px)]">{children}</ScrollArea>
+        <div className="flex-1 overflow-hidden lg:ml-16 xl:ml-64">
+          <main className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
+            <ScrollArea className="h-screen lg:max-h-none">
+              {children}
+            </ScrollArea>
           </main>
         </div>
         <NavigationBar
@@ -96,9 +98,9 @@ export function LayoutHome({ children }: LayoutHomeProps) {
   // Para páginas que necesitan el layout con ScrollArea (search, etc.)
   return (
     <div className="h-screen flex flex-col">
-      <div className="flex-1 overflow-hidden">
-        <main className="w-full max-w-2xl mx-auto">
-          <ScrollArea className="h-[calc(100vh-100px)]">{children}</ScrollArea>
+      <div className="flex-1 overflow-hidden lg:ml-16 xl:ml-64">
+        <main className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
+          <ScrollArea className="h-screen lg:max-h-none">{children}</ScrollArea>
         </main>
       </div>
       <NavigationBar

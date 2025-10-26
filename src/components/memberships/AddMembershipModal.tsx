@@ -64,7 +64,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
-    expiry: "",
+    expiryDate: "",
   });
 
   // Colores predefinidos para cada categoría
@@ -153,7 +153,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
     }
 
     // Validar fecha de vencimiento si se proporciona
-    if (newCard.expiry && !validateExpiry(newCard.expiry)) {
+    if (newCard.expiryDate && !validateExpiry(newCard.expiryDate)) {
       return;
     }
 
@@ -163,7 +163,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: newCard.brand,
       level: newCard.level,
       name: newCard.name || "",
-      expiry: newCard.expiry || "",
+      expiryDate: newCard.expiryDate || "",
     };
 
     setCards([...cards, card]);
@@ -172,7 +172,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
   };
 
@@ -193,7 +193,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
     onClose();
   };
@@ -414,9 +414,9 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                           <span className="text-sm text-gray-600 ml-2">
                             ({card.type})
                           </span>
-                          {card.expiry && (
+                          {card.expiryDate && (
                             <div className="text-xs text-gray-500 mt-1">
-                              Vence: {card.expiry}
+                              Vence: {card.expiryDate}
                             </div>
                           )}
                         </div>
@@ -604,10 +604,10 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
                   <Input
                     id="cardExpiry"
                     placeholder="MM/YY"
-                    value={newCard.expiry || ""}
+                    value={newCard.expiryDate || ""}
                     onChange={(e) => {
                       const formatted = formatExpiryInput(e.target.value);
-                      setNewCard({ ...newCard, expiry: formatted });
+                      setNewCard({ ...newCard, expiryDate: formatted });
                     }}
                     maxLength={5}
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"

@@ -1,5 +1,5 @@
 import { auth } from "@/lib/firebase/firebase";
-import { logout } from "@/lib/firebase/firebase-auth";
+import { logout, resetPassword } from "@/lib/firebase/firebase-auth";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -8,6 +8,7 @@ interface UseAuthResult {
   user: User | null;
   loading: boolean;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 export function useAuth(): UseAuthResult {
@@ -32,5 +33,5 @@ export function useAuth(): UseAuthResult {
     }
   };
 
-  return { user, loading, logout: handleLogout };
+  return { user, loading, logout: handleLogout, resetPassword };
 }

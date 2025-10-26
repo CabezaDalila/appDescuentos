@@ -54,7 +54,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
-    expiry: "",
+    expiryDate: "",
   });
 
   // Colores y gradientes para bancos
@@ -88,7 +88,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
     }
 
     // Validar fecha de vencimiento si se proporciona
-    if (cardData.expiry && !validateExpiry(cardData.expiry)) {
+    if (cardData.expiryDate && !validateExpiry(cardData.expiryDate)) {
       toast.error(
         "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
       );
@@ -107,7 +107,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
         brand: cardData.brand,
         level: cardData.level,
         name: cardData.name || "",
-        expiry: cardData.expiry || "",
+        expiryDate: cardData.expiryDate || "",
       };
 
       const membershipData = {
@@ -140,7 +140,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
     onClose();
   };
@@ -365,10 +365,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
                   <Input
                     id="cardExpiry"
                     placeholder="MM/YY"
-                    value={cardData.expiry || ""}
+                    value={cardData.expiryDate || ""}
                     onChange={(e) => {
                       const formatted = formatExpiryInput(e.target.value);
-                      setCardData({ ...cardData, expiry: formatted });
+                      setCardData({ ...cardData, expiryDate: formatted });
                     }}
                     maxLength={5}
                   />

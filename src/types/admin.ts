@@ -25,6 +25,7 @@ export interface ManualDiscount {
   discountPercentage?: number;
   discountAmount?: number;
   imageUrl?: string;
+  url?: string;
   isVisible: boolean;
   availableCredentials?: Array<{
     brand: string;
@@ -36,6 +37,11 @@ export interface ManualDiscount {
   createdAt?: Date;
   updatedAt?: Date;
   validUntil?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 export interface CreateManualDiscountData {
@@ -47,6 +53,7 @@ export interface CreateManualDiscountData {
   discountPercentage?: number;
   discountAmount?: number;
   imageUrl?: string;
+  url?: string;
   isVisible: boolean;
   availableCredentials?: Array<{
     brand: string;
@@ -66,6 +73,7 @@ export interface UpdateManualDiscountData {
   discountPercentage?: number;
   discountAmount?: number;
   imageUrl?: string;
+  url?: string;
   isVisible?: boolean;
   availableCredentials?: Array<{
     brand: string;

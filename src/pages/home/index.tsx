@@ -22,6 +22,11 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 // Componentes de la página de inicio
@@ -171,6 +176,7 @@ export default function Home() {
   };
 
   const handleCategoryClick = (categoryId: string) => {
+    // Navegar a búsqueda para categorías normales
     router.push(`/search?category=${categoryId}`);
   };
 
@@ -197,62 +203,68 @@ export default function Home() {
     ["food", "fashion", "technology", "home"].includes(category.id)
   );
 
-  // Obtener descuentos de tendencias (máximo 3 para que quepan bien en el ancho)
-  const trendingDiscounts = discounts.slice(0, 3);
-
   return (
-    <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden">
-      <Header
-        greeting={greeting}
-        notificationCount={getUnreadCount()}
-        onNotificationClick={() => router.push("/notifications")}
-        onThemeToggle={() => {}}
-      />
+    <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden pb-24 lg:pb-0">
+      {/* Header y Search - Siempre en la parte superior */}
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-100 lg:border-none">
+        <Header
+          greeting={greeting}
+          notificationCount={getUnreadCount()}
+          onNotificationClick={() => router.push("/notifications")}
+          onThemeToggle={() => {}}
+        />
 
-      <SearchSection
-        searchTerm={searchTerm}
-        searchResults={searchResults}
-        isSearching={isSearching}
-        showSearchResults={showSearchResults}
-        onSearchChange={handleSearch}
-        onSearchFocus={() =>
-          searchTerm.trim().length >= 2 && setShowSearchResults(true)
-        }
-        onSearchBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-        onClearSearch={clearSearch}
-        onSelectResult={handleSelectSearchResult}
-      />
+        <SearchSection
+          searchTerm={searchTerm}
+          searchResults={searchResults}
+          isSearching={isSearching}
+          showSearchResults={showSearchResults}
+          onSearchChange={handleSearch}
+          onSearchFocus={() =>
+            searchTerm.trim().length >= 2 && setShowSearchResults(true)
+          }
+          onSearchBlur={() =>
+            setTimeout(() => setShowSearchResults(false), 200)
+          }
+          onClearSearch={clearSearch}
+          onSelectResult={handleSelectSearchResult}
+        />
+      </div>
 
-      <QuickActionsSection onCategoryClick={handleCategoryClick} />
+      {/* Contenido principal con layout responsivo */}
+      <div className="lg:flex lg:gap-6 lg:px-4 xl:px-6 2xl:px-8">
+        {/* Columna izquierda - Acciones rápidas y categorías */}
+        <div className="lg:w-1/3 xl:w-1/4 2xl:w-1/5 lg:flex-shrink-0">
+          <QuickActionsSection onCategoryClick={handleCategoryClick} />
 
-      <ExploreCategoriesSection
-        categories={selectedCategories}
-        onCategoryClick={handleCategoryClick}
-        onViewAll={() => router.push("/search")}
-      />
+          <ExploreCategoriesSection
+            categories={selectedCategories}
+            onCategoryClick={handleCategoryClick}
+            onViewAll={() => router.push("/search")}
+          />
+        </div>
 
-      {/* <PopularBanksSection
-        onBankClick={handleBankClick}
-        onViewAll={() => router.push("/search")}
-      /> */}
+        {/* Columna derecha - Ofertas y descuentos */}
+        <div className="lg:w-2/3 xl:w-3/4 2xl:w-4/5 lg:flex-1">
+          <PersonalizedOffersSection
+            onOfferClick={handleOfferClick}
+            userMemberships={userMemberships}
+            userCredentials={userCredentials}
+          />
 
-      <PersonalizedOffersSection
-        onOfferClick={handleOfferClick}
-        userMemberships={userMemberships}
-        userCredentials={userCredentials}
-      />
+          <TrendingSection
+            discounts={discounts.slice(0, 3)}
+            onOfferClick={handleOfferClick}
+          />
 
-      <TrendingSection
-        discounts={trendingDiscounts}
-        onOfferClick={handleOfferClick}
-      />
-
-      <DiscountsSection
-        discounts={discounts}
-        loading={loading}
-        onDiscountClick={handleNavigateToDetail}
-        onViewAll={() => router.push("/search")}
-      />
+          <DiscountsSection
+            discounts={discounts}
+            loading={loading}
+            onDiscountClick={handleNavigateToDetail}
+            onViewAll={() => router.push("/search")}
+          />
+        </div>
+      </div>
     </div>
   );
 }

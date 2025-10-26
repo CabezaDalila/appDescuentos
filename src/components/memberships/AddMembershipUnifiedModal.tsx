@@ -64,7 +64,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
     brand: "" as Card["brand"],
     level: "" as CardLevel,
     name: "",
-    expiry: "",
+    expiryDate: "",
   });
 
   // Colores predefinidos para cada categoría
@@ -152,7 +152,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
     }
 
     // Validar fecha de vencimiento si se proporciona
-    if (newCard.expiry && !validateExpiry(newCard.expiry)) {
+    if (newCard.expiryDate && !validateExpiry(newCard.expiryDate)) {
       toast.error(
         "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
       );
@@ -167,7 +167,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
       brand: newCard.brand,
       level: newCard.level,
       name: newCard.name || "",
-      expiry: newCard.expiry || "",
+      expiryDate: newCard.expiryDate || "",
     };
 
     try {
@@ -212,7 +212,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
       brand: "" as Card["brand"],
       level: "" as CardLevel,
       name: "",
-      expiry: "",
+      expiryDate: "",
     });
     onClose();
   };
@@ -589,10 +589,10 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
                   <Input
                     id="cardExpiry"
                     placeholder="MM/YY"
-                    value={newCard.expiry || ""}
+                    value={newCard.expiryDate || ""}
                     onChange={(e) => {
                       const formatted = formatExpiryInput(e.target.value);
-                      setNewCard({ ...newCard, expiry: formatted });
+                      setNewCard({ ...newCard, expiryDate: formatted });
                     }}
                     maxLength={5}
                     className="border-purple-300 focus:border-purple-500 focus:ring-purple-500"
