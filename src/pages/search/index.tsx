@@ -76,7 +76,7 @@ export default function Search() {
           const latitude = parseFloat(lat as string);
           const longitude = parseFloat(lng as string);
 
-          data = await getNearbyDiscounts(latitude, longitude, 50);
+          data = await getNearbyDiscounts(latitude, longitude, 1.5);
         } else if (q && typeof q === "string") {
           data = await getDiscountsBySearch(q);
           setSearchTerm(q);
@@ -169,7 +169,7 @@ export default function Search() {
             {isLocationFilter && (
               <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
                 <Filter className="w-3 h-3" />
-                Cerca de ti (50km)
+                Cerca de ti
                 <button
                   onClick={handleClearLocation}
                   className="ml-1 hover:bg-green-200 rounded-full p-0.5"

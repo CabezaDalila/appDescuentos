@@ -383,10 +383,10 @@ export const getPersonalizedDiscounts = async (
       return [];
     }
 
-    // Normalizar membresías del usuario
-    const normalizedUserMemberships = userMemberships.map((m) =>
-      m.toLowerCase().trim().replace(/\s+/g, " ")
-    );
+    // Normalizar membresías del usuario (filtrando undefined/null)
+    const normalizedUserMemberships = userMemberships
+      .filter((m) => m && typeof m === "string") // Filtrar undefined, null y valores no-string
+      .map((m) => m.toLowerCase().trim().replace(/\s+/g, " "));
 
     // Función helper para normalizar strings
     const normalize = (str: string): string => {
@@ -512,7 +512,7 @@ export const getPersonalizedDiscounts = async (
 export const getNearbyDiscounts = async (
   userLatitude: number,
   userLongitude: number,
-  maxDistanceKm: number = 50
+  maxDistanceKm: number = 1.5
 ): Promise<HomePageDiscount[]> => {
   try {
     const snapshot = await getDocs(collection(db, "discounts"));
