@@ -1,4 +1,5 @@
 import { db } from "@/lib/firebase/firebase";
+import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import {
@@ -43,12 +44,7 @@ interface FirestoreDiscount {
   bancos?: string[];
   // Campos para matching con membresías y credenciales del usuario
   availableMemberships?: string[]; // ["Club Despegar", "Banco Galicia"]
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
+  availableCredentials?: UserCredential[];
 
   location?: {
     latitude: number;
@@ -200,13 +196,34 @@ export const getDiscountsBySearch = async (
 
     if (!searchTerm) return all;
 
-    const term = searchTerm.toLowerCase();
-    return all.filter(
-      (d: Discount) =>
-        (d.name || "").toLowerCase().includes(term) ||
-        (d.description || "").toLowerCase().includes(term) ||
-        (d.category || "").toLowerCase().includes(term)
-    );
+    // Normalizador: minúsculas y sin tildes
+    const normalize = (v: unknown) =>
+      (typeof v === "string" ? v : "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}+/gu, "");
+
+    const term = normalize(searchTerm);
+    type ExtendedDiscount = Discount & {
+      title?: string;
+      descripcion?: string;
+      origin?: string;
+      type?: string;
+    };
+
+    return all.filter((d: Discount) => {
+      const e = d as ExtendedDiscount;
+      const haystack = [
+        normalize(e.title),
+        normalize(e.name),
+        normalize(e.description),
+        normalize(e.descripcion),
+        normalize(e.category),
+        normalize(e.origin),
+        normalize(e.type),
+      ];
+      return haystack.some((field) => field.includes(term));
+    });
   } catch (error) {
     console.error("Error al buscar descuentos:", error);
     throw error;
@@ -367,12 +384,7 @@ export const getDiscountById = async (
 // Obtener descuentos personalizados basados en las membresías y credenciales del usuario
 export const getPersonalizedDiscounts = async (
   userMemberships: string[],
-  userCredentials: Array<{
-    bank: string;
-    type: string;
-    brand: string;
-    level: string;
-  }>
+  userCredentials: UserCredential[]
 ): Promise<HomePageDiscount[]> => {
   try {
     // Si no hay membresías ni credenciales, retornar array vacío
@@ -383,21 +395,16 @@ export const getPersonalizedDiscounts = async (
       return [];
     }
 
-    // Normalizar membresías del usuario (filtrando undefined/null)
-    const normalizedUserMemberships = userMemberships
-      .filter((m) => m && typeof m === "string") // Filtrar undefined, null y valores no-string
-      .map((m) => m.toLowerCase().trim().replace(/\s+/g, " "));
-
-    // Función helper para normalizar strings
-    const normalize = (str: string): string => {
-      return str.toLowerCase().trim().replace(/\s+/g, " ");
-    };
+    // Listas ya tipadas y consistentes (provenientes de selects)
+    const userMembershipsClean = userMemberships.filter(
+      (m) => typeof m === "string" && m.trim().length > 0
+    );
 
     // Función helper para verificar si hay match de membresía
     const hasMembershipMatch = (discountMembership: string): boolean => {
-      return normalizedUserMemberships.some(
-        (userMembership) => normalize(discountMembership) === userMembership
-      );
+      const result = userMembershipsClean.includes(discountMembership);
+      // no logs aquí; se loguea un resumen al final
+      return result;
     };
 
     // Función helper para verificar si hay match ESTRICTO de credencial
@@ -408,14 +415,16 @@ export const getPersonalizedDiscounts = async (
       brand: string;
       level: string;
     }): boolean => {
-      return userCredentials.some((userCred) => {
-        return (
-          normalize(discountCred.bank) === normalize(userCred.bank) &&
-          normalize(discountCred.type) === normalize(userCred.type) &&
-          normalize(discountCred.brand) === normalize(userCred.brand) &&
-          normalize(discountCred.level) === normalize(userCred.level)
-        );
+      const result = userCredentials.some((userCred) => {
+        const matches =
+          discountCred.bank === userCred.bank &&
+          discountCred.type === userCred.type &&
+          discountCred.brand === userCred.brand &&
+          discountCred.level === userCred.level;
+        // no logs aquí; se loguea un resumen al final
+        return matches;
       });
+      return result;
     };
 
     // Obtener todos los descuentos aprobados y activos
@@ -448,7 +457,9 @@ export const getPersonalizedDiscounts = async (
             return hasMembershipMatch(availableMembership);
           }
         );
-        if (matchFound) return true;
+        if (matchFound) {
+          return true;
+        }
       }
 
       // Verificar si availableCredentials coincide EXACTAMENTE con credenciales del usuario
@@ -461,11 +472,19 @@ export const getPersonalizedDiscounts = async (
         const matchFound = data.availableCredentials.some((discountCred) => {
           return hasCredentialMatch(discountCred);
         });
-        if (matchFound) return true;
+        if (matchFound) {
+          return true;
+        }
       }
 
       return false;
     });
+
+    // Log único: mostrar cuáles matchearon (id y título)
+    const matchedSummary = matchedDiscounts.map(({ data }) => ({
+      title: data.title || data.name || "Sin título",
+    }));
+    console.log("[PersonalizedOffers] Matched:", matchedSummary);
 
     // Convertir a formato HomePageDiscount y limitar resultados
     return matchedDiscounts

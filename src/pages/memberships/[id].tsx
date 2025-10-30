@@ -1,6 +1,6 @@
 import { Button } from "@/components/Share/button";
 import { Switch } from "@/components/Share/switch";
-import { Membership } from "@/constants/membership";
+import { Card, Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase/firebase";
 import {
@@ -101,15 +101,16 @@ export default function MembershipDetailsPage() {
 
   const handleToggleCardStatus = async (
     cardId: string,
-    currentStatus: string
+    currentStatus: Card["status"]
   ) => {
     if (!membership) return;
 
-    const newStatus = currentStatus === "active" ? "inactive" : "active";
+    const newStatus: Card["status"] =
+      currentStatus === "active" ? "inactive" : "active";
 
     try {
       // Actualizar el estado de la tarjeta
-      const updatedCards = membership.cards.map((card) =>
+      const updatedCards: Card[] = membership.cards.map((card) =>
         card.id === cardId ? { ...card, status: newStatus } : card
       );
 
@@ -124,7 +125,11 @@ export default function MembershipDetailsPage() {
       });
 
       // Actualizar en Firebase
-      await updateMembershipStatus(newMembershipStatus, updatedCards);
+      await updateMembershipStatus(
+        membership.id,
+        newMembershipStatus,
+        updatedCards
+      );
 
       // Mensaje informativo
       let message = `Tarjeta ${
@@ -155,7 +160,7 @@ export default function MembershipDetailsPage() {
   };
 
   // Función para determinar el estado de la membresía basado en las tarjetas
-  const getMembershipStatusFromCards = (cards: any[]) => {
+  const getMembershipStatusFromCards = (cards: Card[]) => {
     if (cards.length === 0) return "inactive";
     return cards.some((card) => card.status === "active")
       ? "active"
@@ -163,10 +168,14 @@ export default function MembershipDetailsPage() {
   };
 
   // Función para actualizar el estado de la membresía en Firebase
-  const updateMembershipStatus = async (newStatus: string, cards?: any[]) => {
+  const updateMembershipStatus = async (
+    membershipId: string,
+    newStatus: Membership["status"],
+    cards?: Card[]
+  ) => {
     const membershipRef = doc(
       db,
-      `users/${user?.uid}/memberships/${membership.id}`
+      `users/${user?.uid}/memberships/${membershipId}`
     );
 
     const updateData: any = {
@@ -184,13 +193,17 @@ export default function MembershipDetailsPage() {
   const handleMembershipStatusToggle = async () => {
     if (!membership) return;
 
-    const newStatus = membership.status === "active" ? "inactive" : "active";
+    const newStatus: Membership["status"] =
+      membership.status === "active" ? "inactive" : "active";
 
     try {
       // Si se está desactivando la membresía, también desactivar todas las tarjetas
-      const updatedCards =
+      const updatedCards: Card[] =
         newStatus === "inactive"
-          ? membership.cards.map((card) => ({ ...card, status: "inactive" }))
+          ? membership.cards.map((card) => ({
+              ...card,
+              status: "inactive" as Card["status"],
+            }))
           : membership.cards; // Si se activa, mantener el estado actual de las tarjetas
 
       // Actualizar el estado localmente primero
@@ -201,7 +214,7 @@ export default function MembershipDetailsPage() {
       });
 
       // Actualizar en Firebase
-      await updateMembershipStatus(newStatus, updatedCards);
+      await updateMembershipStatus(membership.id, newStatus, updatedCards);
 
       const message =
         newStatus === "inactive"
@@ -268,10 +281,9 @@ export default function MembershipDetailsPage() {
       }
     } catch (error) {
       console.error("Error al eliminar tarjeta:", error);
-      toast.error(
-        "Error al eliminar la tarjeta: " +
-          (error.message || "Error desconocido")
-      );
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+      toast.error("Error al eliminar la tarjeta: " + message);
     }
   };
 
@@ -568,10 +580,11 @@ export default function MembershipDetailsPage() {
                   router.push("/memberships");
                 } catch (error) {
                   console.error("Error al eliminar membresía:", error);
-                  toast.error(
-                    "Error al eliminar la membresía: " +
-                      (error.message || "Error desconocido")
-                  );
+                  const message =
+                    error instanceof Error
+                      ? error.message
+                      : "Error desconocido";
+                  toast.error("Error al eliminar la membresía: " + message);
                 }
               }
             }}

@@ -1,4 +1,5 @@
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import { getRealDistance } from "@/utils/real-distance";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 
 interface CardDiscountCompactProps {
+  id?: string;
   title: string;
   image: string;
   category: string;
@@ -19,9 +21,11 @@ interface CardDiscountCompactProps {
   };
   onClick?: () => void;
   onNavigateToDetail?: () => void;
+  onFavoriteChange?: (id: string, isFavorite: boolean) => void;
 }
 
 const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
+  id,
   title,
   image,
   category,
@@ -32,8 +36,9 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
   discountLocation,
   onClick,
   onNavigateToDetail,
+  onFavoriteChange,
 }) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
   const [calculatedDistance, setCalculatedDistance] = useState<string>(
     initialDistance || "Sin ubicación"
   );
@@ -114,9 +119,23 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
     calculateRealDistance();
   }, [position, discountLocation, hasCalculated]);
 
+  useEffect(() => {
+    if (id) {
+      setIsLiked(isFavorite(id));
+    }
+  }, [id]);
+
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
+    if (!id) {
+      setIsLiked((prev) => !prev);
+      return;
+    }
+    const nowLiked = toggleFavorite(id);
+    setIsLiked(nowLiked);
+    if (onFavoriteChange) {
+      onFavoriteChange(id, nowLiked);
+    }
   };
 
   const handleCardClick = () => {

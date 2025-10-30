@@ -10,6 +10,7 @@ import { useDiscounts } from "@/hooks/useDiscounts";
 import { ADMIN_CONSTANTS } from "@/utils/admin";
 import { Gift, Plus, X } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 /**
  * Componente principal para la gestión de descuentos manuales
@@ -54,6 +55,7 @@ export function ManualDiscountsManager() {
 
   // Estado local para selección múltiple
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   // Handlers para operaciones de eliminación
   const handleDeleteDiscount = (discountId: string) => {
@@ -107,11 +109,30 @@ export function ManualDiscountsManager() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (submitting) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }
 
     try {
+      setSubmitting(true);
+
+      // Evitar duplicados por título cuando es creación
+      if (!editingDiscount) {
+        const normalizedTitle = formData.title.trim().toLowerCase();
+        const duplicated = discounts.some(
+          (d) => d.title?.trim().toLowerCase() === normalizedTitle
+        );
+        if (duplicated) {
+          toast.error("Ya existe un descuento con el mismo título");
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const discountData = {
         title: formData.title.trim(),
         origin: formData.origin.trim(),
@@ -162,6 +183,8 @@ export function ManualDiscountsManager() {
     } catch (error) {
       // El error ya se maneja en los hooks
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -207,6 +230,7 @@ export function ManualDiscountsManager() {
         onShowFormChange={setShowForm}
         onResetForm={resetForm}
         onSubmit={handleSubmit}
+        submitting={submitting}
       />
 
       {/* Lista de Descuentos */}

@@ -1,5 +1,5 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
-import { TrendingUp } from "lucide-react";
+import { ArrowRight, TrendingUp } from "lucide-react";
 
 interface HomePageDiscount {
   id: string;
@@ -24,11 +24,13 @@ interface HomePageDiscount {
 interface TrendingSectionProps {
   discounts: HomePageDiscount[];
   onOfferClick: (offerId: string) => void;
+  onViewAll?: () => void;
 }
 
 export function TrendingSection({
   discounts,
   onOfferClick,
+  onViewAll,
 }: TrendingSectionProps) {
   // Limitar a máximo 3 descuentos para que quepan bien en el ancho
   const limitedDiscounts = discounts.slice(0, 3);
@@ -42,12 +44,21 @@ export function TrendingSection({
             Tendencias
           </h2>
         </div>
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            className="flex items-center gap-1 text-purple-600 text-xs lg:text-sm font-medium hover:text-purple-700 transition-colors"
+          >
+            Ver todas <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
+          </button>
+        )}
       </div>
       {limitedDiscounts.length > 0 ? (
         <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
           {limitedDiscounts.map((discount) => (
             <CardDiscountCompact
               key={discount.id}
+              id={discount.id}
               title={discount.title}
               image={discount.image}
               category={discount.category}

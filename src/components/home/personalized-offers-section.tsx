@@ -1,6 +1,9 @@
 import { Card, CardContent } from "@/components/Share/card";
+import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { getPersonalizedDiscounts } from "@/lib/discounts";
-import Image from "next/image";
+import type { UserCredential } from "@/types/credentials";
+import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 interface HomePageDiscount {
@@ -21,12 +24,7 @@ interface HomePageDiscount {
 interface PersonalizedOffersSectionProps {
   onOfferClick: (offerId: string) => void;
   userMemberships?: string[];
-  userCredentials?: Array<{
-    bank: string;
-    type: string;
-    brand: string;
-    level: string;
-  }>;
+  userCredentials?: UserCredential[];
 }
 
 export function PersonalizedOffersSection({
@@ -34,6 +32,7 @@ export function PersonalizedOffersSection({
   userMemberships,
   userCredentials,
 }: PersonalizedOffersSectionProps) {
+  const router = useRouter();
   const [personalizedOffers, setPersonalizedOffers] = useState<
     HomePageDiscount[]
   >([]);
@@ -50,19 +49,22 @@ export function PersonalizedOffersSection({
       }
 
       try {
-        console.log("🔍 Debug - Llamando getPersonalizedDiscounts con:");
-        console.log("  - userMemberships:", userMemberships);
-        console.log("  - userCredentials:", userCredentials);
+        const DEBUG = false; // Cambiar a true si necesitas depurar
+        if (DEBUG) {
+          console.log("🔍 Matching personalizado", {
+            memberships: userMemberships?.length || 0,
+            credentials: userCredentials?.length || 0,
+          });
+        }
 
         const discounts = await getPersonalizedDiscounts(
           userMemberships || [],
           userCredentials || []
         );
 
-        console.log(
-          "🔍 Debug - Descuentos personalizados encontrados:",
-          discounts
-        );
+        if (DEBUG) {
+          console.log("🔍 Resultados personalizados:", discounts.length);
+        }
         setPersonalizedOffers(discounts);
       } catch (error) {
         console.error("Error cargando descuentos personalizados:", error);
@@ -85,10 +87,18 @@ export function PersonalizedOffersSection({
             Basado en tus credenciales
           </p>
         </div>
+        {personalizedOffers.length > 0 && (
+          <button
+            onClick={() => router.push("/search?personalized=true")}
+            className="flex items-center gap-1 text-purple-600 text-xs lg:text-sm font-medium hover:text-purple-700 transition-colors"
+          >
+            Ver todas <ArrowRight className="w-3 h-3 lg:w-4 lg:h-4" />
+          </button>
+        )}
       </div>
       {loading ? (
-        <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-          {[1, 2].map((i) => (
+        <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+          {[1, 2, 3].map((i) => (
             <Card key={i} className="overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-gray-200 animate-pulse h-20 lg:h-24"></div>
@@ -131,43 +141,20 @@ export function PersonalizedOffersSection({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+        <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
           {personalizedOffers.slice(0, 3).map((offer) => (
-            <Card
+            <CardDiscountCompact
               key={offer.id}
-              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => onOfferClick(offer.id)}
-            >
-              <CardContent className="p-0">
-                <div className="relative h-24 sm:h-28 lg:h-32">
-                  <Image
-                    src={offer.image}
-                    alt={offer.title}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute top-1.5 sm:top-2 lg:top-3 left-1.5 sm:left-2 lg:left-3 bg-white/90 rounded-full px-1.5 sm:px-2 lg:px-3 py-0.5 sm:py-1 lg:py-1.5">
-                    <span className="text-[10px] sm:text-xs lg:text-sm font-bold text-gray-900">
-                      {offer.discountPercentage}
-                    </span>
-                  </div>
-                  <div className="absolute bottom-1.5 sm:bottom-2 lg:bottom-3 left-1.5 sm:left-2 lg:left-3 text-white">
-                    <div className="text-[10px] sm:text-xs lg:text-sm opacity-90">
-                      {offer.category}
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2.5 sm:p-3 lg:p-4">
-                  <div className="text-xs sm:text-sm lg:text-base font-medium text-gray-900 mb-0.5 sm:mb-1 lg:mb-2">
-                    {offer.title}
-                  </div>
-                  <div className="text-[10px] sm:text-xs lg:text-sm text-gray-600">
-                    {offer.origin}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              id={offer.id}
+              title={offer.title}
+              image={offer.image}
+              category={offer.category}
+              points={offer.points}
+              distance={offer.distance}
+              expiration={offer.expiration}
+              discountPercentage={offer.discountPercentage}
+              onNavigateToDetail={() => onOfferClick(offer.id)}
+            />
           ))}
         </div>
       )}

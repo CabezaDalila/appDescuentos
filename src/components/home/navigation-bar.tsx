@@ -21,7 +21,7 @@ export function NavigationBar({
             return (
               <button
                 key={tab.id}
-                className={`flex flex-col items-center gap-0.5 sm:gap-1 h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-md transition-colors min-h-[44px] ${
+                className={`flex flex-col items-center justify-center gap-0 h-auto py-1.5 sm:py-2 px-2 sm:px-3 rounded-md transition-colors min-h-[44px] ${
                   isActive
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground hover:text-accent-foreground hover:bg-accent/50"
@@ -29,9 +29,8 @@ export function NavigationBar({
                 onClick={() => onTabsChange(tab.id)}
               >
                 <tab.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-[10px] sm:text-xs font-medium leading-tight">
-                  {tab.label}
-                </span>
+                {/* Ocultamos el texto en mobile para dejar solo iconos */}
+                <span className="sr-only">{tab.label}</span>
               </button>
             );
           })}
@@ -75,7 +74,7 @@ export function NavigationBar({
               return (
                 <button
                   key={tab.id}
-                  className={`w-full flex flex-col items-center gap-1 h-auto py-3 px-2 rounded-lg transition-colors mb-1 ${
+                  className={`w-full flex flex-col items-center justify-center gap-0 h-auto py-3 px-2 rounded-lg transition-colors mb-1 ${
                     isActive
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-accent-foreground hover:bg-accent/50"
@@ -84,9 +83,8 @@ export function NavigationBar({
                   title={tab.label}
                 >
                   <tab.icon className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-[10px] font-medium text-center leading-tight">
-                    {tab.label}
-                  </span>
+                  {/* Ocultamos el texto en modo compacto para evitar solapamientos */}
+                  <span className="sr-only">{tab.label}</span>
                 </button>
               );
             })}

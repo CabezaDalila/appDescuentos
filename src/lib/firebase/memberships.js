@@ -55,10 +55,10 @@ export const getActiveMemberships = async () => {
     const activeItems = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      
+
       // Para bancos: agregar solo las tarjetas activas como elementos separados
       if (data.category === "banco" && data.cards && data.cards.length > 0) {
-        data.cards.forEach(card => {
+        data.cards.forEach((card) => {
           if (card.status === "active" || card.status === undefined) {
             activeItems.push({
               id: `${doc.id}-${card.id}`,
@@ -410,10 +410,10 @@ export const getInactiveMemberships = async () => {
     const inactiveItems = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      
+
       // Para bancos: agregar solo las tarjetas inactivas como elementos separados
       if (data.category === "banco" && data.cards && data.cards.length > 0) {
-        data.cards.forEach(card => {
+        data.cards.forEach((card) => {
           if (card.status === "inactive") {
             inactiveItems.push({
               id: `${doc.id}-${card.id}`,
@@ -473,7 +473,13 @@ export const getMembershipById = async (membershipId) => {
     const data = membershipDoc.data();
     return {
       id: membershipDoc.id,
-      ...data,
+      // Aseguramos shape completo esperado por el front
+      name: data.name || "",
+      category: data.category,
+      status: data.status || "active",
+      color: data.color || "#6B7280",
+      cards: Array.isArray(data.cards) ? data.cards : [],
+      logoUrl: data.logoUrl,
       createdAt: data.createdAt?.toDate() || new Date(),
       updatedAt: data.updatedAt?.toDate() || new Date(),
     };

@@ -188,6 +188,20 @@ export const DISCOUNT_CATEGORIES: Category[] = [
   },
 ];
 
+// Tipo seguro para IDs de categoría y utilidades asociadas
+export type CategoryId = (typeof DISCOUNT_CATEGORIES)[number]["id"];
+export const CATEGORY_IDS: CategoryId[] = DISCOUNT_CATEGORIES.map(
+  (c) => c.id as CategoryId
+);
+
+export function assertValidCategoryId(
+  value: string
+): asserts value is CategoryId {
+  if (!CATEGORY_IDS.includes(value as CategoryId)) {
+    throw new Error(`Categoría inválida: ${value}`);
+  }
+}
+
 // Función para obtener categoría por ID
 export const getCategoryById = (id: string): Category | undefined => {
   return DISCOUNT_CATEGORIES.find((cat) => cat.id === id);

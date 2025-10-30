@@ -62,6 +62,7 @@ export function DiscountsSection({
           discounts.map((discount) => (
             <CardDiscountCompact
               key={discount.id}
+              id={discount.id}
               title={discount.title}
               image={discount.image}
               category={discount.category}

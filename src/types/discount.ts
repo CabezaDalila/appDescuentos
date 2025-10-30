@@ -1,3 +1,5 @@
+import type { UserCredential } from "@/types/credentials";
+
 export interface Discount {
   id: string;
   name: string;
@@ -23,12 +25,7 @@ export interface Discount {
   source: "manual" | "scraping"; // Origen del descuento
   origin?: string; // Origen del descuento (empresa/sitio)
   availableMemberships?: string[];
-  availableCredentials?: Array<{
-    bank: string;
-    type: string;
-    brand: string;
-    level: string;
-  }>;
+  availableCredentials?: UserCredential[];
   // Propiedades adicionales para la UI
   points?: number;
   distance?: string;

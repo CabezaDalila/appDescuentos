@@ -52,6 +52,8 @@ export default function AddCardPage() {
     expiryDate: "",
     cardType: "",
     cardName: "",
+    brand: "",
+    level: "",
   });
 
   useEffect(() => {

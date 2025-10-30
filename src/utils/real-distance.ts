@@ -153,12 +153,6 @@ export async function getRealDistance(
       // Calcular distancia Haversine para comparar
       const haversineDistance = calculateHaversineDistance(from, to);
 
-      console.log("🗺️ Calculando distancia real:", {
-        desde: { lat: from.lat, lng: from.lng },
-        hasta: { lat: to.lat, lng: to.lng },
-        haversine: `${haversineDistance.toFixed(2)} km (línea recta)`,
-      });
-
       // Llamar directamente a OpenRouteService API
       const url = new URL(
         "https://api.openrouteservice.org/v2/directions/driving-car"
@@ -168,8 +162,6 @@ export async function getRealDistance(
       url.searchParams.set("end", `${to.lng},${to.lat}`);
       url.searchParams.set("preference", "fastest");
       url.searchParams.set("units", "m");
-
-      console.log("🌐 Llamando OpenRouteService directamente");
 
       const response = await fetch(url.toString());
 
@@ -197,14 +189,9 @@ export async function getRealDistance(
       const durationMin = Math.round(duration / 60);
 
       console.log(
-        `✅ Distancia por carretera: ${distanceKm.toFixed(
+        `✅ Distancia: ${distanceKm.toFixed(
           1
         )} km | Duración: ${durationMin} min`
-      );
-      console.log(
-        `   (Línea recta sería: ${haversineDistance.toFixed(
-          1
-        )} km - diferencia: +${(distanceKm - haversineDistance).toFixed(1)} km)`
       );
 
       // Formatear distancia
@@ -236,7 +223,7 @@ export async function getRealDistance(
       console.error("Error calculando distancia real:", errorMessage);
 
       // Fallback a Haversine si falla la API
-      console.log("🔄 Usando fallback Haversine...");
+
       const fallbackResult = getHaversineResult(from, to);
       cache.set(cacheKey, fallbackResult);
       return fallbackResult;

@@ -1,9 +1,15 @@
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
-import { Card, Membership } from "@/constants/membership";
+import {
+  Card,
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
+import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -51,14 +57,7 @@ export default function Home() {
   const [discounts, setDiscounts] = useState<HomePageDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
-  const [userCredentials, setUserCredentials] = useState<
-    Array<{
-      bank: string;
-      type: string;
-      brand: string;
-      level: string;
-    }>
-  >([]);
+  const [userCredentials, setUserCredentials] = useState<UserCredential[]>([]);
 
   // Determinar saludo según la hora del día
   useEffect(() => {
@@ -104,32 +103,91 @@ export default function Home() {
         // Array de nombres de membresías
         const membershipNames: string[] = [];
         // Array de credenciales completas
-        const credentials: Array<{
-          bank: string;
-          type: string;
-          brand: string;
-          level: string;
-        }> = [];
+        const credentials: UserCredential[] = [];
 
-        memberships.forEach((m: Membership) => {
-          // Agregar el nombre de la membresía
-          membershipNames.push(m.name);
+        const validTypes = CARD_TYPES.map((t) => t.value) as ReadonlyArray<
+          Card["type"]
+        >;
+        const validBrands = CARD_BRANDS.map((b) => b.value) as ReadonlyArray<
+          Card["brand"]
+        >;
+        const validLevels = CARD_LEVELS.map((l) => l.value) as ReadonlyArray<
+          (typeof CARD_LEVELS)[number]["value"]
+        >;
 
-          // Agregar las credenciales completas de cada tarjeta
-          if (m.cards && m.cards.length > 0) {
-            m.cards.forEach((card: Card) => {
-              credentials.push({
-                bank: m.name, // El banco es el nombre de la membresía
-                type: card.type,
-                brand: card.brand,
-                level: card.level,
-              });
+        const isValidType = (v: unknown): v is Card["type"] =>
+          typeof v === "string" &&
+          (validTypes as readonly string[]).includes(v);
+        const isValidBrand = (v: unknown): v is Card["brand"] =>
+          typeof v === "string" &&
+          (validBrands as readonly string[]).includes(v);
+        const isValidLevel = (
+          v: unknown
+        ): v is (typeof CARD_LEVELS)[number]["value"] =>
+          typeof v === "string" &&
+          (validLevels as readonly string[]).includes(v);
+
+        memberships.forEach((m: unknown) => {
+          const item = m as {
+            name?: string;
+            membershipName?: string;
+            membershipCategory?: string;
+            isCard?: boolean;
+            card?: { type?: string; brand?: string; level?: string };
+            cards?: Card[];
+          };
+          // La API getActiveMemberships devuelve items "normalizados":
+          // - Para bancos con tarjetas: un item por tarjeta (isCard=true) con m.card
+          // - Para otras membresías: un item por membresía (isCard=false)
+
+          const name = item.name || item.membershipName;
+          if (typeof name === "string" && name.trim().length > 0) {
+            membershipNames.push(name);
+          }
+
+          // Solo hay credenciales cuando es banco con tarjeta
+          if (item.isCard && item.membershipCategory === "banco" && item.card) {
+            const bank = typeof name === "string" ? name : "";
+            const type = isValidType(item.card.type)
+              ? item.card.type
+              : undefined;
+            const brand = isValidBrand(item.card.brand)
+              ? item.card.brand
+              : undefined;
+            const level = isValidLevel(item.card.level)
+              ? item.card.level
+              : undefined;
+
+            if (bank && type && brand && level) {
+              credentials.push({ bank, type, brand, level });
+            }
+          } else if (Array.isArray(item.cards) && item.cards.length > 0) {
+            (item.cards as Card[]).forEach((card) => {
+              const bank = typeof name === "string" ? name : "";
+              const type = isValidType(card.type) ? card.type : undefined;
+              const brand = isValidBrand(card.brand) ? card.brand : undefined;
+              const level = isValidLevel(card.level) ? card.level : undefined;
+              if (bank && type && brand && level) {
+                credentials.push({ bank, type, brand, level });
+              }
             });
           }
         });
 
-        setUserMemberships(membershipNames);
-        setUserCredentials(credentials);
+        // Limpiar duplicados y valores inválidos
+        const cleanedMemberships = Array.from(
+          new Set(
+            membershipNames.filter(
+              (n) => typeof n === "string" && n.trim().length > 0
+            )
+          )
+        );
+        const cleanedCredentials = credentials.filter(
+          (c) => c.bank && c.type && c.brand && c.level
+        );
+
+        setUserMemberships(cleanedMemberships);
+        setUserCredentials(cleanedCredentials);
       } catch (error) {
         console.error("Error cargando membresías del usuario:", error);
         setUserMemberships([]);
@@ -141,33 +199,39 @@ export default function Home() {
   }, [user]);
 
   // Función de búsqueda con Firebase y debounce
-  const handleSearch = async (value: string) => {
+  const handleSearch = (value: string) => {
     setSearchTerm(value);
+  };
 
-    if (value.trim().length === 0) {
+  // Debounce de búsqueda y manejo de dropdown (como en /buscar)
+  useEffect(() => {
+    const term = searchTerm.trim();
+    if (term.length === 0) {
       setSearchResults([]);
       setShowSearchResults(false);
       return;
     }
-
-    // Mostrar resultados si hay texto
-    if (value.trim().length >= 2) {
-      setIsSearching(true);
+    const handler = setTimeout(async () => {
+      if (term.length < 2) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+      }
       try {
-        const results = await getDiscountsBySearch(value);
+        setIsSearching(true);
+        const results = await getDiscountsBySearch(term);
         setSearchResults(results);
         setShowSearchResults(true);
       } catch (error) {
         console.error("Error al buscar descuentos:", error);
         setSearchResults([]);
+        setShowSearchResults(false);
       } finally {
         setIsSearching(false);
       }
-    } else {
-      setSearchResults([]);
-      setShowSearchResults(false);
-    }
-  };
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -190,9 +254,16 @@ export default function Home() {
   };
 
   const handleSelectSearchResult = (discount: Discount) => {
-    setSearchTerm(discount.name);
+    const term = discount.name || "";
+    setSearchTerm(term);
     setShowSearchResults(false);
-    router.push(`/discount/${discount.id}`);
+    // Navegar a la vista de búsqueda con el término aplicado y solicitar abrir detalle
+    const query: Record<string, string> = { openId: discount.id } as Record<
+      string,
+      string
+    >;
+    if (term.trim().length >= 2) query.search = term.trim();
+    router.push({ pathname: "/search", query });
   };
 
   const handleOfferClick = (discountId: string) => {
@@ -206,12 +277,11 @@ export default function Home() {
   return (
     <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden pb-24 lg:pb-0">
       {/* Header y Search - Siempre en la parte superior */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100 lg:border-none">
+      <div className="sticky top-0 z-40 bg-white border-none">
         <Header
           greeting={greeting}
           notificationCount={getUnreadCount()}
           onNotificationClick={() => router.push("/notifications")}
-          onThemeToggle={() => {}}
         />
 
         <SearchSection
@@ -231,12 +301,15 @@ export default function Home() {
         />
       </div>
 
+      {/* Acciones rápidas justo debajo del buscador */}
+      <div className="px-3 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 mt-2">
+        <QuickActionsSection onCategoryClick={handleCategoryClick} />
+      </div>
+
       {/* Contenido principal con layout responsivo */}
       <div className="lg:flex lg:gap-6 lg:px-4 xl:px-6 2xl:px-8">
         {/* Columna izquierda - Acciones rápidas y categorías */}
-        <div className="lg:w-1/3 xl:w-1/4 2xl:w-1/5 lg:flex-shrink-0">
-          <QuickActionsSection onCategoryClick={handleCategoryClick} />
-
+        <div className="lg:w-1/4 xl:w-1/5 2xl:w-1/6 lg:flex-shrink-0">
           <ExploreCategoriesSection
             categories={selectedCategories}
             onCategoryClick={handleCategoryClick}
@@ -245,7 +318,7 @@ export default function Home() {
         </div>
 
         {/* Columna derecha - Ofertas y descuentos */}
-        <div className="lg:w-2/3 xl:w-3/4 2xl:w-4/5 lg:flex-1">
+        <div className="lg:w-3/4 xl:w-4/5 2xl:w-5/6 lg:flex-1">
           <PersonalizedOffersSection
             onOfferClick={handleOfferClick}
             userMemberships={userMemberships}
@@ -255,6 +328,7 @@ export default function Home() {
           <TrendingSection
             discounts={discounts.slice(0, 3)}
             onOfferClick={handleOfferClick}
+            onViewAll={() => router.push("/search")}
           />
 
           <DiscountsSection

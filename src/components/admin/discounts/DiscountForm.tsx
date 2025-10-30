@@ -68,6 +68,7 @@ interface DiscountFormProps {
   onShowFormChange: (show: boolean) => void;
   onResetForm: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  submitting?: boolean;
 }
 
 const CATEGORIES = getAllCategories().map((cat) => cat.name);
@@ -82,6 +83,7 @@ export function DiscountForm({
   onShowFormChange,
   onResetForm,
   onSubmit,
+  submitting,
 }: DiscountFormProps) {
   const [credentialError, setCredentialError] = useState<string>("");
   const [membershipError, setMembershipError] = useState<string>("");
@@ -192,7 +194,7 @@ export function DiscountForm({
                     {formData.origin || "Selecciona un origen"}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-64 overflow-y-auto">
                   {ORIGINS.map((origin) => (
                     <SelectItem key={origin.id} value={origin.displayName}>
                       {origin.displayName}
@@ -232,7 +234,7 @@ export function DiscountForm({
                           : "Banco"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-64 overflow-y-auto">
                       {ENTITIES_BY_CATEGORY.banco.map((bank) => (
                         <SelectItem
                           key={bank}
@@ -262,7 +264,7 @@ export function DiscountForm({
                         {formData.newCredentialType || "Tipo"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_TYPES.map((type) => (
                         <SelectItem
                           key={type.value}
@@ -292,7 +294,7 @@ export function DiscountForm({
                         {formData.newCredentialBrand || "Marca"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_BRANDS.map((brand) => (
                         <SelectItem
                           key={brand.value}
@@ -322,7 +324,7 @@ export function DiscountForm({
                         {formData.newCredentialLevel || "Nivel"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_LEVELS.map((level) => (
                         <SelectItem
                           key={level.value}
@@ -469,7 +471,7 @@ export function DiscountForm({
                           {formData.newMembershipEntity || "Entidad"}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-64 overflow-y-auto">
                         {Object.entries(ENTITIES_BY_CATEGORY).flatMap(
                           ([, entities]) =>
                             entities.map((entity) => (
@@ -587,7 +589,7 @@ export function DiscountForm({
                       {formData.category || "Selecciona una categoría"}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-64 overflow-y-auto">
                     {CATEGORIES.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -752,9 +754,19 @@ export function DiscountForm({
               <X className="h-4 w-4 mr-2" />
               Cancelar
             </Button>
-            <Button type="submit" className="flex items-center gap-2">
+            <Button
+              type="submit"
+              disabled={!!submitting}
+              className="flex items-center gap-2"
+            >
               <Save className="h-4 w-4" />
-              {isEditing ? "Actualizar Descuento" : "Guardar Descuento"}
+              {submitting
+                ? isEditing
+                  ? "Actualizando..."
+                  : "Guardando..."
+                : isEditing
+                ? "Actualizar Descuento"
+                : "Guardar Descuento"}
             </Button>
           </DialogFooter>
         </form>

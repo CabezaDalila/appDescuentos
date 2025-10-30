@@ -22,6 +22,7 @@ export default function AddMembershipPage() {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    color: "",
   });
 
   const [selectedMembership, setSelectedMembership] = useState("");
