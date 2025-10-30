@@ -356,7 +356,7 @@ export default function Search() {
       : undefined;
 
   return (
-    <div className="w-full min-h-screen bg-white">
+    <div className="w-full min-h-screen bg-white with-bottom-nav-pb">
       {/* Header removido para una vista más limpia */}
 
       {/* Buscador en la vista de resultados */}

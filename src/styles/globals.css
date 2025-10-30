@@ -201,6 +201,11 @@ body::-webkit-scrollbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Padding para contenidos que conviven con el bottom nav fijo en móvil */
+.with-bottom-nav-pb {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+}
+
 /* Mejoras para el input de búsqueda */
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;

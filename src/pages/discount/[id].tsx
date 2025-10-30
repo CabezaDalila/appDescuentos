@@ -110,7 +110,7 @@ export default function DiscountDetail() {
   }, [position, discountData, urlDistance]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen with-bottom-nav-pb">
       {/* Header con botón de regreso */}
       <div>
         <div className="flex items-center p-1">
