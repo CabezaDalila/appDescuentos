@@ -127,7 +127,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
         // Esperar a que el SDK esté disponible
         if (typeof window !== "undefined" && (window as any).OneSignal?.init) {
-          await window.OneSignal.init({
+          await (window as any).OneSignal.init({
             appId: appId,
             allowLocalhostAsSecureOrigin: true,
           });
