@@ -81,7 +81,11 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     loadGapi();
 
-    if (!loading && !user && !["/login", "/reset-password"].includes(router.pathname)) {
+    if (
+      !loading &&
+      !user &&
+      !["/login", "/reset-password"].includes(router.pathname)
+    ) {
       router.push("/login");
     }
     if (user && !loading && router.pathname === "/login") {
@@ -116,8 +120,13 @@ function MyApp({ Component, pageProps }: AppProps) {
       isInitializing = true;
 
       try {
-        // Esperar a que OneSignal se cargue
-        if (typeof window !== "undefined" && window.OneSignal) {
+        // Stub seguro y guard contra doble init
+        if (typeof window !== "undefined") {
+          (window as any).OneSignal = (window as any).OneSignal || [];
+        }
+
+        // Esperar a que el SDK esté disponible
+        if (typeof window !== "undefined" && (window as any).OneSignal?.init) {
           await window.OneSignal.init({
             appId: appId,
             allowLocalhostAsSecureOrigin: true,
@@ -165,11 +174,6 @@ function MyApp({ Component, pageProps }: AppProps) {
           src="https://apis.google.com/js/platform.js"
           strategy="beforeInteractive"
         />
-        {/* Script de OneSignal para web */}
-        <Script
-          src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
-          strategy="beforeInteractive"
-        />
         <Component {...pageProps} />
       </>
     );
@@ -190,11 +194,6 @@ function MyApp({ Component, pageProps }: AppProps) {
         />
         <Script
           src="https://apis.google.com/js/platform.js"
-          strategy="beforeInteractive"
-        />
-        {/* Script de OneSignal para web */}
-        <Script
-          src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"
           strategy="beforeInteractive"
         />
         <Component {...pageProps} />
@@ -220,6 +219,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         src="https://apis.google.com/js/platform.js"
         strategy="beforeInteractive"
       />
+      {/* OneSignal SDK se carga en _document.tsx para evitar duplicados */}
       <LayoutHome>
         <Component {...pageProps} />
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />

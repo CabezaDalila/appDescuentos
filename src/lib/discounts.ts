@@ -257,12 +257,11 @@ export const getPendingDiscounts = async (): Promise<Discount[]> => {
   try {
     const q = query(
       collection(db, "discounts"),
-      where("approvalStatus", "==", "pending"),
-      orderBy("createdAt", "desc")
+      where("approvalStatus", "==", "pending")
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => {
+    const items = snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreDiscount;
       return {
         id: doc.id,
@@ -274,6 +273,12 @@ export const getPendingDiscounts = async (): Promise<Discount[]> => {
         source: data.source || "scraping",
       } as Discount;
     });
+    // Ordenar por createdAt desc en cliente
+    items.sort(
+      (a, b) =>
+        (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0)
+    );
+    return items;
   } catch (error) {
     console.error("Error al obtener descuentos pendientes:", error);
     throw error;

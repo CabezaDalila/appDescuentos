@@ -33,7 +33,7 @@ import {
   getScrapingScripts,
   updateScrapingScript,
 } from "@/lib/admin";
-import { ScrapingScript, ScrapingFrequency } from "@/types/admin";
+import { ScrapingFrequency, ScrapingScript } from "@/types/admin";
 import {
   Calendar,
   Clock,
@@ -46,6 +46,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -64,6 +65,8 @@ export function ScrapingScriptsManager() {
   });
   const [jsonData, setJsonData] = useState("");
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
+  const [savingJson, setSavingJson] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     loadScripts();
@@ -94,13 +97,13 @@ export function ScrapingScriptsManager() {
       if (editingScript) {
         await updateScrapingScript(editingScript.id, {
           ...formData,
-          frequency: formData.frequency as ScrapingFrequency
+          frequency: formData.frequency as ScrapingFrequency,
         });
         toast.success("Script actualizado correctamente");
       } else {
         await createScrapingScript({
           ...formData,
-          frequency: formData.frequency as ScrapingFrequency
+          frequency: formData.frequency as ScrapingFrequency,
         });
         toast.success("Script creado correctamente");
       }
@@ -148,8 +151,11 @@ export function ScrapingScriptsManager() {
   };
 
   const handleSaveJsonData = async () => {
+    if (savingJson) return; // evitar doble envío
+    setSavingJson(true);
     if (!jsonData.trim()) {
       toast.error("Por favor pega el JSON con los datos de descuentos");
+      setSavingJson(false);
       return;
     }
 
@@ -172,11 +178,50 @@ export function ScrapingScriptsManager() {
       }
 
       toast.success(`${savedCount} descuentos guardados correctamente`);
+      // Aviso propio (no alert nativo) para ir a aprobar
+      if (savedCount > 0) {
+        toast.custom(
+          (t) => (
+            <div className="max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 p-4">
+              <div className="flex items-start">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    {savedCount} descuentos cargados como PENDIENTES
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    ¿Quieres ir a Aprobar ahora?
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
+                >
+                  Luego
+                </button>
+                <button
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    router.push("/admin/approvals");
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+                >
+                  Ir a aprobar
+                </button>
+              </div>
+            </div>
+          ),
+          { duration: 7000 }
+        );
+      }
       setJsonData("");
       setIsJsonDialogOpen(false);
     } catch (error) {
       toast.error("Error al procesar el JSON. Verifica el formato");
       console.error(error);
+    } finally {
+      setSavingJson(false);
     }
   };
 
@@ -468,9 +513,7 @@ export function ScrapingScriptsManager() {
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                El JSON debe ser un array de objetos con los descuentos.
-                Ejemplo: [{"{"}"name": "Descuento 1", "discountPercentage": 20
-                {"}"}]
+                El JSON debe ser un array de objetos de descuentos válidos.
               </p>
             </div>
           </div>
@@ -485,10 +528,13 @@ export function ScrapingScriptsManager() {
             </Button>
             <Button
               onClick={handleSaveJsonData}
-              className="flex items-center gap-2"
+              disabled={savingJson}
+              className={`flex items-center gap-2 ${
+                savingJson ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
               <Upload className="h-4 w-4" />
-              Guardar Descuentos
+              {savingJson ? "Guardando..." : "Guardar Descuentos"}
             </Button>
           </DialogFooter>
         </DialogContent>

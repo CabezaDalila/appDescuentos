@@ -1,6 +1,14 @@
 import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
-import { BarChart3, Gift, Home, LogOut, Settings, Users } from "lucide-react";
+import {
+  BarChart3,
+  CheckSquare,
+  Gift,
+  Home,
+  LogOut,
+  Settings,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
@@ -28,6 +36,12 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
       href: "/admin",
       icon: BarChart3,
       current: router.pathname === "/admin",
+    },
+    {
+      name: "Aprobaciones",
+      href: "/admin/approvals",
+      icon: CheckSquare,
+      current: router.pathname.startsWith("/admin/approvals"),
     },
     {
       name: "Descuentos",
