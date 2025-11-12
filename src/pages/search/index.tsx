@@ -8,6 +8,7 @@ import {
   getHomePageDiscounts,
   getNearbyDiscounts,
   getPersonalizedDiscounts,
+  MAX_DISTANCE_KM,
 } from "@/lib/discounts";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import type { UserCredential } from "@/types/credentials";
@@ -222,7 +223,7 @@ export default function Search() {
           const latitude = parseFloat(lat as string);
           const longitude = parseFloat(lng as string);
 
-          data = await getNearbyDiscounts(latitude, longitude, 1.5);
+          data = await getNearbyDiscounts(latitude, longitude, MAX_DISTANCE_KM);
         } else if (personalized === "true") {
           // Construir memberships y credenciales del usuario y traer personalizadas
           const memberships = await getActiveMemberships();

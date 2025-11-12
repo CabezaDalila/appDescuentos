@@ -48,7 +48,7 @@ export function EmptyState({
           icon: MapPin,
           title: "No hay descuentos cerca de ti",
           description:
-            "No encontramos descuentos en un radio de 50km. Prueba explorando todas las ofertas disponibles.",
+            "No encontramos descuentos en un radio de 1,5km. Prueba explorando todas las ofertas disponibles.",
           showButton: true,
           buttonText: "Ver todos los descuentos",
         };

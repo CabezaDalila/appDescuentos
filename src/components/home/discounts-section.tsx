@@ -25,7 +25,7 @@ interface HomePageDiscount {
 interface DiscountsSectionProps {
   discounts: HomePageDiscount[];
   loading: boolean;
-  onDiscountClick: (discountId: string) => void;
+  onDiscountClick: (discountId: string, url?: string) => void;
   onViewAll: () => void;
 }
 
@@ -71,7 +71,17 @@ export function DiscountsSection({
               expiration={discount.expiration}
               discountPercentage={discount.discountPercentage}
               discountLocation={discount.location}
-              onNavigateToDetail={() => onDiscountClick(discount.id)}
+              onNavigateToDetail={(distance) => {
+                const url =
+                  distance &&
+                  distance !== "Sin ubicación" &&
+                  distance !== "Calculando..."
+                    ? `/discount/${discount.id}?distance=${encodeURIComponent(
+                        distance
+                      )}`
+                    : `/discount/${discount.id}`;
+                onDiscountClick(discount.id, url);
+              }}
             />
           ))
         )}

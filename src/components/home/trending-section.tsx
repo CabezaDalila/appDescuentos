@@ -23,7 +23,7 @@ interface HomePageDiscount {
 
 interface TrendingSectionProps {
   discounts: HomePageDiscount[];
-  onOfferClick: (offerId: string) => void;
+  onOfferClick: (offerId: string, url?: string) => void;
   onViewAll?: () => void;
 }
 
@@ -67,7 +67,17 @@ export function TrendingSection({
               expiration={discount.expiration}
               discountPercentage={discount.discountPercentage}
               discountLocation={discount.location}
-              onNavigateToDetail={() => onOfferClick(discount.id)}
+              onNavigateToDetail={(distance) => {
+                const url =
+                  distance &&
+                  distance !== "Sin ubicación" &&
+                  distance !== "Calculando..."
+                    ? `/discount/${discount.id}?distance=${encodeURIComponent(
+                        distance
+                      )}`
+                    : `/discount/${discount.id}`;
+                onOfferClick(discount.id, url);
+              }}
             />
           ))}
         </div>

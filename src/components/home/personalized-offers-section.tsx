@@ -22,7 +22,7 @@ interface HomePageDiscount {
 }
 
 interface PersonalizedOffersSectionProps {
-  onOfferClick: (offerId: string) => void;
+  onOfferClick: (offerId: string, url?: string) => void;
   userMemberships?: string[];
   userCredentials?: UserCredential[];
 }
@@ -153,7 +153,17 @@ export function PersonalizedOffersSection({
               distance={offer.distance}
               expiration={offer.expiration}
               discountPercentage={offer.discountPercentage}
-              onNavigateToDetail={() => onOfferClick(offer.id)}
+              onNavigateToDetail={(distance) => {
+                const url =
+                  distance &&
+                  distance !== "Sin ubicación" &&
+                  distance !== "Calculando..."
+                    ? `/discount/${offer.id}?distance=${encodeURIComponent(
+                        distance
+                      )}`
+                    : `/discount/${offer.id}`;
+                onOfferClick(offer.id, url);
+              }}
             />
           ))}
         </div>

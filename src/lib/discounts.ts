@@ -2,6 +2,7 @@ import { db } from "@/lib/firebase/firebase";
 import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
+import { getRealDistance } from "@/utils/real-distance";
 import {
   addDoc,
   collection,
@@ -14,6 +15,9 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+
+// Distancia máxima para el filtro "Cerca de ti" (en kilómetros)
+export const MAX_DISTANCE_KM = 2;
 
 interface FirestoreDiscount {
   name: string;
@@ -151,23 +155,7 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
       "Error al obtener descuentos para la página principal:",
       error
     );
-    // Retornar descuentos por defecto en caso de error
-    return [
-      {
-        id: "default-1",
-        title: "Descuentos disponibles",
-        image: "/primary_image.jpg",
-        category: "General",
-        discountPercentage: "Cargando...",
-        points: 6,
-        distance: "1.2km",
-        expiration: "Próximamente",
-        description: "Cargando descuentos desde la base de datos...",
-        origin: "Sistema",
-        status: "active" as const,
-        isVisible: true,
-      },
-    ] as HomePageDiscount[];
+    return [];
   }
 };
 
@@ -532,17 +520,17 @@ export const getPersonalizedDiscounts = async (
   }
 };
 
-// Obtener descuentos cercanos a una ubicación específica (versión gratuita)
+// Obtener descuentos cercanos a una ubicación específica usando OpenRouteService
 export const getNearbyDiscounts = async (
   userLatitude: number,
   userLongitude: number,
-  maxDistanceKm: number = 1.5
+  maxDistanceKm: number = MAX_DISTANCE_KM
 ): Promise<HomePageDiscount[]> => {
   try {
     const snapshot = await getDocs(collection(db, "discounts"));
     const nearbyDiscounts: HomePageDiscount[] = [];
 
-    snapshot.forEach((doc) => {
+    for (const doc of snapshot.docs) {
       const data = doc.data() as FirestoreDiscount;
       const id = doc.id;
 
@@ -551,17 +539,35 @@ export const getNearbyDiscounts = async (
         data.isVisible === false ||
         !data.location
       ) {
-        return;
+        continue;
       }
 
-      // Calcular distancia usando la fórmula de Haversine
-      const distance = calculateDistance(
-        { latitude: userLatitude, longitude: userLongitude },
-        { latitude: data.location.latitude, longitude: data.location.longitude }
+      // Calcular distancia usando OpenRouteService
+      const result = await getRealDistance(
+        { lat: userLatitude, lng: userLongitude },
+        { lat: data.location.latitude, lng: data.location.longitude }
       );
 
-      // Solo incluir si está dentro del radio máximo
-      if (distance <= maxDistanceKm) {
+      // Si no hay resultado (sin API key o error), saltar este descuento
+      if (!result) {
+        console.log("[getNearbyDiscounts] Sin resultado para descuento:", {
+          id,
+          title: data.title || data.name,
+        });
+        continue;
+      }
+
+      // Solo incluir si está dentro del radio máximo (convertir metros a km para comparar)
+      const distanceKm = result.distance / 1000;
+      console.log("[getNearbyDiscounts] Distancia calculada:", {
+        id,
+        title: data.title || data.name,
+        distance: result.distanceText,
+        distanceKm: distanceKm.toFixed(2),
+        maxDistanceKm,
+        dentroDelRadio: distanceKm <= maxDistanceKm,
+      });
+      if (distanceKm <= maxDistanceKm) {
         const title = data.title || data.name || "Sin título";
         const image =
           data.imageUrl ||
@@ -584,7 +590,7 @@ export const getNearbyDiscounts = async (
           category,
           discountPercentage,
           points: 6,
-          distance: formatDistance(distance),
+          distance: result.distanceText,
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",
           origin: data.origin || "Origen no especificado",
@@ -592,7 +598,7 @@ export const getNearbyDiscounts = async (
           isVisible: data.isVisible ?? true,
         } as HomePageDiscount);
       }
-    });
+    }
 
     // Ordenar por distancia (más cercanos primero)
     return nearbyDiscounts.sort((a, b) => {
@@ -605,34 +611,3 @@ export const getNearbyDiscounts = async (
     return [];
   }
 };
-
-// Función auxiliar para calcular distancia (fórmula de Haversine)
-function calculateDistance(
-  point1: { latitude: number; longitude: number },
-  point2: { latitude: number; longitude: number }
-): number {
-  const R = 6371; // Radio de la Tierra en kilómetros
-  const dLat = toRadians(point2.latitude - point1.latitude);
-  const dLon = toRadians(point2.longitude - point1.longitude);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(point1.latitude)) *
-      Math.cos(toRadians(point2.latitude)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function toRadians(degrees: number): number {
-  return degrees * (Math.PI / 180);
-}
-
-function formatDistance(distance: number): string {
-  if (distance < 1) {
-    return `${Math.round(distance * 1000)} m`;
-  }
-  return `${distance.toFixed(1)} km`;
-}

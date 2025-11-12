@@ -1,6 +1,5 @@
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { useDistance } from "@/hooks/useDistance";
 import { isFavorite, toggleFavorite } from "@/utils/favorites";
-import { getRealDistance } from "@/utils/real-distance";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Badge } from "../Share/badge";
@@ -20,7 +19,7 @@ interface CardDiscountCompactProps {
     longitude: number;
   };
   onClick?: () => void;
-  onNavigateToDetail?: () => void;
+  onNavigateToDetail?: (distance?: string) => void;
   onFavoriteChange?: (id: string, isFavorite: boolean) => void;
 }
 
@@ -39,85 +38,28 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
   onFavoriteChange,
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
-  const [calculatedDistance, setCalculatedDistance] = useState<string>(
-    initialDistance || "Sin ubicación"
-  );
-  const [distanceLoading, setDistanceLoading] = useState(false);
-  const [hasCalculated, setHasCalculated] = useState(false);
 
-  const { position, getCurrentPosition } = useGeolocation();
+  const { distance: calculatedDistance, loading: distanceLoading } =
+    useDistance({
+      discountLocation,
+      initialDistance,
+    });
 
-  // Calcular distancia automáticamente si hay ubicación del descuento
+  // Log cuando la distancia cambia
   useEffect(() => {
-    const calculateDistance = async () => {
-      // Si ya tenemos una distancia válida, no calcular
-      if (
-        initialDistance &&
-        initialDistance !== "Calculando..." &&
-        initialDistance !== "Sin ubicación"
-      ) {
-        setCalculatedDistance(initialDistance);
-        return;
-      }
-
-      // Si no hay ubicación del descuento, no calcular
-      if (!discountLocation) {
-        setCalculatedDistance("Sin ubicación");
-        return;
-      }
-
-      // Si ya calculó, no volver a calcular
-      if (hasCalculated) {
-        return;
-      }
-
-      try {
-        setDistanceLoading(true);
-        setCalculatedDistance("Calculando...");
-
-        // Obtener ubicación del usuario
-        await getCurrentPosition();
-      } catch (error) {
-        console.error("Error obteniendo ubicación:", error);
-        setCalculatedDistance("Ubicación no disponible");
-        setDistanceLoading(false);
-      }
-    };
-
-    calculateDistance();
-  }, [discountLocation, initialDistance, getCurrentPosition, hasCalculated]);
-
-  // Calcular distancia real cuando se obtiene la posición del usuario
-  useEffect(() => {
-    const calculateRealDistance = async () => {
-      if (!position || !discountLocation || hasCalculated) {
-        return;
-      }
-
-      try {
-        setDistanceLoading(true);
-
-        const result = await getRealDistance(
-          { lat: position.latitude, lng: position.longitude },
-          { lat: discountLocation.latitude, lng: discountLocation.longitude }
-        );
-
-        if (result) {
-          setCalculatedDistance(result.distanceText);
-        } else {
-          setCalculatedDistance("Error calculando distancia");
-        }
-      } catch (error) {
-        console.error("Error calculando distancia:", error);
-        setCalculatedDistance("Error calculando distancia");
-      } finally {
-        setDistanceLoading(false);
-        setHasCalculated(true);
-      }
-    };
-
-    calculateRealDistance();
-  }, [position, discountLocation, hasCalculated]);
+    if (
+      calculatedDistance &&
+      calculatedDistance !== "Calculando..." &&
+      calculatedDistance !== "Sin ubicación"
+    ) {
+      console.log("[CardDiscountCompact] Distancia para descuento:", {
+        id,
+        title,
+        distance: calculatedDistance,
+        category,
+      });
+    }
+  }, [calculatedDistance, id, title, category]);
 
   useEffect(() => {
     if (id) {
@@ -140,7 +82,13 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
   const handleCardClick = () => {
     if (onNavigateToDetail) {
-      onNavigateToDetail();
+      // Pasar la distancia calculada si está disponible
+      console.log("[CardDiscountCompact] Navegando a detalle con distancia:", {
+        id,
+        title,
+        distance: calculatedDistance,
+      });
+      onNavigateToDetail(calculatedDistance);
     } else if (onClick) {
       onClick();
     }

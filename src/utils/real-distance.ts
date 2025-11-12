@@ -1,6 +1,6 @@
 /**
  * Utilidades para cálculo de distancias reales por carretera
- * Usa el proxy de Next.js (/api/distance) para evitar problemas de CORS
+ * Usa OpenRouteService API para calcular distancia y tiempo de viaje
  */
 
 // API Key de OpenRouteService (gratis)
@@ -16,59 +16,12 @@ export interface RealDistanceResult {
 
 // Sistema de caché y gestión de requests
 const cache = new Map<string, RealDistanceResult>();
-const pendingRequests = new Map<string, Promise<RealDistanceResult>>();
+const pendingRequests = new Map<string, Promise<RealDistanceResult | null>>();
 
 // Configuración para limitar requests
 const MAX_CONCURRENT_REQUESTS = 3;
 let activeRequests = 0;
 const requestQueue: Array<() => void> = [];
-
-/**
- * Calcula la distancia Haversine entre dos puntos (línea recta)
- */
-function calculateHaversineDistance(
-  point1: { lat: number; lng: number },
-  point2: { lat: number; lng: number }
-): number {
-  const R = 6371; // Radio de la Tierra en kilómetros
-  const dLat = toRadians(point2.lat - point1.lat);
-  const dLng = toRadians(point2.lng - point1.lng);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(point1.lat)) *
-      Math.cos(toRadians(point2.lat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-function toRadians(degrees: number): number {
-  return degrees * (Math.PI / 180);
-}
-
-/**
- * Retorna resultado usando distancia Haversine (línea recta)
- */
-function getHaversineResult(
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number }
-): RealDistanceResult {
-  const haversineDistance = calculateHaversineDistance(from, to);
-  const distanceText =
-    haversineDistance < 1
-      ? `${Math.round(haversineDistance * 1000)} m`
-      : `${haversineDistance.toFixed(1)} km`;
-
-  return {
-    distance: haversineDistance * 1000, // convertir a metros
-    duration: 0, // no disponible con Haversine
-    distanceText,
-    durationText: "N/A",
-  };
-}
 
 /**
  * Genera una clave única para el caché
@@ -108,34 +61,30 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Calcula la distancia real por carretera entre dos puntos usando OpenRouteService
- * CON caché y limitación de requests concurrentes
+ * Retorna null si no hay API key o si falla la petición
  */
 export async function getRealDistance(
   from: { lat: number; lng: number },
   to: { lat: number; lng: number }
 ): Promise<RealDistanceResult | null> {
+  // Si no hay API key, retornar null directamente
+  if (!OPENROUTE_API_KEY) {
+    return null;
+  }
+
   const cacheKey = getCacheKey(from, to);
 
-  // 1. Verificar caché primero
+  // Verificar caché primero
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey)!;
   }
 
-  // 2. Si ya hay una request pendiente para estas coordenadas, esperar esa
+  // Si ya hay una request pendiente para estas coordenadas, esperar esa
   if (pendingRequests.has(cacheKey)) {
-    // No loguear - esto es esperado cuando múltiples componentes piden la misma distancia
     return await pendingRequests.get(cacheKey)!;
   }
 
-  // 3. Si no hay API key, usar Haversine directamente
-  if (!OPENROUTE_API_KEY) {
-    console.log("⚠️ No hay API key configurada, usando Haversine");
-    const result = getHaversineResult(from, to);
-    cache.set(cacheKey, result);
-    return result;
-  }
-
-  // 4. Crear nueva request con control de concurrencia
+  // Crear nueva request con control de concurrencia
   const requestPromise = (async () => {
     // Esperar en la cola si hay demasiadas requests activas
     while (activeRequests >= MAX_CONCURRENT_REQUESTS) {
@@ -150,10 +99,7 @@ export async function getRealDistance(
       // Pequeño delay para no saturar la API
       await delay(300);
 
-      // Calcular distancia Haversine para comparar
-      const haversineDistance = calculateHaversineDistance(from, to);
-
-      // Llamar directamente a OpenRouteService API
+      // Llamar a OpenRouteService API
       const url = new URL(
         "https://api.openrouteservice.org/v2/directions/driving-car"
       );
@@ -169,30 +115,22 @@ export async function getRealDistance(
         console.error(
           `Error OpenRouteService ${response.status}: ${response.statusText}`
         );
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        return null;
       }
 
       const data = await response.json();
 
       if (!data.features || data.features.length === 0) {
         console.error("No se encontró ruta en OpenRouteService");
-        const fallbackResult = getHaversineResult(from, to);
-        cache.set(cacheKey, fallbackResult);
-        return fallbackResult;
+        return null;
       }
 
       const route = data.features[0];
-      const distance = route.properties.summary.distance; // en metros - DISTANCIA POR CARRETERA
+      const distance = route.properties.summary.distance; // en metros
       const duration = route.properties.summary.duration; // en segundos
 
       const distanceKm = distance / 1000;
       const durationMin = Math.round(duration / 60);
-
-      console.log(
-        `✅ Distancia: ${distanceKm.toFixed(
-          1
-        )} km | Duración: ${durationMin} min`
-      );
 
       // Formatear distancia
       const distanceText =
@@ -218,15 +156,8 @@ export async function getRealDistance(
       cache.set(cacheKey, result);
       return result;
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Error desconocido";
-      console.error("Error calculando distancia real:", errorMessage);
-
-      // Fallback a Haversine si falla la API
-
-      const fallbackResult = getHaversineResult(from, to);
-      cache.set(cacheKey, fallbackResult);
-      return fallbackResult;
+      console.error("Error calculando distancia real:", err);
+      return null;
     } finally {
       activeRequests--;
       processNextRequest();

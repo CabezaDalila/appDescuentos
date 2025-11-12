@@ -27,7 +27,7 @@ export default function Home() {
   const router = useRouter();
   const { getUnreadCount } = useNotifications();
   const { user } = useAuth();
-  
+
   // Usar hook con caché para descuentos
   const { discounts, loading } = useCachedDiscounts();
 
@@ -212,8 +212,8 @@ export default function Home() {
   //   router.push(`/search?bank=${bankId}`);
   // };
 
-  const handleNavigateToDetail = (discountId: string) => {
-    router.push(`/discount/${discountId}`);
+  const handleNavigateToDetail = (discountId: string, url?: string) => {
+    router.push(url || `/discount/${discountId}`);
   };
 
   const handleSelectSearchResult = (discount: Discount) => {
@@ -229,8 +229,8 @@ export default function Home() {
     router.push({ pathname: "/search", query });
   };
 
-  const handleOfferClick = (discountId: string) => {
-    router.push(`/discount/${discountId}`);
+  const handleOfferClick = (discountId: string, url?: string) => {
+    router.push(url || `/discount/${discountId}`);
   };
 
   // Usar todas las categorías disponibles
