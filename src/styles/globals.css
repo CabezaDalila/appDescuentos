@@ -201,9 +201,27 @@ body::-webkit-scrollbar {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Safe area superior */
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Safe area para contenedores principales */
+.safe-area-insets {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 /* Padding para contenidos que conviven con el bottom nav fijo en móvil */
 .with-bottom-nav-pb {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+}
+
+/* Margen superior para headers que respetan la status bar */
+.with-top-safe-area {
+  margin-top: env(safe-area-inset-top, 0px);
 }
 
 /* Mejoras para el input de búsqueda */

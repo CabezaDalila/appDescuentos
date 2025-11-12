@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.1",
+    "@capacitor/app": "^7.1.0",
     "@capacitor/cli": "^7.4.1",
     "@capacitor/core": "^7.4.1",
     "@codetrix-studio/capacitor-google-auth": "^3.3.6",

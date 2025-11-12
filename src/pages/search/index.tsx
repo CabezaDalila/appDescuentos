@@ -1,6 +1,7 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { EmptyState } from "@/components/home/empty-state";
-import { SearchDropdown } from "@/components/home/SearchDropdown";
+import { SearchSection } from "@/components/home/search-section";
+import { PageHeader } from "@/components/Share/page-header";
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
 import {
   getDiscountsBySearch,
@@ -13,9 +14,9 @@ import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { matchesCategory } from "@/utils/category-mapping";
 import { getFavoriteIds } from "@/utils/favorites";
-import { Filter, Search as SearchIcon, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // Tipo para descuentos de la página de inicio
 type HomePageDiscount = {
@@ -53,7 +54,6 @@ export default function Search() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Discount[]>([]);
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const categoryLabelMap = useMemo(() => {
     const map: Record<string, string> = {};
     EXPLORE_CATEGORIES.forEach((c) => (map[c.id] = c.label));
@@ -91,12 +91,7 @@ export default function Search() {
           setIsSearching(true);
           const results = await getDiscountsBySearch(next);
           setSearchResults(results);
-          const isFocused =
-            inputRef.current !== null &&
-            typeof document !== "undefined" &&
-            document.activeElement === inputRef.current;
-          // Solo mostrar el dropdown si el input está enfocado
-          setShowSearchResults(isFocused);
+          // El SearchSection maneja el estado de showSearchResults a través de onSearchFocus
         } catch {
           setSearchResults([]);
           setShowSearchResults(false);
@@ -277,13 +272,7 @@ export default function Search() {
         ) {
           const urlTerm = (search || q) as string;
           data = await getDiscountsBySearch(urlTerm);
-          const isFocused =
-            inputRef.current !== null &&
-            typeof document !== "undefined" &&
-            document.activeElement === inputRef.current;
-          if (!isFocused) {
-            setSearchTerm(urlTerm);
-          }
+          setSearchTerm(urlTerm);
         } else {
           data = await getHomePageDiscounts();
         }
@@ -356,229 +345,277 @@ export default function Search() {
       : undefined;
 
   return (
-    <div className="w-full min-h-screen bg-white with-bottom-nav-pb">
-      {/* Header removido para una vista más limpia */}
+    <div className="w-full min-h-screen bg-gray-50 with-bottom-nav-pb">
+      {/* Header y buscador unificados en sticky */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm">
+        {/* Header con título y botón de retroceso */}
+        <PageHeader
+          title="Buscar"
+          onBack={() => {
+            // Resetear el estado de búsqueda
+            setSearchTerm("");
+            setSelectedCategories([]);
+            setShowSearchResults(false);
+            setSearchResults([]);
+            setIsLocationFilter(false);
+            // Redirigir al home
+            router.push("/home");
+          }}
+        />
 
-      {/* Buscador en la vista de resultados */}
-      <div className="px-4 pt-1">
-        <div className="relative max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="¿Qué estás buscando hoy?"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onFocus={() =>
-              searchTerm.trim().length >= 2 && setShowSearchResults(true)
-            }
-            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-            className="w-full pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 caret-purple-600 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 bg-white shadow-sm"
-          />
-          {/* Panel de filtros */}
-          {showFilters && (
-            <div
-              className="absolute z-40 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl p-3"
-              style={{ top: "100%" }}
-            >
-              <div className="mb-2 text-sm font-semibold text-gray-900">
-                Categorías
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                {EXPLORE_CATEGORIES.map((categoryDef) => (
-                  <label
-                    key={categoryDef.id}
-                    className="flex items-center gap-2 text-sm text-gray-800"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draftCategories.includes(categoryDef.id)}
-                      onChange={(e) => {
-                        setDraftCategories((prev) =>
-                          e.target.checked
-                            ? Array.from(new Set([...prev, categoryDef.id]))
-                            : prev.filter(
-                                (categoryId) => categoryId !== categoryDef.id
-                              )
-                        );
+        {/* Buscador y filtros */}
+        <div className="border-b border-gray-200">
+          <div className="py-3">
+            <SearchSection
+              searchTerm={searchTerm}
+              searchResults={searchResults}
+              isSearching={isSearching}
+              showSearchResults={showSearchResults}
+              onSearchChange={setSearchTerm}
+              onSearchFocus={() =>
+                searchTerm.trim().length >= 2 && setShowSearchResults(true)
+              }
+              onSearchBlur={() =>
+                setTimeout(() => setShowSearchResults(false), 200)
+              }
+              onClearSearch={() => {
+                setSearchTerm("");
+                setShowSearchResults(false);
+              }}
+              onSelectResult={(d) => {
+                setShowSearchResults(false);
+                router.push(`/discount/${d.id}`);
+              }}
+              showFilterButton={true}
+              hasActiveFilters={
+                selectedCategories.length > 0 || isLocationFilter
+              }
+              onFilterClick={() => {
+                setDraftCategories(selectedCategories);
+                setDraftNearby(isLocationFilter);
+                setShowFilters((s) => !s);
+              }}
+              compact={true}
+            />
+
+            {/* Panel de filtros */}
+            {showFilters && (
+              <>
+                <div
+                  className="fixed inset-0 bg-black/20 z-[45]"
+                  onClick={() => setShowFilters(false)}
+                />
+                <div className="absolute z-[50] top-full left-4 right-4 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 max-h-[70vh] overflow-y-auto">
+                  <div className="mb-4">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">
+                      Categorías
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {EXPLORE_CATEGORIES.map((categoryDef) => (
+                        <label
+                          key={categoryDef.id}
+                          className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                            draftCategories.includes(categoryDef.id)
+                              ? "bg-purple-50 border border-purple-200"
+                              : "bg-gray-50 border border-transparent hover:bg-gray-100"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={draftCategories.includes(categoryDef.id)}
+                            onChange={(e) => {
+                              setDraftCategories((prev) =>
+                                e.target.checked
+                                  ? Array.from(
+                                      new Set([...prev, categoryDef.id])
+                                    )
+                                  : prev.filter(
+                                      (categoryId) =>
+                                        categoryId !== categoryDef.id
+                                    )
+                              );
+                            }}
+                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                          />
+                          <span
+                            className={`text-sm ${
+                              draftCategories.includes(categoryDef.id)
+                                ? "text-purple-700 font-medium"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {categoryDef.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">
+                      Otros filtros
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <label
+                        className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                          draftCategories.includes("favoritos")
+                            ? "bg-purple-50 border border-purple-200"
+                            : "bg-gray-50 border border-transparent hover:bg-gray-100"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={draftCategories.includes("favoritos")}
+                          onChange={(e) => {
+                            setDraftCategories((prev) =>
+                              e.target.checked
+                                ? Array.from(new Set([...prev, "favoritos"]))
+                                : prev.filter((x) => x !== "favoritos")
+                            );
+                          }}
+                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                        />
+                        <span
+                          className={`text-sm ${
+                            draftCategories.includes("favoritos")
+                              ? "text-purple-700 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          Favoritos
+                        </span>
+                      </label>
+                      <label
+                        className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                          draftNearby
+                            ? "bg-green-50 border border-green-200"
+                            : "bg-gray-50 border border-transparent hover:bg-gray-100"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={draftNearby}
+                          onChange={(e) => setDraftNearby(e.target.checked)}
+                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                        />
+                        <span
+                          className={`text-sm ${
+                            draftNearby
+                              ? "text-green-700 font-medium"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          Cerca de ti
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <button
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      onClick={() => {
+                        setDraftCategories([]);
+                        setDraftNearby(false);
                       }}
-                    />
-                    <span
-                      className={
-                        draftCategories.includes(categoryDef.id)
-                          ? "text-purple-700 font-medium"
-                          : "text-gray-800"
-                      }
                     >
-                      {categoryDef.label}
-                    </span>
-                  </label>
+                      Limpiar
+                    </button>
+                    <button
+                      className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+                      onClick={async () => {
+                        setShowFilters(false);
+                        setSelectedCategories(draftCategories);
+                        // Construir query
+                        const queryObj: Record<string, string> = {};
+                        if (searchTerm.trim().length >= 2)
+                          queryObj.search = searchTerm.trim();
+                        if (draftCategories.length > 0)
+                          queryObj.categories = draftCategories.join(",");
+                        if (draftNearby) {
+                          try {
+                            const pos = await getCurrentPosition();
+                            queryObj.location = "true";
+                            queryObj.lat = String(pos.lat);
+                            queryObj.lng = String(pos.lng);
+                          } catch {
+                            // Si falla geolocalización, mantener sin ubicación
+                          }
+                        }
+                        router.push({ pathname: "/search", query: queryObj });
+                      }}
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Chips de filtros activos */}
+          {(selectedCategories.length > 0 || isLocationFilter) && (
+            <div className="px-4 pb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedCategories.slice(0, maxCategoryChips).map((cat) => (
+                  <span
+                    key={cat}
+                    className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium"
+                  >
+                    <Filter className="w-3 h-3" />
+                    {categoryLabelMap[cat] || cat}
+                    <button
+                      onClick={() => handleClearCategory(cat)}
+                      className="ml-0.5 hover:bg-purple-200 rounded-full p-0.5 transition-colors"
+                      aria-label={`Quitar filtro ${
+                        categoryLabelMap[cat] || cat
+                      }`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
                 ))}
-              </div>
-              <div className="mt-3 text-sm font-semibold text-gray-900">
-                Otros
-              </div>
-              <div className="mt-1 grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={draftCategories.includes("favoritos")}
-                    onChange={(e) => {
-                      setDraftCategories((prev) =>
-                        e.target.checked
-                          ? Array.from(new Set([...prev, "favoritos"]))
-                          : prev.filter((x) => x !== "favoritos")
-                      );
-                    }}
-                  />
-                  <span
-                    className={
-                      draftCategories.includes("favoritos")
-                        ? "text-purple-700 font-medium"
-                        : "text-gray-800"
-                    }
+
+                {selectedCategories.length > maxCategoryChips && (
+                  <button
+                    className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-purple-100 transition-colors"
+                    onClick={() => setShowFilters(true)}
+                    title={selectedCategories
+                      .slice(maxCategoryChips)
+                      .map(
+                        (categoryId) =>
+                          categoryLabelMap[categoryId] || categoryId
+                      )
+                      .join(", ")}
                   >
-                    Favoritos
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    checked={draftNearby}
-                    onChange={(e) => setDraftNearby(e.target.checked)}
-                  />
-                  <span
-                    className={
-                      draftNearby
-                        ? "text-purple-700 font-medium"
-                        : "text-gray-800"
-                    }
-                  >
+                    +{selectedCategories.length - maxCategoryChips}
+                  </button>
+                )}
+
+                {isLocationFilter && (
+                  <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                    <Filter className="w-3 h-3" />
                     Cerca de ti
-                  </span>
-                </label>
-              </div>
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                  onClick={() => {
-                    setDraftCategories([]);
-                    setDraftNearby(false);
-                  }}
-                >
-                  Limpiar
-                </button>
-                <button
-                  className="text-sm text-white bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded-md"
-                  onClick={async () => {
-                    setShowFilters(false);
-                    setSelectedCategories(draftCategories);
-                    // Construir query
-                    const queryObj: Record<string, string> = {};
-                    if (searchTerm.trim().length >= 2)
-                      queryObj.search = searchTerm.trim();
-                    if (draftCategories.length > 0)
-                      queryObj.categories = draftCategories.join(",");
-                    if (draftNearby) {
-                      try {
-                        const pos = await getCurrentPosition();
-                        queryObj.location = "true";
-                        queryObj.lat = String(pos.lat);
-                        queryObj.lng = String(pos.lng);
-                      } catch {
-                        // Si falla geolocalización, mantener sin ubicación
+                    <button
+                      onClick={() =>
+                        router.push({
+                          pathname: "/search",
+                          query: { search: searchTerm },
+                        })
                       }
-                    }
-                    router.push({ pathname: "/search", query: queryObj });
-                  }}
-                >
-                  Aplicar
-                </button>
+                      className="ml-0.5 hover:bg-green-200 rounded-full p-0.5 transition-colors"
+                      aria-label="Quitar filtro de ubicación"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
               </div>
             </div>
           )}
-          <SearchDropdown
-            isOpen={showSearchResults}
-            isSearching={isSearching}
-            searchTerm={searchTerm}
-            results={searchResults}
-            onSelect={(d) => {
-              // En la vista de búsqueda, seleccionar un item abre el detalle directamente
-              setShowSearchResults(false);
-              router.push(`/discount/${d.id}`);
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Filtros: siempre visible */}
-      <div className="px-4 py-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* No mostramos chip del término de búsqueda; solo chips de filtros aplicados */}
-
-          {selectedCategories.slice(0, maxCategoryChips).map((cat) => (
-            <span
-              key={cat}
-              className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 px-2.5 py-0.5 rounded-full text-xs"
-            >
-              <Filter className="w-3 h-3" />
-              {categoryLabelMap[cat] || cat}
-              <button
-                onClick={() => handleClearCategory(cat)}
-                className="ml-1 hover:bg-purple-200 rounded-full p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          ))}
-
-          {selectedCategories.length > maxCategoryChips && (
-            <button
-              className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full text-xs hover:bg-purple-100"
-              onClick={() => setShowFilters(true)}
-              title={selectedCategories
-                .slice(maxCategoryChips)
-                .map((categoryId) => categoryLabelMap[categoryId] || categoryId)
-                .join(", ")}
-            >
-              +{selectedCategories.length - maxCategoryChips}
-            </button>
-          )}
-
-          {isLocationFilter && (
-            <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 px-2.5 py-0.5 rounded-full text-xs">
-              <Filter className="w-3 h-3" />
-              Cerca de ti
-              <button
-                onClick={() =>
-                  router.push({
-                    pathname: "/search",
-                    query: { search: searchTerm },
-                  })
-                }
-                className="ml-1 hover:bg-green-200 rounded-full p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-
-          {/* Botón Filtros al final de la misma fila */}
-          <button
-            className="inline-flex items-center gap-2 text-sm text-purple-700 hover:text-purple-900 ml-auto"
-            onClick={() => {
-              setDraftCategories(selectedCategories);
-              setDraftNearby(isLocationFilter);
-              setShowFilters((s) => !s);
-            }}
-          >
-            <Filter className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
       {/* Contenido */}
-      <div className="px-4 pt-2 pb-4">
+      <div className="px-4 pt-4 pb-4">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
@@ -675,9 +712,16 @@ export default function Search() {
                     onFavoriteChange={(changedId, isFav) => {
                       // Si está aplicado el filtro de favoritos, quitar de la lista al dejar de ser favorito
                       if (selectedCategories.includes("favoritos") && !isFav) {
-                        setFilteredDiscounts((prev) =>
-                          prev.filter((d) => d.id !== changedId)
-                        );
+                        setFilteredDiscounts((prev) => {
+                          const updated = prev.filter(
+                            (d) => d.id !== changedId
+                          );
+                          // Si quedó vacía la lista y el filtro de favoritos está activo, redirigir a home
+                          if (updated.length === 0) {
+                            router.push("/home");
+                          }
+                          return updated;
+                        });
                       }
                     }}
                   />

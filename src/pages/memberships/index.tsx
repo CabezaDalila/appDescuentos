@@ -1,35 +1,26 @@
 import { Button } from "@/components/Share/button";
 import { Input } from "@/components/Share/input";
 import {
-  CreateMembershipData,
-  Membership,
-  MEMBERSHIP_CATEGORIES,
+    CreateMembershipData,
+    Membership,
+    MEMBERSHIP_CATEGORIES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
+import { useCachedMemberships } from "@/hooks/useCachedMemberships";
 import {
-  checkMembershipExists,
-  createMembership,
-  deleteCardFromMembership,
-  deleteMembership,
-  getActiveMemberships,
-  getInactiveMemberships,
-  updateMembership,
+    checkMembershipExists,
+    createMembership,
+    deleteCardFromMembership,
+    deleteMembership,
+    updateMembership,
 } from "@/lib/firebase/memberships";
+import type { MembershipItem } from "@/types/membership";
 
 import { ArrowLeft, Plus, Search } from "lucide-react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 type TabType = "all" | "active" | "inactive";
-
-// Tipo para elementos que pueden ser membresías o tarjetas individuales
-type MembershipItem = Membership & {
-  isCard?: boolean;
-  membershipId?: string;
-  membershipName?: string;
-  membershipCategory?: string;
-  card?: any;
-};
 
 export default function MembershipsPage() {
   const { user, loading } = useAuth();
@@ -38,39 +29,10 @@ export default function MembershipsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [scrollY, setScrollY] = useState(0);
 
-  const [activeMemberships, setActiveMemberships] = useState<MembershipItem[]>(
-    []
-  );
-  const [inactiveMemberships, setInactiveMemberships] = useState<
-    MembershipItem[]
-  >([]);
-  const [loadingMemberships, setLoadingMemberships] = useState(true);
+  // Usar hook con caché para membresías
+  const { activeMemberships, inactiveMemberships, loading: loadingMemberships, refreshMemberships } = useCachedMemberships();
 
   const allMemberships = [...activeMemberships, ...inactiveMemberships];
-
-  const loadMemberships = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      setLoadingMemberships(true);
-      const [active, inactive] = await Promise.all([
-        getActiveMemberships(),
-        getInactiveMemberships(),
-      ]);
-      setActiveMemberships(active);
-      setInactiveMemberships(inactive);
-    } catch (error) {
-      console.error("Error al cargar las membresías:", error);
-      // toast.error('Error al cargar las membresías');
-    } finally {
-      setLoadingMemberships(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user || loading) return;
-    loadMemberships();
-  }, [user, loading, loadMemberships]);
 
   const handleCreateMembership = async (
     membershipData: CreateMembershipData & { cards?: unknown[] }
@@ -87,7 +49,7 @@ export default function MembershipsPage() {
       }
 
       await createMembership({ ...membershipData, userId: user.uid });
-      loadMemberships();
+      await refreshMemberships();
     } catch (err) {
       console.error("❌ Error al crear la membresía:", err);
     }
@@ -99,7 +61,7 @@ export default function MembershipsPage() {
   ) => {
     try {
       await updateMembership(membershipId, updateData);
-      loadMemberships();
+      await refreshMemberships();
     } catch (error) {
       console.error("❌ Error al actualizar la membresía:", error);
     }
@@ -119,7 +81,7 @@ export default function MembershipsPage() {
 
     try {
       await deleteMembership(membershipId);
-      loadMemberships();
+      await refreshMemberships();
       toast.success("Membresía eliminada exitosamente");
     } catch (error) {
       console.error("❌ Error al eliminar la membresía:", error);
@@ -152,11 +114,11 @@ export default function MembershipsPage() {
 
       if (result.membershipDeleted) {
         // Si se eliminó la membresía completa, recargar la lista
-        loadMemberships();
+        await refreshMemberships();
         return result;
       } else {
         // Si solo se eliminó la tarjeta, recargar para actualizar contadores
-        loadMemberships();
+        await refreshMemberships();
         return result;
       }
     } catch (error) {
@@ -211,7 +173,7 @@ export default function MembershipsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div
-        className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10 transition-opacity duration-200"
+        className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10 transition-opacity duration-200 safe-area-pt"
         style={{ opacity: headerOpacity }}
       >
         <div className="flex items-center justify-between">

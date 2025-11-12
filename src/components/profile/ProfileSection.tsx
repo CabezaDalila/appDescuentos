@@ -13,6 +13,7 @@ interface ProfileItem {
   badge?: string;
   onClick: () => void;
   variant?: "default" | "danger";
+  disabled?: boolean;
 }
 
 export default function ProfileSection({ title, items }: ProfileSectionProps) {
@@ -24,9 +25,10 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
           <button
             key={index}
             onClick={item.onClick}
+            disabled={item.disabled}
             className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors ${
               item.variant === "danger" ? "text-red-600 hover:bg-red-50" : ""
-            }`}
+            } ${item.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
               item.variant === "danger" ? "bg-red-100" : "bg-gray-100"
@@ -61,7 +63,7 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
 }
 
 // Función helper para crear las secciones del perfil
-export function createProfileSections(router: any, onLogout: () => void, onSettings: () => void, membershipsCount: number = 0) {
+export function createProfileSections(router: any, onLogout: () => void, onSettings: () => void, membershipsCount: number = 0, loggingOut: boolean = false) {
   const miCuentaItems: ProfileItem[] = [
     {
       icon: <Pencil className="h-5 w-5" />,
@@ -111,10 +113,11 @@ export function createProfileSections(router: any, onLogout: () => void, onSetti
   const cerrarSesionItem: ProfileItem[] = [
     {
       icon: <LogOut className="h-5 w-5" />,
-      title: "Cerrar sesión",
+      title: loggingOut ? "Cerrando sesión..." : "Cerrar sesión",
       description: "",
       onClick: onLogout,
       variant: "danger",
+      disabled: loggingOut,
     },
   ];
 

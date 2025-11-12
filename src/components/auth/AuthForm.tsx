@@ -14,7 +14,9 @@ import { Label } from "@/components/Share/label";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { db } from "@/lib/firebase/firebase";
 import { login, register, resetPassword } from "@/lib/firebase/firebase-auth";
+import { doc, setDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
@@ -247,9 +249,31 @@ export default function AuthForm() {
         setSuccess("¡Inicio de sesión exitoso!");
         setLoginSuccess(true);
       } else {
-        await register(formData.email, formData.password);
-        setSuccess("¡Cuenta creada exitosamente! Bienvenido a la plataforma");
-        router.push("/home");
+        const result = await register(formData.email, formData.password);
+
+        if (result?.user?.uid) {
+          await setDoc(
+            doc(db, "users", result.user.uid),
+            {
+              profile: {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+              },
+              onboarding: {
+                completed: false,
+                answers: {
+                  interests: [],
+                  goals: [],
+                },
+              },
+            },
+            { merge: true }
+          );
+        }
+
+        setSuccess("¡Cuenta creada exitosamente! Continuemos con tu perfil");
+        router.push("/onboarding");
         setFormData({
           firstName: "",
           lastName: "",

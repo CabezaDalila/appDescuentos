@@ -124,7 +124,7 @@ export const getCategoryVariants = (category: string): string[] => {
  * @returns true si el descuento coincide con la categoría
  */
 export const matchesCategory = (
-  discountCategory: string,
+  discountCategory: string | undefined,
   targetCategory: string
 ): boolean => {
   if (!discountCategory) return false;

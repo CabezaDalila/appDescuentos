@@ -16,7 +16,7 @@ export const ProfileAppBar: React.FC<ProfileAppBarProps> = ({
 }) => {
   const router = useRouter();
   return (
-    <header className="sticky top-0 z-30 bg-white shadow-sm flex items-center justify-between h-14 px-4 border-b">
+    <header className="sticky top-0 z-30 bg-white shadow-sm flex items-center justify-between h-14 px-4 border-b safe-area-pt">
       {/* Volver */}
       <Button
         variant="ghost"

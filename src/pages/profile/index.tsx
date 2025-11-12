@@ -13,7 +13,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function Profile() {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, loggingOut } = useAuth();
   const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -68,7 +68,7 @@ export default function Profile() {
   }
 
   const sections = createProfileSections(router, logout, () =>
-    setSettingsOpen(true), membershipsCount
+    setSettingsOpen(true), membershipsCount, loggingOut
   );
 
   return (

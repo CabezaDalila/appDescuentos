@@ -8,7 +8,7 @@ export const MembershipsAppBar: React.FC<MembershipsAppBarProps> = ({
   onBack,
 }) => {
   return (
-    <header className="sticky top-0 z-30 w-full bg-white border-b flex items-center h-16 px-4 shadow-sm">
+    <header className="sticky top-0 z-30 w-full bg-white border-b flex items-center h-16 px-4 shadow-sm safe-area-pt">
       {onBack && (
         <button
           onClick={onBack}

@@ -6,34 +6,13 @@ import {
   CARD_TYPES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
+import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
 import { useNotifications } from "@/hooks/useNotifications";
-import { getDiscountsBySearch, getHomePageDiscounts } from "@/lib/discounts";
+import { getDiscountsBySearch } from "@/lib/discounts";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
-import type { UserCredential } from "@/types/credentials";
-import { Discount } from "@/types/discount";
+import { Discount, type UserCredential } from "@/types/discount";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-
-// Tipo específico para los descuentos de la página de inicio
-interface HomePageDiscount {
-  id: string;
-  title: string;
-  image: string;
-  category: string;
-  discountPercentage: string;
-  points: number;
-  distance: string;
-  expiration: string;
-  description: string;
-  origin: string;
-  status: "active" | "inactive" | "expired";
-  isVisible: boolean;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-}
 
 // Componentes de la página de inicio
 import { QuickActionsSection } from "@/components/home/categories-section";
@@ -48,14 +27,15 @@ export default function Home() {
   const router = useRouter();
   const { getUnreadCount } = useNotifications();
   const { user } = useAuth();
+  
+  // Usar hook con caché para descuentos
+  const { discounts, loading } = useCachedDiscounts();
 
   const [greeting, setGreeting] = useState("Buenas noches");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Discount[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [discounts, setDiscounts] = useState<HomePageDiscount[]>([]);
-  const [loading, setLoading] = useState(true);
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
   const [userCredentials, setUserCredentials] = useState<UserCredential[]>([]);
 
@@ -69,23 +49,6 @@ export default function Home() {
     } else {
       setGreeting("Buenas noches");
     }
-  }, []);
-
-  // Cargar descuentos desde Firebase
-  useEffect(() => {
-    const loadDiscounts = async () => {
-      try {
-        setLoading(true);
-        const data = await getHomePageDiscounts();
-        setDiscounts(data);
-      } catch (error) {
-        console.error("Error cargando descuentos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDiscounts();
   }, []);
 
   // Cargar membresías y credenciales activas del usuario
@@ -270,14 +233,13 @@ export default function Home() {
     router.push(`/discount/${discountId}`);
   };
 
-  const selectedCategories = EXPLORE_CATEGORIES.filter((category) =>
-    ["food", "fashion", "technology", "home"].includes(category.id)
-  );
+  // Usar todas las categorías disponibles
+  const selectedCategories = EXPLORE_CATEGORIES;
 
   return (
     <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden pb-24 lg:pb-0">
       {/* Header y Search - Siempre en la parte superior */}
-      <div className="sticky top-0 z-40 bg-white border-none">
+      <div className="sticky top-0 z-40 bg-white border-none safe-area-pt">
         <Header
           greeting={greeting}
           notificationCount={getUnreadCount()}

@@ -1,47 +1,11 @@
-import type { UserCredential } from "@/types/credentials";
+// Tipos para descuentos
+import type { Card, CardLevel } from "@/constants/membership";
 
 export interface Discount {
   id: string;
   name: string;
-  title?: string; // Agregado para compatibilidad
   description?: string;
-  category: string; // Cambiado a string para permitir todas las categorías
-  discountPercentage?: number | string; // Cambiado para permitir string también
-  discountAmount?: number;
-  validFrom?: Date;
-  validUntil?: Date;
-  membershipRequired?: string[];
-  terms?: string;
-  imageUrl?: string;
-  image?: string; // Agregado para compatibilidad
-  isVisible?: boolean; // Campo para controlar visibilidad
-  createdAt: Date;
-  updatedAt: Date;
-  status: "active" | "inactive" | "expired";
-  approvalStatus: "pending" | "approved" | "rejected"; // Nuevo campo para gestión de aprobación
-  reviewedBy?: string; // ID del admin que revisó
-  reviewedAt?: Date; // Fecha de revisión
-  rejectionReason?: string; // Razón del rechazo
-  source: "manual" | "scraping"; // Origen del descuento
-  origin?: string; // Origen del descuento (empresa/sitio)
-  availableMemberships?: string[];
-  availableCredentials?: UserCredential[];
-  // Propiedades adicionales para la UI
-  points?: number;
-  distance?: string;
-  expiration?: string;
-
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-}
-
-export interface CreateDiscountData {
-  name: string;
-  description?: string;
-  category: Discount["category"];
+  category?: string;
   discountPercentage?: number;
   discountAmount?: number;
   validFrom?: Date;
@@ -49,6 +13,24 @@ export interface CreateDiscountData {
   membershipRequired?: string[];
   terms?: string;
   imageUrl?: string;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  status?: "active" | "inactive" | "expired";
+  title?: string;
+  origin?: string;
+  type?: string;
+  expirationDate?: Date;
+  descripcion?: string;
+  approvalStatus?: "pending" | "approved" | "rejected";
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  rejectionReason?: string;
+  source?: "manual" | "scraping";
+  isVisible?: boolean;
+  bancos?: string[];
+  availableMemberships?: string[];
+  availableCredentials?: UserCredential[];
   location?: {
     latitude: number;
     longitude: number;
@@ -56,13 +38,32 @@ export interface CreateDiscountData {
   };
 }
 
-export const DISCOUNT_CATEGORIES = [
-  { value: "banco", label: "Banco" },
-  { value: "club", label: "Club" },
-  { value: "salud", label: "Salud" },
-  { value: "educacion", label: "Educación" },
-  { value: "seguro", label: "Seguro" },
-  { value: "telecomunicacion", label: "Telecomunicación" },
-  { value: "gastronomia", label: "Gastronomía" },
-  { value: "otro", label: "Otro" },
-] as const;
+// Tipo específico para los descuentos de la página de inicio
+export interface HomePageDiscount {
+  id: string;
+  title: string;
+  image: string;
+  category: string;
+  discountPercentage: string;
+  points: number;
+  distance: string;
+  expiration: string;
+  description: string;
+  origin: string;
+  status: "active" | "inactive" | "expired";
+  isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+}
+
+// Representa una credencial de tarjeta del usuario y también
+// el formato usado en availableCredentials de los descuentos.
+export interface UserCredential {
+  bank: string; // Debe provenir del selector (e.g., "Banco Galicia")
+  type: Card["type"]; // "Crédito" | "Débito"
+  brand: Card["brand"]; // "Visa" | "Mastercard" | ...
+  level: CardLevel; // "Gold" | "Platinum" | ...
+}

@@ -1,11 +1,13 @@
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAndroidBackButton } from "@/hooks/useAndroidBackButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { usePreload } from "@/hooks/usePreload";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { LayoutHome } from "@/layouts/layout-home";
 import { initializeGoogleAuth } from "@/lib/google-auth-init";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import Head from "next/head";
 import { useRouter } from "next/router";
 import Script from "next/script";
 import { useEffect } from "react";
@@ -46,6 +48,13 @@ function MyApp({ Component, pageProps }: AppProps) {
   const { isAdmin, adminLoading } = useAdmin();
   const isMobile = useIsMobile();
   const router = useRouter();
+  const { profile, loading: profileLoading } = useUserProfile(user?.uid);
+  
+  // Precargar datos críticos en segundo plano
+  usePreload();
+  
+  // Manejar botón de retroceso de Android
+  useAndroidBackButton();
 
   useEffect(() => {
     initializeGoogleAuth();
@@ -80,22 +89,60 @@ function MyApp({ Component, pageProps }: AppProps) {
     };
 
     loadGapi();
+  }, [router]);
 
-    if (
-      !loading &&
-      !user &&
-      !["/login", "/reset-password"].includes(router.pathname)
-    ) {
-      router.push("/login");
+  useEffect(() => {
+    if (loading || adminLoading || profileLoading) {
+      return;
     }
-    if (user && !loading && router.pathname === "/login") {
-      // Solo redirigir automáticamente usuarios no-admin o admins en móvil
-      // Los admins en escritorio verán el selector de modo en AuthForm
-      if (isMobile || !isAdmin) {
+
+    const isAuthRoute = ["/login", "/reset-password"].includes(router.pathname);
+
+    if (!user && !isAuthRoute) {
+      router.push("/login");
+      return;
+    }
+
+    if (!user) {
+      return;
+    }
+
+    const onboardingCompleted = profile?.onboarding?.completed === true;
+    const isOnboardingRoute = router.pathname.startsWith("/onboarding");
+    const isAdminRoute = router.pathname.startsWith("/admin");
+
+    if (router.pathname === "/login") {
+      if (!onboardingCompleted && !isAdmin) {
+        router.push("/onboarding");
+      } else if (isMobile || !isAdmin) {
         router.push("/home");
       }
+      return;
     }
-  }, [user, loading, adminLoading, isAdmin, isMobile, router]);
+
+    if (
+      !onboardingCompleted &&
+      !isAdmin &&
+      !isOnboardingRoute &&
+      !isAdminRoute
+    ) {
+      router.push("/onboarding");
+      return;
+    }
+
+    if (onboardingCompleted && isOnboardingRoute) {
+      router.push("/home");
+    }
+  }, [
+    user,
+    loading,
+    adminLoading,
+    profileLoading,
+    profile,
+    isAdmin,
+    isMobile,
+    router,
+  ]);
 
   // Inicializar OneSignal solo una vez
   useEffect(() => {
@@ -159,12 +206,6 @@ function MyApp({ Component, pageProps }: AppProps) {
   ) {
     return (
       <>
-        <Head>
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-          />
-        </Head>
         {/* Scripts de Google para autenticación */}
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -181,13 +222,24 @@ function MyApp({ Component, pageProps }: AppProps) {
   if (router.pathname.startsWith("/admin")) {
     return (
       <>
-        <Head>
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-          />
-        </Head>
         {/* Scripts de Google para autenticación */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://apis.google.com/js/platform.js"
+          strategy="beforeInteractive"
+        />
+        <Component {...pageProps} />
+        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+      </>
+    );
+  }
+
+  if (router.pathname.startsWith("/onboarding")) {
+    return (
+      <>
         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="beforeInteractive"
@@ -204,12 +256,6 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
-      <Head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
-      </Head>
       {/* Scripts de Google para autenticación */}
       <Script
         src="https://accounts.google.com/gsi/client"

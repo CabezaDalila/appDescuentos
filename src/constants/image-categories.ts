@@ -129,7 +129,11 @@ export const CATEGORY_IMAGES: Record<string, CategoryImageConfig> = {
 };
 
 // Función para obtener imagen por categoría
-export const getImageByCategory = (category: string): string => {
+export const getImageByCategory = (category?: string): string => {
+  if (!category) {
+    return CATEGORY_IMAGES.general.defaultImage;
+  }
+  
   const categoryLower = category.toLowerCase();
 
   // Buscar coincidencia exacta primero

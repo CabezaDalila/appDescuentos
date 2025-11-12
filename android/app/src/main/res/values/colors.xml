@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#9333ea</color> <!-- Purple -->
+    <color name="colorPrimaryDark">#7c3aed</color> <!-- Darker purple for status bar -->
+    <color name="colorAccent">#9333ea</color> <!-- Purple accent -->
+    <color name="statusBarBackground">#FFFFFF</color> <!-- White background -->
+</resources>
+

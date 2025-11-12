@@ -38,7 +38,7 @@ export function NavigationBar({
       </div>
 
       {/* Desktop Navigation - Wide Sidebar (1250px and above) */}
-      <div className="hidden xl:block fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-30">
+      <div className="hidden xl:block fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-30 safe-area-pt">
         <div className="flex flex-col h-full pt-20">
           <div className="px-4 mb-6">
             <h2 className="text-lg font-semibold text-gray-900">Navegación</h2>
@@ -66,7 +66,7 @@ export function NavigationBar({
       </div>
 
       {/* Desktop Navigation - Compact Sidebar (1024px to 1250px) */}
-      <div className="hidden lg:block xl:hidden fixed left-0 top-0 h-full w-16 bg-white border-r border-gray-200 z-30">
+      <div className="hidden lg:block xl:hidden fixed left-0 top-0 h-full w-16 bg-white border-r border-gray-200 z-30 safe-area-pt">
         <div className="flex flex-col h-full pt-20">
           <div className="flex-1 px-2">
             {tabs.map((tab) => {

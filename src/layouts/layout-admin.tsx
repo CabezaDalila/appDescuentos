@@ -19,16 +19,7 @@ interface LayoutAdminProps {
 
 export function LayoutAdmin({ children }: LayoutAdminProps) {
   const router = useRouter();
-  const { logout, user } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/login");
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
-  };
+  const { logout, user, loggingOut } = useAuth();
 
   const navigationItems = [
     {
@@ -132,11 +123,12 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
           <div className="px-4 pb-4">
             <Button
               variant="outline"
-              onClick={handleLogout}
+              onClick={logout}
+              disabled={loggingOut}
               className="w-full justify-start text-gray-700 hover:text-gray-900"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
+              {loggingOut ? "Cerrando sesión..." : "Cerrar Sesión"}
             </Button>
           </div>
         </div>
