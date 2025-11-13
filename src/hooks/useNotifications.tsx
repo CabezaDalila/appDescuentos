@@ -17,7 +17,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  timestamp: any; // Firestore timestamp
+  timestamp: any;
   read: boolean;
   type:
     | "vencimiento_tarjeta"
@@ -142,10 +142,6 @@ export const useNotifications = () => {
     return notifications.filter((n) => !n.read).length;
   };
 
-  const getNotificationsByType = (type: string) => {
-    return notifications.filter((n) => n.type === type);
-  };
-
   return {
     notifications,
     loading,
@@ -154,6 +150,5 @@ export const useNotifications = () => {
     markAllAsRead,
     deleteNotification,
     getUnreadCount,
-    getNotificationsByType,
   };
 };
