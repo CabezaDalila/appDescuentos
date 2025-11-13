@@ -1,11 +1,13 @@
 import { CreditCard, Users } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import { Separator } from "../Share/separator";
 
 interface CardDiscountProps {
+  id?: string;
   title: string;
   image: string;
   description: string;
@@ -25,6 +27,7 @@ interface CardDiscountProps {
 }
 
 const CardDiscount: React.FC<CardDiscountProps> = ({
+  id,
   title,
   image,
   description,
@@ -37,11 +40,22 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   expiration,
   discountPercentage,
 }) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState(false);
 
+  useEffect(() => {
+    if (id) {
+      setIsLiked(isFavorite(id));
+    }
+  }, [id]);
+
   const handleLike = () => {
-    setIsLiked(!isLiked);
+    if (!id) {
+      setIsLiked((prev) => !prev);
+      return;
+    }
+    const nowLiked = toggleFavorite(id);
+    setIsLiked(nowLiked);
   };
 
   const handleShare = async () => {

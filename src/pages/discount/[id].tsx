@@ -80,6 +80,7 @@ export default function DiscountDetail() {
         ) : discountData ? (
           <>
             <CardDiscount
+              id={discountData.id}
               title={discountData.title || discountData.name || "Sin título"}
               image={discountData.image || "/primary_image.jpg"}
               description={discountData.description || "Sin descripción"}
