@@ -14,7 +14,7 @@ export function NavigationBar({
   return (
     <>
       {/* Mobile Navigation - Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb z-30 lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb z-50 lg:hidden">
         <div className="flex justify-around max-w-2xl mx-auto p-2">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;

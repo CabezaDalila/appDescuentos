@@ -344,6 +344,37 @@ export default function Search() {
 
   // (clear location se hace inline donde se usa)
 
+  // Función para aplicar filtros y cerrar el popup
+  const applyFiltersAndClose = async () => {
+    setShowFilters(false);
+    setSelectedCategories(draftCategories);
+
+    // Construir query
+    const queryObj: Record<string, string> = {};
+    if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
+    if (draftCategories.length > 0)
+      queryObj.categories = draftCategories.join(",");
+    if (draftNearby) {
+      try {
+        const pos = await getCurrentPosition();
+        queryObj.location = "true";
+        queryObj.lat = String(pos.lat);
+        queryObj.lng = String(pos.lng);
+      } catch {
+        // Si falla geolocalización, mantener sin ubicación
+      }
+    }
+    router.push({ pathname: "/search", query: queryObj });
+  };
+
+  // Función para limpiar todos los filtros y mostrar todos los descuentos
+  const handleViewAllDiscounts = () => {
+    setSelectedCategories([]);
+    setIsLocationFilter(false);
+    setSearchTerm("");
+    router.push({ pathname: "/search", query: {} });
+  };
+
   const categoryInfoName =
     selectedCategories.length > 0
       ? categoryLabelMap[selectedCategories[0]]
@@ -403,120 +434,135 @@ export default function Search() {
               compact={true}
             />
 
-            {/* Panel de filtros */}
+            {/* Panel de filtros - Popup desde abajo estilo Spotify */}
             {showFilters && (
               <>
+                {/* Overlay oscuro con backdrop blur */}
                 <div
-                  className="fixed inset-0 bg-black/20 z-[45]"
-                  onClick={() => setShowFilters(false)}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
+                  onClick={applyFiltersAndClose}
                 />
-                <div className="absolute z-[50] top-full left-4 right-4 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl p-4 max-h-[70vh] overflow-y-auto">
-                  <div className="mb-4">
-                    <h3 className="text-base font-semibold text-gray-900 mb-3">
-                      Categorías
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {EXPLORE_CATEGORIES.map((categoryDef) => (
+                {/* Popup que sale desde abajo - no tapa la barra de navegación */}
+                <div
+                  className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
+                  style={{ maxHeight: "calc(55vh)" }}
+                >
+                  {/* Handle bar */}
+                  <div className="flex justify-center pt-2 pb-1.5">
+                    <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+                  </div>
+
+                  {/* Contenido sin scroll - todo visible */}
+                  <div className="flex-1 overflow-hidden px-3 pb-2">
+                    <div className="mb-2">
+                      <h3 className="text-base font-semibold text-gray-900 mb-2">
+                        Categorías
+                      </h3>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {EXPLORE_CATEGORIES.map((categoryDef) => (
+                          <label
+                            key={categoryDef.id}
+                            className={`flex items-center gap-1.5 p-2 rounded-md cursor-pointer transition-all ${
+                              draftCategories.includes(categoryDef.id)
+                                ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
+                                : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={draftCategories.includes(categoryDef.id)}
+                              onChange={(e) => {
+                                setDraftCategories((prev) =>
+                                  e.target.checked
+                                    ? Array.from(
+                                        new Set([...prev, categoryDef.id])
+                                      )
+                                    : prev.filter(
+                                        (categoryId) =>
+                                          categoryId !== categoryDef.id
+                                      )
+                                );
+                              }}
+                              className="w-3.5 h-3.5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
+                            />
+                            <span
+                              className={`text-xs ${
+                                draftCategories.includes(categoryDef.id)
+                                  ? "text-purple-700 font-semibold"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {categoryDef.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <h3 className="text-base font-semibold text-gray-900 mb-2">
+                        Otros filtros
+                      </h3>
+                      <div className="grid grid-cols-2 gap-1.5">
                         <label
-                          key={categoryDef.id}
-                          className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                            draftCategories.includes(categoryDef.id)
-                              ? "bg-purple-50 border border-purple-200"
-                              : "bg-gray-50 border border-transparent hover:bg-gray-100"
+                          className={`flex items-center gap-1.5 p-2 rounded-md cursor-pointer transition-all ${
+                            draftCategories.includes("favoritos")
+                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
+                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={draftCategories.includes(categoryDef.id)}
+                            checked={draftCategories.includes("favoritos")}
                             onChange={(e) => {
                               setDraftCategories((prev) =>
                                 e.target.checked
-                                  ? Array.from(
-                                      new Set([...prev, categoryDef.id])
-                                    )
-                                  : prev.filter(
-                                      (categoryId) =>
-                                        categoryId !== categoryDef.id
-                                    )
+                                  ? Array.from(new Set([...prev, "favoritos"]))
+                                  : prev.filter((x) => x !== "favoritos")
                               );
                             }}
-                            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            className="w-3.5 h-3.5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
                           />
                           <span
-                            className={`text-sm ${
-                              draftCategories.includes(categoryDef.id)
-                                ? "text-purple-700 font-medium"
+                            className={`text-xs ${
+                              draftCategories.includes("favoritos")
+                                ? "text-purple-700 font-semibold"
                                 : "text-gray-700"
                             }`}
                           >
-                            {categoryDef.label}
+                            Favoritos
                           </span>
                         </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h3 className="text-base font-semibold text-gray-900 mb-3">
-                      Otros filtros
-                    </h3>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <label
-                        className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                          draftCategories.includes("favoritos")
-                            ? "bg-purple-50 border border-purple-200"
-                            : "bg-gray-50 border border-transparent hover:bg-gray-100"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={draftCategories.includes("favoritos")}
-                          onChange={(e) => {
-                            setDraftCategories((prev) =>
-                              e.target.checked
-                                ? Array.from(new Set([...prev, "favoritos"]))
-                                : prev.filter((x) => x !== "favoritos")
-                            );
-                          }}
-                          className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                        />
-                        <span
-                          className={`text-sm ${
-                            draftCategories.includes("favoritos")
-                              ? "text-purple-700 font-medium"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          Favoritos
-                        </span>
-                      </label>
-                      <label
-                        className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
-                          draftNearby
-                            ? "bg-green-50 border border-green-200"
-                            : "bg-gray-50 border border-transparent hover:bg-gray-100"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={draftNearby}
-                          onChange={(e) => setDraftNearby(e.target.checked)}
-                          className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                        />
-                        <span
-                          className={`text-sm ${
+                        <label
+                          className={`flex items-center gap-1.5 p-2 rounded-md cursor-pointer transition-all ${
                             draftNearby
-                              ? "text-green-700 font-medium"
-                              : "text-gray-700"
+                              ? "bg-green-50 border-2 border-green-300 shadow-sm"
+                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
                           }`}
                         >
-                          Cerca de ti
-                        </span>
-                      </label>
+                          <input
+                            type="checkbox"
+                            checked={draftNearby}
+                            onChange={(e) => setDraftNearby(e.target.checked)}
+                            className="w-3.5 h-3.5 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:ring-offset-0 flex-shrink-0"
+                          />
+                          <span
+                            className={`text-xs ${
+                              draftNearby
+                                ? "text-green-700 font-semibold"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            Cerca de ti
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+
+                  {/* Botones fijos en la parte inferior */}
+                  <div className="border-t border-gray-200 bg-white px-3 py-2 flex justify-end gap-2">
                     <button
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      className="px-5 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                       onClick={() => {
                         setDraftCategories([]);
                         setDraftNearby(false);
@@ -525,28 +571,8 @@ export default function Search() {
                       Limpiar
                     </button>
                     <button
-                      className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
-                      onClick={async () => {
-                        setShowFilters(false);
-                        setSelectedCategories(draftCategories);
-                        // Construir query
-                        const queryObj: Record<string, string> = {};
-                        if (searchTerm.trim().length >= 2)
-                          queryObj.search = searchTerm.trim();
-                        if (draftCategories.length > 0)
-                          queryObj.categories = draftCategories.join(",");
-                        if (draftNearby) {
-                          try {
-                            const pos = await getCurrentPosition();
-                            queryObj.location = "true";
-                            queryObj.lat = String(pos.lat);
-                            queryObj.lng = String(pos.lng);
-                          } catch {
-                            // Si falla geolocalización, mantener sin ubicación
-                          }
-                        }
-                        router.push({ pathname: "/search", query: queryObj });
-                      }}
+                      className="px-5 py-2 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors shadow-md"
+                      onClick={applyFiltersAndClose}
                     >
                       Aplicar
                     </button>
@@ -643,14 +669,8 @@ export default function Search() {
             }
             categoryName={categoryInfoName}
             onClearFilter={
-              isLocationFilter
-                ? () =>
-                    router.push({
-                      pathname: "/search",
-                      query: { search: searchTerm },
-                    })
-                : selectedCategories.length > 0
-                ? handleClearCategory
+              isLocationFilter || selectedCategories.length > 0
+                ? handleViewAllDiscounts
                 : undefined
             }
           />

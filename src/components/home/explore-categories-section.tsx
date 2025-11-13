@@ -106,6 +106,20 @@ export function ExploreCategoriesSection({
         onTouchEnd={onTouchEnd}
         style={{ touchAction: "pan-x pan-y" }}
       >
+        {/* Gradientes sutiles en los bordes para indicar que hay más contenido */}
+        {totalPages > 1 && (
+          <>
+            {/* Gradiente izquierdo - solo visible si no estamos en la primera página */}
+            {currentIndex > 0 && (
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10 lg:hidden" />
+            )}
+            {/* Gradiente derecho - solo visible si no estamos en la última página */}
+            {currentIndex < totalPages - 1 && (
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10 lg:hidden" />
+            )}
+          </>
+        )}
+
         {/* Grid de categorías: 2 columnas en mobile, 1 columna en desktop */}
         <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3 lg:gap-3 xl:gap-4">
           {currentCategories.map((category) => (
