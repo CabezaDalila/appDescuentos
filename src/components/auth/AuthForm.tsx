@@ -1,4 +1,3 @@
-import AdminModeSelector from "@/components/auth/AdminModeSelector";
 import { Alert, AlertDescription } from "@/components/Share/alert";
 import { Button } from "@/components/Share/button";
 import {
@@ -12,9 +11,6 @@ import { Checkbox } from "@/components/Share/checkbox";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import { Separator } from "@/components/Share/separator";
-import { useAdmin } from "@/hooks/useAdmin";
-import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { db } from "@/lib/firebase/firebase";
 import {
   login,
@@ -27,7 +23,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as yup from "yup";
 
 // Esquemas de validación con Yup
@@ -77,12 +73,7 @@ const registerSchema = yup.object({
 });
 
 export default function AuthForm() {
-  const { user, loading } = useAuth();
-  const { isAdmin, adminLoading } = useAdmin();
-  const isMobile = useIsMobile();
   const router = useRouter();
-  const [showModeSelector, setShowModeSelector] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [formData, setFormData] = useState({
     firstName: "",
@@ -104,75 +95,6 @@ export default function AuthForm() {
   const [resetEmail, setResetEmail] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  // Si el usuario está logueado y es admin, mostrar selector de modo si esta en desktop
-  useEffect(() => {
-    if (
-      user &&
-      !loading &&
-      !adminLoading &&
-      isAdmin &&
-      loginSuccess &&
-      !isMobile
-    ) {
-      setShowModeSelector(true);
-    } else if (
-      user &&
-      !loading &&
-      !adminLoading &&
-      isAdmin &&
-      loginSuccess &&
-      isMobile
-    ) {
-      router.push("/home");
-    }
-  }, [
-    user,
-    loading,
-    adminLoading,
-    isAdmin,
-    loginSuccess,
-    isMobile,
-    router,
-    showModeSelector,
-  ]);
-
-  useEffect(() => {
-    if (
-      user &&
-      !loading &&
-      !adminLoading &&
-      isAdmin &&
-      !isMobile &&
-      !loginSuccess
-    ) {
-      setShowModeSelector(true);
-    }
-  }, [
-    user,
-    loading,
-    adminLoading,
-    isAdmin,
-    isMobile,
-    loginSuccess,
-    showModeSelector,
-  ]);
-
-  // Si está mostrando el selector de modo, renderizarlo
-  if (showModeSelector) {
-    return (
-      <AdminModeSelector
-        onModeSelect={(mode) => {
-          if (mode === "admin") {
-            router.push("/admin");
-          } else {
-            router.push("/home");
-          }
-        }}
-        userName={user?.displayName || user?.email?.split("@")[0]}
-      />
-    );
-  }
 
   const clearMessages = () => {
     setError("");
@@ -257,8 +179,6 @@ export default function AuthForm() {
 
       if (result?.user) {
         setSuccess("¡Inicio de sesión exitoso!");
-        setLoginSuccess(true);
-        router.push("/home");
       } else {
         setError("Error al autenticar con Google");
       }
@@ -319,7 +239,6 @@ export default function AuthForm() {
       if (mode === "login") {
         await login(formData.email, formData.password);
         setSuccess("¡Inicio de sesión exitoso!");
-        setLoginSuccess(true);
       } else {
         const result = await register(formData.email, formData.password);
 

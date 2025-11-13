@@ -16,7 +16,8 @@ export function useIsMobile() {
         );
       const isMobileScreen = window.innerWidth < 600;
 
-      setIsMobile(isMobileUserAgent || isMobileScreen);
+      const result = isMobileUserAgent || isMobileScreen;
+      setIsMobile(result);
     };
 
     checkIsMobile();

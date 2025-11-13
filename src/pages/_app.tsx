@@ -49,10 +49,10 @@ function MyApp({ Component, pageProps }: AppProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
-  
+
   // Precargar datos críticos en segundo plano
   usePreload();
-  
+
   // Manejar botón de retroceso de Android
   useAndroidBackButton();
 
@@ -111,11 +111,18 @@ function MyApp({ Component, pageProps }: AppProps) {
     const isAdminRoute = router.pathname.startsWith("/admin");
 
     if (router.pathname === "/login") {
-      if (!onboardingCompleted && !isAdmin) {
+      // Esperar a que termine de cargar el admin antes de redirigir
+      if (adminLoading) {
+        return;
+      }
+
+      // Redirigir según el estado del onboarding
+      if (!onboardingCompleted) {
         router.push("/onboarding");
-      } else if (isMobile || !isAdmin) {
+      } else {
         router.push("/home");
       }
+
       return;
     }
 

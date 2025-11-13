@@ -17,7 +17,6 @@ export function ExploreCategoriesSection({
   const categoriesPerView = 4;
   const totalPages = Math.ceil(categories.length / categoriesPerView);
 
-  // Cache de estilos para evitar recalcular en cada render
   const getPillStyles = (id: string) => {
     const styles: Record<string, string> = {
       food: "bg-green-50 border border-green-200 text-green-700",
@@ -58,10 +57,10 @@ export function ExploreCategoriesSection({
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (touchStartX.current === null || touchStartY.current === null) return;
-    
+
     const diffX = touchStartX.current - e.touches[0].clientX;
     const diffY = touchStartY.current - e.touches[0].clientY;
-    
+
     // Solo prevenir scroll si es claramente un swipe horizontal
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
       e.preventDefault();
@@ -107,8 +106,8 @@ export function ExploreCategoriesSection({
         onTouchEnd={onTouchEnd}
         style={{ touchAction: "pan-x pan-y" }}
       >
-        {/* Grid de categorías (2x2) - sin transiciones para máxima velocidad */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-3 xl:gap-4">
+        {/* Grid de categorías: 2 columnas en mobile, 1 columna en desktop */}
+        <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3 lg:gap-3 xl:gap-4">
           {currentCategories.map((category) => (
             <button
               key={`${category.id}-${currentIndex}`}

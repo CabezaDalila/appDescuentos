@@ -302,7 +302,7 @@ export const checkAdminRole = async (userId: string): Promise<boolean> => {
     const userData = userSnap.data();
     return userData.role === "admin";
   } catch (error) {
-    console.error("Error al verificar rol de admin:", error);
+    console.error("Error verificando rol de admin:", error);
     return false;
   }
 };

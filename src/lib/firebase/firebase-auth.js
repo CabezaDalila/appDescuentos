@@ -49,6 +49,8 @@ const saveUserToFirestore = async (user) => {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
     const isNewUser = !userDoc.exists();
+    const existingData = userDoc.exists() ? userDoc.data() : null;
+
     const userData = {
       uid: user.uid,
       email: user.email,
@@ -114,6 +116,14 @@ const saveUserToFirestore = async (user) => {
         totalLogins: increment(1),
         lastActivityAt: serverTimestamp(),
       };
+      // Preservar el estado del onboarding si ya existe
+      if (existingData?.onboarding) {
+        userData.onboarding = existingData.onboarding;
+      }
+      // Preservar el rol si ya existe (importante para admins)
+      if (existingData?.role) {
+        userData.role = existingData.role;
+      }
     }
 
     await setDoc(userRef, userData, { merge: true });
