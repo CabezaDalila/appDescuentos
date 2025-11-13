@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
+import TestNotificationButton from "@/components/TestNotificationButton";
 import { LayoutAdmin } from "@/layouts/layout-admin";
 import { Code } from "lucide-react";
 
@@ -30,6 +31,15 @@ export default function AdminScripts() {
           </CardHeader>
           <CardContent>
             <ScrapingScriptsManager />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Prueba de Notificaciones Push</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TestNotificationButton />
           </CardContent>
         </Card>
       </div>

@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/Share/card";
 import { Notification, useNotifications } from "@/hooks/useNotifications";
 import {
-  AlertTriangle,
   ArrowLeft,
   Bell,
   Calendar,
@@ -10,6 +9,7 @@ import {
   Filter,
   Percent,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -32,9 +32,6 @@ export default function Notifications() {
     unreadOnly: false,
     category: "all",
   });
-  const [activeTab, setActiveTab] = useState<"all" | "unread" | "promotions">(
-    "all"
-  );
 
   const handleDeleteNotification = async (notificationId: string) => {
     await deleteNotification(notificationId);
@@ -60,6 +57,41 @@ export default function Notifications() {
       category: "all",
     });
   };
+
+  const filteredNotifications = notifications.filter((notification) => {
+    if (activeFilters.unreadOnly && notification.read) {
+      return false;
+    }
+
+    if (activeFilters.category !== "all") {
+      if (
+        activeFilters.category === "offers" &&
+        notification.type !== "promocion"
+      ) {
+        return false;
+      }
+      if (
+        activeFilters.category === "account" &&
+        notification.type !== "sistema"
+      ) {
+        return false;
+      }
+      if (
+        activeFilters.category === "expiring" &&
+        notification.type !== "vencimiento_tarjeta"
+      ) {
+        return false;
+      }
+      if (
+        activeFilters.category === "reminders" &&
+        notification.type !== "recordatorio"
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const getNotificationIcon = (notification: Notification) => {
     switch (notification.type) {
@@ -111,61 +143,6 @@ export default function Notifications() {
             <Bell className="h-4 w-4 text-gray-600" />
           </div>
         );
-    }
-  };
-
-  // Filtrar notificaciones según los filtros activos
-  const filteredNotifications = notifications.filter((notification) => {
-    // Filtro por no leídas
-    if (activeFilters.unreadOnly && notification.read) {
-      return false;
-    }
-
-    // Filtro por categoría
-    if (activeFilters.category !== "all") {
-      if (
-        activeFilters.category === "offers" &&
-        notification.type !== "promocion"
-      ) {
-        return false;
-      }
-      if (
-        activeFilters.category === "account" &&
-        notification.type !== "sistema"
-      ) {
-        return false;
-      }
-      if (
-        activeFilters.category === "expiring" &&
-        notification.type !== "vencimiento_tarjeta"
-      ) {
-        return false;
-      }
-      if (
-        activeFilters.category === "reminders" &&
-        notification.type !== "recordatorio"
-      ) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const formatTimeAgo = (date: Date) => {
-    if (!date) return "0m";
-
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}m`;
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)}h`;
-    } else {
-      return `${Math.floor(diffInMinutes / 1440)}d`;
     }
   };
 
@@ -230,31 +207,12 @@ export default function Notifications() {
     { id: "offers", label: "Ofertas", icon: "percent", color: "green" },
     { id: "account", label: "Cuenta", icon: "creditcard", color: "blue" },
     { id: "expiring", label: "Por vencer", icon: "calendar", color: "orange" },
-    { id: "system", label: "Sistema", icon: "bell", color: "purple" },
+    { id: "reminders", label: "Recordatorios", icon: "bell", color: "blue" },
   ];
-
-  const getFilterDescription = () => {
-    const filters = [];
-    if (activeFilters.unreadOnly) filters.push("Solo no leídas");
-    if (activeFilters.category !== "all") {
-      const categoryLabels = {
-        offers: "Ofertas",
-        account: "Cuenta",
-        expiring: "Por vencer",
-        system: "Sistema",
-      };
-      filters.push(
-        categoryLabels[activeFilters.category as keyof typeof categoryLabels]
-      );
-    }
-    return filters.length > 0 ? filters.join(" + ") : "Todas las categorías";
-  };
 
   return (
     <div className="h-full bg-gray-50 flex flex-col">
-      {/* Header principal */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
-        {/* Header con botón de retroceso, título y filtros */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0 relative">
         <div className="flex items-center justify-between">
           <button
             onClick={() => router.back()}
@@ -283,7 +241,6 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Dropdown de filtros */}
         {showFilterDropdown && (
           <div className="absolute top-16 right-4 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-48">
             {filterOptions.map((option) => (
@@ -341,12 +298,12 @@ export default function Notifications() {
                       <Calendar className="h-3 w-3 text-orange-600" />
                     </div>
                   )
-                ) : option.id === "system" ? (
-                  activeFilters.category === "system" ? (
+                ) : option.id === "reminders" ? (
+                  activeFilters.category === "reminders" ? (
                     <Check className="h-4 w-4 text-black" />
                   ) : (
-                    <div className="w-4 h-4 bg-purple-100 rounded flex items-center justify-center">
-                      <Bell className="h-3 w-3 text-purple-600" />
+                    <div className="w-4 h-4 bg-blue-100 rounded flex items-center justify-center">
+                      <Bell className="h-3 w-3 text-blue-600" />
                     </div>
                   )
                 ) : (
@@ -355,7 +312,7 @@ export default function Notifications() {
                 <span className="text-sm text-gray-900">{option.label}</span>
               </button>
             ))}
-            {activeFilters.unreadOnly || activeFilters.category !== "all" ? (
+            {(activeFilters.unreadOnly || activeFilters.category !== "all") && (
               <button
                 onClick={clearFilters}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left text-red-600"
@@ -363,12 +320,11 @@ export default function Notifications() {
                 <Filter className="h-4 w-4" />
                 <span className="text-sm">Limpiar filtros</span>
               </button>
-            ) : null}
+            )}
           </div>
         )}
       </div>
 
-      {/* Lista de notificaciones */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-4 max-w-2xl pb-20">
           {loading ? (
@@ -379,14 +335,11 @@ export default function Notifications() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Cargando notificaciones...
               </h3>
-              <p className="text-sm text-gray-600">
-                Por favor espera mientras cargamos tus notificaciones
-              </p>
             </div>
           ) : error ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-8 w-8 text-red-600" />
+                <Bell className="h-8 w-8 text-red-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Error al cargar notificaciones

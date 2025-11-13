@@ -1,7 +1,6 @@
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAndroidBackButton } from "@/hooks/useAndroidBackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreload } from "@/hooks/usePreload";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { LayoutHome } from "@/layouts/layout-home";
@@ -21,6 +20,7 @@ interface OneSignal {
   getUserId: () => Promise<string | null>;
   on?: (event: string, callback: (data: any) => void) => void;
   addEventListener?: (event: string, callback: (data: any) => void) => void;
+  push?: (args: any[]) => void;
   event?: {
     on: (event: string, callback: (data: any) => void) => void;
   };
@@ -46,7 +46,6 @@ declare global {
 function MyApp({ Component, pageProps }: AppProps) {
   const { user, loading } = useAuth();
   const { isAdmin, adminLoading } = useAdmin();
-  const isMobile = useIsMobile();
   const router = useRouter();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
 
@@ -83,35 +82,37 @@ function MyApp({ Component, pageProps }: AppProps) {
           });
         }
       } catch (err) {
-        console.error("❌ Error al inicializar Google Auth:", err);
+        console.error("Error al inicializar Google Auth:", err);
       }
     };
 
     loadGapi();
-  }, [router]);
+  }, []); // Remover router de dependencias para evitar re-ejecuciones
 
   useEffect(() => {
     if (loading || adminLoading || profileLoading) {
       return;
     }
 
-    const isAuthRoute = ["/login", "/reset-password"].includes(router.pathname);
+    const currentPath = router.pathname;
+    const isAuthRoute = ["/login", "/reset-password"].includes(currentPath);
 
+    // Si no hay usuario y no está en ruta de auth, redirigir a login
     if (!user && !isAuthRoute) {
       router.push("/login");
       return;
     }
 
+    // Si no hay usuario, no hacer nada más
     if (!user) {
       return;
     }
 
     const onboardingCompleted = profile?.onboarding?.completed === true;
-    const isOnboardingRoute = router.pathname.startsWith("/onboarding");
-    const isAdminRoute = router.pathname.startsWith("/admin");
+    const isOnboardingRoute = currentPath.startsWith("/onboarding");
+    const isAdminRoute = currentPath.startsWith("/admin");
 
-    if (router.pathname === "/login") {
-      // Esperar a que termine de cargar el admin antes de redirigir
+    if (currentPath === "/login") {
       if (adminLoading) {
         return;
       }
@@ -122,10 +123,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       } else {
         router.push("/home");
       }
-
       return;
     }
 
+    // Si no completó onboarding y no es admin ni está en onboarding, redirigir
     if (
       !onboardingCompleted &&
       !isAdmin &&
@@ -136,37 +137,75 @@ function MyApp({ Component, pageProps }: AppProps) {
       return;
     }
 
+    // Si completó onboarding pero está en onboarding, redirigir a home
     if (onboardingCompleted && isOnboardingRoute) {
       router.push("/home");
+      return;
     }
   }, [
     user,
     loading,
     adminLoading,
     profileLoading,
-    profile,
+    profile?.onboarding?.completed,
     isAdmin,
-    isMobile,
-    router,
+    router.pathname,
   ]);
 
-  // Inicializar OneSignal solo una vez
+  // Inicializar OneSignal cuando el usuario esté autenticado
   useEffect(() => {
+    if (loading || !user) {
+      return;
+    }
+
+    // Verificar si ya está inicializado
+    if (
+      (window as unknown as { OneSignalInitialized: boolean })
+        ?.OneSignalInitialized
+    ) {
+      if (user?.uid) {
+        const setupListeners = async () => {
+          const { setupNotificationListenersForUser } = await import(
+            "@/lib/onesignal-config"
+          );
+          setupNotificationListenersForUser(user.uid);
+        };
+        setupListeners();
+      }
+      return;
+    }
+
+    const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+    if (!appId || appId === "your_onesignal_app_id_here") {
+      return;
+    }
+
     let isInitializing = false;
+    let attempts = 0;
+    const maxAttempts = 20; // Máximo 10 segundos (20 * 500ms)
 
     const initOneSignal = async () => {
-      const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
+      attempts++;
 
-      if (!appId || appId === "your_onesignal_app_id_here") {
+      // Verificar límite de intentos
+      if (attempts > maxAttempts) {
+        console.warn("OneSignal no se cargó después de múltiples intentos");
+        return;
+      }
+      if (
+        (window as unknown as { OneSignalInitialized: boolean })
+          ?.OneSignalInitialized
+      ) {
+        if (user?.uid) {
+          const { setupNotificationListenersForUser } = await import(
+            "@/lib/onesignal-config"
+          );
+          setupNotificationListenersForUser(user.uid);
+        }
         return;
       }
 
-      // Verificar si ya se está inicializando o ya se inicializó
-      if (
-        isInitializing ||
-        (window as unknown as { OneSignalInitialized: boolean })
-          .OneSignalInitialized
-      ) {
+      if (isInitializing) {
         return;
       }
 
@@ -183,28 +222,37 @@ function MyApp({ Component, pageProps }: AppProps) {
           await (window as any).OneSignal.init({
             appId: appId,
             allowLocalhostAsSecureOrigin: true,
+            autoResubscribe: true,
           });
 
           (
             window as unknown as { OneSignalInitialized: boolean }
           ).OneSignalInitialized = true;
+
+          // Configurar listeners para recibir notificaciones
+          if (user?.uid) {
+            const { setupNotificationListenersForUser } = await import(
+              "@/lib/onesignal-config"
+            );
+            setupNotificationListenersForUser(user.uid);
+          }
         } else {
           isInitializing = false;
-          setTimeout(initOneSignal, 500);
+          // Solo reintentar si no hemos excedido el límite
+          if (attempts < maxAttempts) {
+            setTimeout(initOneSignal, 500);
+          }
           return;
         }
-      } catch {
+      } catch (error) {
+        console.error("Error inicializando OneSignal:", error);
         isInitializing = false;
       }
     };
 
-    if (
-      !(window as unknown as { OneSignalInitialized: boolean })
-        .OneSignalInitialized
-    ) {
-      initOneSignal();
-    }
-  }, []);
+    initOneSignal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, loading]);
 
   if (
     (!user || (user && router.pathname === "/login")) &&

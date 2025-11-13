@@ -33,6 +33,7 @@ import {
   getScrapingScripts,
   updateScrapingScript,
 } from "@/lib/admin";
+import { sendNotificationToAll } from "@/lib/onesignal-api";
 import { ScrapingFrequency, ScrapingScript } from "@/types/admin";
 import {
   Calendar,
@@ -178,7 +179,28 @@ export function ScrapingScriptsManager() {
       }
 
       toast.success(`${savedCount} descuentos guardados correctamente`);
-      // Aviso propio (no alert nativo) para ir a aprobar
+
+      if (savedCount > 0) {
+        try {
+          await sendNotificationToAll(
+            "¡Nuevos descuentos disponibles!",
+            `Se han agregado ${savedCount} nuevo${
+              savedCount > 1 ? "s" : ""
+            } descuento${savedCount > 1 ? "s" : ""} para ti`,
+            {
+              url: "/search",
+              data: {
+                type: "promocion",
+                timestamp: new Date().toISOString(),
+                source: "scraping_script",
+              },
+            }
+          );
+        } catch (error) {
+          console.error("Error enviando notificación:", error);
+        }
+      }
+
       if (savedCount > 0) {
         toast.custom(
           (t) => (
