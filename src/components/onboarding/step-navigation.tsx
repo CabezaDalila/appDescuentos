@@ -19,7 +19,7 @@ export function StepNavigation({
   nextLabel,
 }: StepNavigationProps) {
   return (
-    <div className="mt-10 flex items-center justify-between gap-4">
+    <div className="mt-4 flex items-center justify-between gap-4 flex-shrink-0">
       {showBackButton ? (
         <Button
           type="button"
@@ -39,9 +39,9 @@ export function StepNavigation({
         onClick={onNext}
         disabled={!canContinue || isSaving}
         className={cn(
-          "h-12 flex-[2] rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-base font-semibold text-white shadow-lg transition-all hover:from-orange-600 hover:to-pink-600",
+          "h-12 flex-[2] rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-base font-semibold text-white shadow-lg transition-all hover:from-purple-600 hover:to-purple-700",
           (!canContinue || isSaving) &&
-            "cursor-not-allowed opacity-70 hover:from-orange-500 hover:to-pink-500"
+            "cursor-not-allowed opacity-70 hover:from-purple-500 hover:to-purple-600"
         )}
       >
         {isSaving ? "Guardando..." : nextLabel}

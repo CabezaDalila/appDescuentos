@@ -23,10 +23,10 @@ export function OptionCard({ option, selected, onToggle }: OptionCardProps) {
       onClick={() => onToggle(option.id)}
       className={cn(
         "w-full rounded-2xl border-2 p-4 text-left transition-all duration-200",
-        "bg-white shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300",
+        "bg-white shadow-sm hover:shadow-md focus:outline-none",
         selected
-          ? "border-orange-400 bg-orange-50 shadow-md"
-          : "border-transparent hover:border-orange-200"
+          ? "border-purple-400 bg-purple-50 shadow-md"
+          : "border-gray-200 hover:border-purple-200"
       )}
     >
       <div className="flex items-center justify-between gap-4">
@@ -44,7 +44,7 @@ export function OptionCard({ option, selected, onToggle }: OptionCardProps) {
             {option.label}
           </span>
         </div>
-        {selected && <CheckCircle2 className="h-6 w-6 text-orange-500" />}
+        {selected && <CheckCircle2 className="h-6 w-6 text-purple-500" />}
       </div>
     </button>
   );

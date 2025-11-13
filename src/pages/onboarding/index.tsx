@@ -111,7 +111,7 @@ export default function OnboardingPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="space-y-4 text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-orange-500" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-purple-500" />
           <p className="text-sm text-gray-600">Preparando tu experiencia...</p>
         </div>
       </div>
@@ -119,15 +119,15 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-white to-slate-50">
-      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col px-4 pb-10 pt-8">
+    <div className="h-screen bg-gradient-to-b from-white via-white to-slate-50 overflow-hidden">
+      <div className="mx-auto flex h-screen w-full max-w-2xl flex-col px-4 py-4">
         <ProgressHeader
           currentStep={step}
           totalSteps={totalSteps}
-          className="mb-8"
+          className="mb-4"
         />
 
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col min-h-0">
           {step === 0 && (
             <IntroStep
               title="¡Bienvenido a tu app de ofertas!"
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
               highlight={
                 <>
                   Solo te tomará{" "}
-                  <span className="font-semibold text-orange-500">
+                  <span className="font-semibold text-purple-500">
                     2 minutos
                   </span>{" "}
                   completar este cuestionario y podrás disfrutar de ofertas
@@ -146,8 +146,8 @@ export default function OnboardingPage() {
           )}
 
           {step === 1 && (
-            <div className="flex flex-1 flex-col">
-              <div className="mb-6">
+            <div className="flex flex-1 flex-col min-h-0">
+              <div className="mb-4 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-900">
                   ¿Qué tipo de productos te interesan más?
                 </h2>
@@ -155,22 +155,24 @@ export default function OnboardingPage() {
                   Selecciona todas las opciones que quieras
                 </p>
               </div>
-              <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
-                {INTEREST_OPTIONS.map((option) => (
-                  <OptionCard
-                    key={option.id}
-                    option={option}
-                    selected={selectedInterests.includes(option.id)}
-                    onToggle={toggleInterest}
-                  />
-                ))}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {INTEREST_OPTIONS.map((option) => (
+                    <OptionCard
+                      key={option.id}
+                      option={option}
+                      selected={selectedInterests.includes(option.id)}
+                      onToggle={toggleInterest}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="flex flex-1 flex-col">
-              <div className="mb-6">
+            <div className="flex flex-1 flex-col min-h-0">
+              <div className="mb-4 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-900">
                   ¿Qué te gustaría aprovechar más con los descuentos?
                 </h2>
@@ -178,15 +180,17 @@ export default function OnboardingPage() {
                   Selecciona todas las opciones que quieras
                 </p>
               </div>
-              <div className="flex flex-1 flex-col gap-3">
-                {GOAL_OPTIONS.map((option) => (
-                  <OptionCard
-                    key={option.id}
-                    option={option}
-                    selected={selectedGoals.includes(option.id)}
-                    onToggle={toggleGoal}
-                  />
-                ))}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="flex flex-col gap-3">
+                  {GOAL_OPTIONS.map((option) => (
+                    <OptionCard
+                      key={option.id}
+                      option={option}
+                      selected={selectedGoals.includes(option.id)}
+                      onToggle={toggleGoal}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}

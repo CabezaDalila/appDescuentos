@@ -18,20 +18,20 @@ export function IntroStep({
   return (
     <div
       className={cn(
-        "flex flex-1 flex-col items-center justify-center text-center space-y-6",
+        "flex flex-1 flex-col items-center justify-center text-center space-y-4",
         className
       )}
     >
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-pink-500 text-white shadow-lg">
-        <Sparkles className="h-10 w-10" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg">
+        <Sparkles className="h-8 w-8" />
       </div>
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-        <p className="mx-auto max-w-md text-base text-gray-600">
+      <div className="space-y-3">
+        <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+        <p className="mx-auto max-w-md text-sm text-gray-600">
           {description}
         </p>
       </div>
-      <div className="rounded-2xl border border-orange-100 bg-orange-50 px-6 py-4 text-sm text-gray-700">
+      <div className="rounded-2xl border border-purple-100 bg-purple-50 px-5 py-3 text-sm text-gray-700">
         {highlight}
       </div>
     </div>
