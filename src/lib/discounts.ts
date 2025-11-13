@@ -55,6 +55,7 @@ interface FirestoreDiscount {
     longitude: number;
     address: string;
   };
+  points?: number; // Puntos del descuento basados en votos
 }
 
 // Obtener todos los descuentos
@@ -136,14 +137,14 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           image,
           category,
           discountPercentage,
-          points: 6, // Valor por defecto
-          distance: data.location ? "Calculando..." : "Sin ubicación", // Calcular si tiene ubicación
+          points: data.points || 0,
+          distance: data.location ? "Calculando..." : "Sin ubicación",
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
-          isVisible: data.isVisible ?? true, // Incluir campo de visibilidad
-          location: data.location, // Incluir ubicación para el cálculo
+          isVisible: data.isVisible ?? true,
+          location: data.location,
         } as HomePageDiscount;
       })
       .filter((discount) => {
@@ -526,13 +527,14 @@ export const getPersonalizedDiscounts = async (
           image,
           category,
           discountPercentage,
-          points: 6,
-          distance: "1.2km",
+          points: data.points || 0, // Obtener puntos desde Firestore
+          distance: "", // La distancia se calculará en el componente usando useDistance basándose en la ubicación del descuento
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",
-          origin: data.origin || "Origen no especificado",
-          status: data.status || "active",
+          origin: data.origin,
+          status: data.status,
           isVisible: data.isVisible ?? true,
+          location: data.location,
         } as HomePageDiscount;
       });
   } catch (error) {
@@ -598,7 +600,7 @@ export const getNearbyDiscounts = async (
           image,
           category,
           discountPercentage,
-          points: 6,
+          points: data.points || 0,
           distance: result.distanceText,
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",

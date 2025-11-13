@@ -156,8 +156,10 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
                 <div className="animate-spin rounded-full h-2 w-2 border-b border-gray-400"></div>
                 <span>Calculando...</span>
               </span>
-            ) : (
+            ) : calculatedDistance ? (
               calculatedDistance
+            ) : (
+              "Sin ubicación"
             )}
           </span>
           <span className="flex items-center gap-0.5 sm:gap-1">

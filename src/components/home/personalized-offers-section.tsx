@@ -19,6 +19,11 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 interface PersonalizedOffersSectionProps {
@@ -141,6 +146,14 @@ export function PersonalizedOffersSection({
               distance={offer.distance}
               expiration={offer.expiration}
               discountPercentage={offer.discountPercentage}
+              discountLocation={
+                offer.location
+                  ? {
+                      latitude: offer.location.latitude,
+                      longitude: offer.location.longitude,
+                    }
+                  : undefined
+              }
               onNavigateToDetail={(distance) => {
                 const url =
                   distance &&

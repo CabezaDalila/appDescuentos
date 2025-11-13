@@ -1,7 +1,7 @@
+import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import { CreditCard, Users } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import { Separator } from "../Share/separator";
@@ -24,6 +24,7 @@ interface CardDiscountProps {
   distance: string;
   expiration: string;
   discountPercentage: string;
+  renderVote?: React.ReactNode;
 }
 
 const CardDiscount: React.FC<CardDiscountProps> = ({
@@ -39,6 +40,7 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   distance,
   expiration,
   discountPercentage,
+  renderVote,
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -137,20 +139,25 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
         </span>
       </div>
       <h1 className="text-sm font-bold text-gray-600">{title}</h1>
-      <div className="flex items-center justify-start gap-4">
-        <span className="text-xs text-gray-600 flex items-center gap-1">
-          <Image src="/distance.png" alt="Distance" width={10} height={10} />
-          {distance}
-        </span>
-        <span className="text-xs text-gray-600 flex items-center gap-1">
-          <Image
-            src="/expiration.png"
-            alt="Expiration"
-            width={10}
-            height={10}
-          />
-          {expiration}
-        </span>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-gray-600 flex items-center gap-1">
+            <Image src="/distance.png" alt="Distance" width={10} height={10} />
+            {distance}
+          </span>
+          <span className="text-xs text-gray-600 flex items-center gap-1">
+            <Image
+              src="/expiration.png"
+              alt="Expiration"
+              width={10}
+              height={10}
+            />
+            {expiration}
+          </span>
+        </div>
+        {renderVote && (
+          <div className="flex items-center gap-2">{renderVote}</div>
+        )}
       </div>
       {/* distancia mas vencimiento */}
       <Separator className="w-full" />

@@ -1,10 +1,13 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
+import { DiscountVote } from "@/components/discount/DiscountVote";
 import { BackButton } from "@/components/Share/back-button";
 import { GoogleMap } from "@/components/Share/google-map";
 import { useDistance } from "@/hooks/useDistance";
 import { getDiscounts } from "@/lib/discounts";
+import { db } from "@/lib/firebase/firebase";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -14,8 +17,8 @@ export default function DiscountDetail() {
   const [discountData, setDiscountData] = useState<Discount | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [points, setPoints] = useState(0);
 
-  // Usar hook de distancia - si hay distancia en URL, la usa directamente
   const { distance, loading: distanceLoading } = useDistance({
     discountLocation: discountData?.location,
     initialDistance: typeof urlDistance === "string" ? urlDistance : undefined,
@@ -43,6 +46,15 @@ export default function DiscountDetail() {
             ...discount,
             image: image,
           });
+
+          if (id) {
+            const discountRef = doc(db, "discounts", id);
+            const discountDoc = await getDoc(discountRef);
+            if (discountDoc.exists()) {
+              const data = discountDoc.data();
+              setPoints(data.points || 0);
+            }
+          }
         } else {
           setNotFound(true);
         }
@@ -109,7 +121,7 @@ export default function DiscountDetail() {
               availableMemberships={discountData.availableMemberships}
               availableCredentials={discountData.availableCredentials}
               category={discountData.category || "Sin categoría"}
-              points={6} // Valor por defecto
+              points={points}
               countComments={0} // Valor por defecto
               distance={distanceLoading ? "Calculando..." : distance}
               expiration={
@@ -120,6 +132,13 @@ export default function DiscountDetail() {
                 discountData.discountPercentage
                   ? `${discountData.discountPercentage}%`
                   : "Sin descuento"
+              }
+              renderVote={
+                <DiscountVote
+                  discountId={discountData.id}
+                  currentPoints={points}
+                  onPointsUpdate={setPoints}
+                />
               }
             />
             {/* Mapa de ubicación */}
