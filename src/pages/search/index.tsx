@@ -13,7 +13,7 @@ import {
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
-import { matchesCategory } from "@/utils/category-mapping";
+import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
 import { getFavoriteIds } from "@/utils/favorites";
 import { Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
@@ -212,12 +212,16 @@ export default function Search() {
     const loadDiscounts = async () => {
       try {
         setLoading(true);
-        let data: SearchDiscount[] = [];
 
         // Verificar si hay filtro de ubicación
         const hasLocationFilter = location === "true" && lat && lng;
         setIsLocationFilter(!!hasLocationFilter);
         setDraftNearby(!!hasLocationFilter);
+        if (hasLocationFilter) {
+          setFilteredDiscounts([]);
+        }
+
+        let data: SearchDiscount[] = [];
 
         if (hasLocationFilter) {
           const latitude = parseFloat(lat as string);
@@ -620,7 +624,11 @@ export default function Search() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando descuentos...</p>
+            <p className="text-gray-600">
+              {isLocationFilter
+                ? "Calculando descuentos cercanos..."
+                : "Cargando descuentos..."}
+            </p>
           </div>
         ) : filteredDiscounts.length === 0 ? (
           <EmptyState
@@ -673,7 +681,9 @@ export default function Search() {
                     image={
                       isHomePageDiscount
                         ? (discount as HomePageDiscount).image
-                        : (discount as Discount).imageUrl || ""
+                        : (discount as Discount).imageUrl ||
+                          (discount as Discount).image ||
+                          getImageByCategory(discount.category)
                     }
                     category={discount.category || ""}
                     points={

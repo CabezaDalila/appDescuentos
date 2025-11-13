@@ -143,21 +143,6 @@ export const matchesCategory = (
 };
 
 /**
- * Filtra descuentos por categoría
- * @param discounts - Array de descuentos
- * @param category - Categoría objetivo
- * @returns Array de descuentos filtrados
- */
-export const filterDiscountsByCategory = (
-  discounts: { category: string }[],
-  category: string
-): { category: string }[] => {
-  return discounts.filter((discount) =>
-    matchesCategory(discount.category, category)
-  );
-};
-
-/**
  * Función para obtener la imagen por defecto de una categoría
  * @param category - Nombre de la categoría
  * @returns Ruta de la imagen por defecto para la categoría

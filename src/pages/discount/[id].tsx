@@ -1,9 +1,10 @@
 import CardDiscount from "@/components/cardDiscount/cardDiscount";
 import { BackButton } from "@/components/Share/back-button";
-import { getImageByCategory } from "@/constants/image-categories";
+import { GoogleMap } from "@/components/Share/google-map";
 import { useDistance } from "@/hooks/useDistance";
 import { getDiscounts } from "@/lib/discounts";
 import { Discount } from "@/types/discount";
+import { getImageByCategory } from "@/utils/category-mapping";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -93,26 +94,46 @@ export default function DiscountDetail() {
             <p className="text-gray-600">Cargando descuento...</p>
           </div>
         ) : discountData ? (
-          <CardDiscount
-            title={discountData.title || discountData.name || "Sin título"}
-            image={discountData.image || "/primary_image.jpg"}
-            description={discountData.description || "Sin descripción"}
-            availableMemberships={discountData.availableMemberships}
-            availableCredentials={discountData.availableCredentials}
-            category={discountData.category || "Sin categoría"}
-            points={6} // Valor por defecto
-            countComments={0} // Valor por defecto
-            distance={distanceLoading ? "Calculando..." : distance}
-            expiration={
-              discountData.validUntil?.toLocaleDateString("es-ES") ||
-              "Sin fecha"
-            }
-            discountPercentage={
-              discountData.discountPercentage
-                ? `${discountData.discountPercentage}%`
-                : "Sin descuento"
-            }
-          />
+          <>
+            <CardDiscount
+              title={discountData.title || discountData.name || "Sin título"}
+              image={discountData.image || "/primary_image.jpg"}
+              description={discountData.description || "Sin descripción"}
+              availableMemberships={discountData.availableMemberships}
+              availableCredentials={discountData.availableCredentials}
+              category={discountData.category || "Sin categoría"}
+              points={6} // Valor por defecto
+              countComments={0} // Valor por defecto
+              distance={distanceLoading ? "Calculando..." : distance}
+              expiration={
+                discountData.validUntil?.toLocaleDateString("es-ES") ||
+                "Sin fecha"
+              }
+              discountPercentage={
+                discountData.discountPercentage
+                  ? `${discountData.discountPercentage}%`
+                  : "Sin descuento"
+              }
+            />
+            {/* Mapa de ubicación */}
+            {discountData.location && (
+              <div className="mt-4">
+                <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                  Ubicación
+                </h2>
+                <GoogleMap
+                  latitude={discountData.location.latitude}
+                  longitude={discountData.location.longitude}
+                  address={discountData.location.address}
+                />
+                {discountData.location.address && (
+                  <p className="text-xs text-gray-600 mt-2">
+                    {discountData.location.address}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-8">
             <p className="text-gray-600">Descuento no encontrado</p>

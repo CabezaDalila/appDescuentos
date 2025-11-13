@@ -43,36 +43,3 @@ export const formatExpiryInput = (value: string): string => {
   return formatted;
 };
 
-/**
- * Verifica si una tarjeta está próxima a vencer (dentro de 3 meses)
- * @param expiry - Fecha en formato MM/YY
- * @returns true si está próxima a vencer
- */
-export const isExpiringSoon = (expiry: string): boolean => {
-  if (!expiry || !validateExpiry(expiry)) return false;
-  
-  const [month, year] = expiry.split('/');
-  const cardYear = 2000 + parseInt(year); // Convertir a año completo
-  const cardMonth = parseInt(month);
-  
-  const cardDate = new Date(cardYear, cardMonth - 1); // Mes es 0-indexado
-  const threeMonthsFromNow = new Date();
-  threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
-  
-  return cardDate <= threeMonthsFromNow;
-};
-
-/**
- * Obtiene el estado de la tarjeta basado en su fecha de vencimiento
- * @param expiry - Fecha en formato MM/YY
- * @returns 'expired' | 'expiring-soon' | 'valid'
- */
-export const getCardExpiryStatus = (expiry: string): 'expired' | 'expiring-soon' | 'valid' => {
-  if (!expiry) return 'valid';
-  
-  if (!validateExpiry(expiry)) return 'expired';
-  
-  if (isExpiringSoon(expiry)) return 'expiring-soon';
-  
-  return 'valid';
-};

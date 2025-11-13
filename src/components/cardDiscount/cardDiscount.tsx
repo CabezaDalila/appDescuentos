@@ -38,9 +38,34 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   discountPercentage,
 }) => {
   const [isLiked, setIsLiked] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
+  };
+
+  const handleShare = async () => {
+    if (isSharing) {
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+
+      if (navigator.share) {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: window.location.href,
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Error al compartir:", error);
+      }
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -61,19 +86,9 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
         <div className="absolute top-2 right-2 z-10 flex items-center bg-white/70 rounded-full">
           <Button
             variant="ghost"
-            className="flex items-center focus:outline-none hover:bg-transparent active:bg-transparent transition-none"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({
-                  title: title,
-                  text: description,
-                  url: window.location.href,
-                });
-              } else {
-                // Fallback para navegadores que no soportan Web Share API
-                navigator.clipboard.writeText(window.location.href);
-              }
-            }}
+            className="flex items-center focus:outline-none hover:bg-transparent active:bg-transparent transition-none disabled:opacity-50"
+            onClick={handleShare}
+            disabled={isSharing}
           >
             <Image src="/share.png" alt="Share" width={16} height={16} />
           </Button>

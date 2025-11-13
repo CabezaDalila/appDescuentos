@@ -9,9 +9,7 @@ const OPENROUTE_API_KEY = process.env.NEXT_PUBLIC_OPEN_ROUTE_DISTANCE;
 
 export interface RealDistanceResult {
   distance: number; // en metros
-  duration: number; // en segundos
   distanceText: string; // "2.5 km"
-  durationText: string; // "15 min"
 }
 
 // Sistema de caché y gestión de requests
@@ -126,11 +124,8 @@ export async function getRealDistance(
       }
 
       const route = data.features[0];
-      const distance = route.properties.summary.distance; // en metros
-      const duration = route.properties.summary.duration; // en segundos
-
+      const distance = route.properties.summary.distance;
       const distanceKm = distance / 1000;
-      const durationMin = Math.round(duration / 60);
 
       // Formatear distancia
       const distanceText =
@@ -138,18 +133,9 @@ export async function getRealDistance(
           ? `${Math.round(distance)} m`
           : `${distanceKm.toFixed(1)} km`;
 
-      // Formatear duración
-      const durationMinutes = Math.round(duration / 60);
-      const durationText =
-        durationMinutes < 60
-          ? `${durationMinutes} min`
-          : `${Math.floor(durationMinutes / 60)}h ${durationMinutes % 60}min`;
-
       const result = {
         distance,
-        duration,
         distanceText,
-        durationText,
       };
 
       // Guardar en caché

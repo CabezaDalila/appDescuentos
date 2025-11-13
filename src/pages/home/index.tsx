@@ -207,11 +207,6 @@ export default function Home() {
     router.push(`/search?category=${categoryId}`);
   };
 
-  // const handleBankClick = (bankId: string) => {
-  //   // Navegar a la página de búsqueda con el filtro de banco
-  //   router.push(`/search?bank=${bankId}`);
-  // };
-
   const handleNavigateToDetail = (discountId: string, url?: string) => {
     router.push(url || `/discount/${discountId}`);
   };

@@ -1,4 +1,5 @@
 import { useDistance } from "@/hooks/useDistance";
+import { getImageByCategory } from "@/utils/category-mapping";
 import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -45,22 +46,6 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
       initialDistance,
     });
 
-  // Log cuando la distancia cambia
-  useEffect(() => {
-    if (
-      calculatedDistance &&
-      calculatedDistance !== "Calculando..." &&
-      calculatedDistance !== "Sin ubicación"
-    ) {
-      console.log("[CardDiscountCompact] Distancia para descuento:", {
-        id,
-        title,
-        distance: calculatedDistance,
-        category,
-      });
-    }
-  }, [calculatedDistance, id, title, category]);
-
   useEffect(() => {
     if (id) {
       setIsLiked(isFavorite(id));
@@ -82,12 +67,6 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
   const handleCardClick = () => {
     if (onNavigateToDetail) {
-      // Pasar la distancia calculada si está disponible
-      console.log("[CardDiscountCompact] Navegando a detalle con distancia:", {
-        id,
-        title,
-        distance: calculatedDistance,
-      });
       onNavigateToDetail(calculatedDistance);
     } else if (onClick) {
       onClick();
@@ -101,7 +80,7 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
     >
       <div className="relative h-24 sm:h-32 w-full">
         <Image
-          src={image}
+          src={image || getImageByCategory(category)}
           alt={title}
           fill
           className="object-cover rounded-t-lg"

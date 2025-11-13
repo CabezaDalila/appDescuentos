@@ -58,8 +58,3 @@ export const ADMIN_CONSTANTS = {
       `¿Estás seguro de que quieres eliminar ${count} descuentos seleccionados? Esta acción no se puede deshacer.`,
   },
 } as const;
-
-// Tipos derivados de las constantes
-export type SuccessMessageKey = keyof typeof ADMIN_CONSTANTS.SUCCESS_MESSAGES;
-export type ErrorMessageKey = keyof typeof ADMIN_CONSTANTS.ERROR_MESSAGES;
-export type UITextKey = keyof typeof ADMIN_CONSTANTS.UI_TEXT;

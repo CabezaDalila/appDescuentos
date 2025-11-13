@@ -97,7 +97,6 @@ export function useDistance({
           console.log("[useDistance] Distancia calculada:", {
             distance: result.distanceText,
             distanceMeters: result.distance,
-            duration: result.durationText,
             from: { lat: position.latitude, lng: position.longitude },
             to: {
               lat: discountLocation.latitude,
