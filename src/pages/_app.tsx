@@ -81,7 +81,6 @@ function MyApp({ Component, pageProps }: AppProps) {
           await window.gapi!.auth2.init({
             client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
           });
-          console.log("✅ Google Auth inicializado");
         }
       } catch (err) {
         console.error("❌ Error al inicializar Google Auth:", err);

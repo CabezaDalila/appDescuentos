@@ -31,10 +31,6 @@ export const saveNotificationToFirestore = async (
     };
 
     await addDoc(collection(db, "notifications"), notification);
-    console.log(
-      "✅ Notificación guardada en Firestore:",
-      notificationData.title
-    );
   } catch (error) {
     console.error("❌ Error guardando notificación en Firestore:", error);
     throw error;

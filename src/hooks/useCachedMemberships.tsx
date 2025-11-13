@@ -49,7 +49,6 @@ export function useCachedMemberships() {
         const cachedInactive = cache.get<MembershipItem[]>(CACHE_KEYS.MEMBERSHIPS_INACTIVE);
 
         if (cachedActive && cachedInactive) {
-          console.log("[Cache] Usando membresías desde caché");
           setActiveMemberships(cachedActive);
           setInactiveMemberships(cachedInactive);
           setLoading(false);
@@ -70,7 +69,6 @@ export function useCachedMemberships() {
         }
 
         // Si no hay caché, cargar normalmente
-        console.log("[Cache] Cargando membresías desde Firebase");
         setLoading(true);
         const [active, inactive] = await Promise.all([
           getActiveMemberships(),

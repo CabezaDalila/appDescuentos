@@ -142,9 +142,6 @@ export const createMembership = async (membershipData) => {
 
       if (existingMembership) {
         // Si ya existe, agregar las tarjetas a la membresía existente
-        console.log(
-          `🔄 Membresía "${membershipData.name}" ya existe, agregando tarjetas...`
-        );
         return await addCardsToExistingMembership(
           existingMembership.id,
           membershipData.cards
@@ -223,10 +220,6 @@ const addCardsToExistingMembership = async (membershipId, newCards) => {
       cards: allCards,
       updatedAt: serverTimestamp(),
     });
-
-    console.log(
-      `✅ Agregadas ${newCards.length} tarjetas a "${membership.name}"`
-    );
     return {
       id: membershipId,
       ...membership,
@@ -540,10 +533,6 @@ export const consolidateDuplicateMemberships = async () => {
       }
     });
 
-    console.log(
-      `🔄 Encontrados ${duplicates.length} grupos de membresías duplicadas`
-    );
-
     let consolidated = 0;
     let deleted = 0;
 
@@ -587,9 +576,6 @@ export const consolidateDuplicateMemberships = async () => {
       }
 
       consolidated++;
-      console.log(
-        `✅ Consolidado "${name}": ${memberships.length} → 1 membresía con ${allCards.length} tarjetas`
-      );
     }
 
     return {

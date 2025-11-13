@@ -237,15 +237,7 @@ export default function EditMembershipPage() {
 
     try {
       setSaving(true);
-      console.log(
-        "Eliminando tarjeta:",
-        cardId,
-        "de membresía:",
-        membership.id
-      );
-
       const result = await deleteCardFromMembership(membership.id, cardId);
-      console.log("Resultado de eliminación:", result);
 
       if (result.membershipDeleted) {
         // La membresía fue eliminada completamente

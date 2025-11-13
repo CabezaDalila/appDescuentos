@@ -21,22 +21,6 @@ export default function DiscountDetail() {
     enabled: !!discountData?.location,
   });
 
-  // Log cuando la distancia cambia
-  useEffect(() => {
-    if (
-      distance &&
-      distance !== "Calculando..." &&
-      distance !== "Sin ubicación"
-    ) {
-      console.log("[DiscountDetail] Distancia para descuento:", {
-        id,
-        title: discountData?.title || discountData?.name,
-        distance,
-        fromURL: !!urlDistance,
-      });
-    }
-  }, [distance, id, discountData, urlDistance]);
-
   useEffect(() => {
     const loadDiscount = async () => {
       if (!id) return;

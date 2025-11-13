@@ -124,31 +124,30 @@ const saveUserToFirestore = async (user) => {
 };
 
 export const loginWithGoogle = async () => {
-  const result = await signInWithPopup(auth, new GoogleAuthProvider());
-  await saveUserToFirestore(result.user);
-  return result;
+  try {
+    const result = await signInWithPopup(auth, new GoogleAuthProvider());
+    await saveUserToFirestore(result.user);
+    return result;
+  } catch (error) {
+    console.error("Error en login con Google:", error);
+    throw error;
+  }
 };
 
 export const loginWithGoogleNative = async () => {
   try {
-    // Import dinámico para evitar errores en web
     const { GoogleAuth } = await import(
       "@codetrix-studio/capacitor-google-auth"
     );
-
     const googleUser = await GoogleAuth.signIn();
-
-    const idToken = googleUser.authentication.idToken;
-
-    const credential = GoogleAuthProvider.credential(idToken);
-
+    const credential = GoogleAuthProvider.credential(
+      googleUser.authentication.idToken
+    );
     const result = await signInWithCredential(auth, credential);
-
     await saveUserToFirestore(result.user);
-
     return result;
   } catch (error) {
-    console.error("Error en login nativo de Google:", error);
+    console.error("Error en login nativo con Google:", error);
     throw error;
   }
 };

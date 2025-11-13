@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { cache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getHomePageDiscounts } from "@/lib/discounts";
 import type { HomePageDiscount } from "@/types/discount";
+import { useEffect, useState } from "react";
 
 export function useCachedDiscounts() {
   const [discounts, setDiscounts] = useState<HomePageDiscount[]>([]);
@@ -14,7 +14,6 @@ export function useCachedDiscounts() {
         const cached = cache.get<HomePageDiscount[]>(CACHE_KEYS.DISCOUNTS_HOME);
 
         if (cached && cached.length > 0) {
-          console.log("[Cache] Usando descuentos desde caché");
           setDiscounts(cached);
           setLoading(false);
 
@@ -32,7 +31,6 @@ export function useCachedDiscounts() {
         }
 
         // Si no hay caché, cargar normalmente
-        console.log("[Cache] Cargando descuentos desde Firebase");
         setLoading(true);
         const data = await getHomePageDiscounts();
         cache.set(CACHE_KEYS.DISCOUNTS_HOME, data, CACHE_TTL.DISCOUNTS);
@@ -49,4 +47,3 @@ export function useCachedDiscounts() {
 
   return { discounts, loading };
 }
-

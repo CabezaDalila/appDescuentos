@@ -41,7 +41,6 @@ export function useDistance({
         initialDistance !== "Calculando..." &&
         initialDistance !== "Sin ubicación"
       ) {
-        console.log("[useDistance] Usando distancia inicial:", initialDistance);
         setDistance(initialDistance);
         return;
       }
@@ -94,18 +93,8 @@ export function useDistance({
         );
 
         if (result) {
-          console.log("[useDistance] Distancia calculada:", {
-            distance: result.distanceText,
-            distanceMeters: result.distance,
-            from: { lat: position.latitude, lng: position.longitude },
-            to: {
-              lat: discountLocation.latitude,
-              lng: discountLocation.longitude,
-            },
-          });
           setDistance(result.distanceText);
         } else {
-          console.log("[useDistance] No se pudo calcular distancia");
           setDistance("Sin ubicación");
         }
       } catch (err) {

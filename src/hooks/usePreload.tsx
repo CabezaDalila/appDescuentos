@@ -27,14 +27,11 @@ export function usePreload() {
       // Verificar si ya está en caché
       const cached = cache.get(CACHE_KEYS.DISCOUNTS_HOME);
       if (cached) {
-        console.log("[Preload] Descuentos ya en caché");
         return true;
       }
 
-      console.log("[Preload] Cargando descuentos...");
       const discounts = await getHomePageDiscounts();
       cache.set(CACHE_KEYS.DISCOUNTS_HOME, discounts, CACHE_TTL.DISCOUNTS);
-      console.log(`[Preload] ${discounts.length} descuentos precargados`);
       return true;
     } catch (error) {
       console.error("[Preload] Error cargando descuentos:", error);
@@ -49,11 +46,9 @@ export function usePreload() {
       // Verificar si ya está en caché
       const cached = cache.get(CACHE_KEYS.MEMBERSHIPS_ACTIVE);
       if (cached) {
-        console.log("[Preload] Membresías ya en caché");
         return true;
       }
 
-      console.log("[Preload] Cargando membresías...");
       const [active, inactive] = await Promise.all([
         getActiveMemberships(),
         getInactiveMemberships(),
@@ -61,7 +56,6 @@ export function usePreload() {
 
       cache.set(CACHE_KEYS.MEMBERSHIPS_ACTIVE, active, CACHE_TTL.MEMBERSHIPS);
       cache.set(CACHE_KEYS.MEMBERSHIPS_INACTIVE, inactive, CACHE_TTL.MEMBERSHIPS);
-      console.log(`[Preload] ${active.length + inactive.length} membresías precargadas`);
       return true;
     } catch (error) {
       console.error("[Preload] Error cargando membresías:", error);
@@ -71,9 +65,6 @@ export function usePreload() {
 
   const preloadAll = async () => {
     if (status.complete) return;
-
-    console.log("[Preload] Iniciando precarga de datos...");
-    const startTime = performance.now();
 
     const [discountsLoaded, membershipsLoaded] = await Promise.all([
       preloadDiscounts(),
@@ -85,9 +76,6 @@ export function usePreload() {
       memberships: membershipsLoaded,
       complete: discountsLoaded && membershipsLoaded,
     });
-
-    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
-    console.log(`[Preload] Precarga completada en ${duration}s`);
   };
 
   useEffect(() => {

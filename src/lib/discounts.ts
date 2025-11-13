@@ -473,11 +473,6 @@ export const getPersonalizedDiscounts = async (
       return false;
     });
 
-    // Log único: mostrar cuáles matchearon (id y título)
-    const matchedSummary = matchedDiscounts.map(({ data }) => ({
-      title: data.title || data.name || "Sin título",
-    }));
-    console.log("[PersonalizedOffers] Matched:", matchedSummary);
 
     // Convertir a formato HomePageDiscount y limitar resultados
     return matchedDiscounts
@@ -550,23 +545,11 @@ export const getNearbyDiscounts = async (
 
       // Si no hay resultado (sin API key o error), saltar este descuento
       if (!result) {
-        console.log("[getNearbyDiscounts] Sin resultado para descuento:", {
-          id,
-          title: data.title || data.name,
-        });
         continue;
       }
 
       // Solo incluir si está dentro del radio máximo (convertir metros a km para comparar)
       const distanceKm = result.distance / 1000;
-      console.log("[getNearbyDiscounts] Distancia calculada:", {
-        id,
-        title: data.title || data.name,
-        distance: result.distanceText,
-        distanceKm: distanceKm.toFixed(2),
-        maxDistanceKm,
-        dentroDelRadio: distanceKm <= maxDistanceKm,
-      });
       if (distanceKm <= maxDistanceKm) {
         const title = data.title || data.name || "Sin título";
         const image =

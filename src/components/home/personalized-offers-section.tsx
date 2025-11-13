@@ -49,22 +49,10 @@ export function PersonalizedOffersSection({
       }
 
       try {
-        const DEBUG = false; // Cambiar a true si necesitas depurar
-        if (DEBUG) {
-          console.log("🔍 Matching personalizado", {
-            memberships: userMemberships?.length || 0,
-            credentials: userCredentials?.length || 0,
-          });
-        }
-
         const discounts = await getPersonalizedDiscounts(
           userMemberships || [],
           userCredentials || []
         );
-
-        if (DEBUG) {
-          console.log("🔍 Resultados personalizados:", discounts.length);
-        }
         setPersonalizedOffers(discounts);
       } catch (error) {
         console.error("Error cargando descuentos personalizados:", error);

@@ -11,13 +11,20 @@ import {
 import { Checkbox } from "@/components/Share/checkbox";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
+import { Separator } from "@/components/Share/separator";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { db } from "@/lib/firebase/firebase";
-import { login, register, resetPassword } from "@/lib/firebase/firebase-auth";
+import {
+  login,
+  loginWithGoogle,
+  loginWithGoogleNative,
+  register,
+  resetPassword,
+} from "@/lib/firebase/firebase-auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -96,6 +103,7 @@ export default function AuthForm() {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   // Si el usuario está logueado y es admin, mostrar selector de modo si esta en desktop
   useEffect(() => {
@@ -224,6 +232,70 @@ export default function AuthForm() {
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     clearMessages();
+  };
+
+  const handleGoogleSignUp = async () => {
+    clearMessages();
+    setIsGoogleLoading(true);
+
+    try {
+      // Detectar si es plataforma nativa (iOS/Android)
+      interface CapacitorWindow extends Window {
+        Capacitor?: {
+          isNativePlatform?: () => boolean;
+        };
+      }
+
+      const capWindow = window as CapacitorWindow;
+      const isNativePlatform =
+        typeof window !== "undefined" &&
+        capWindow.Capacitor?.isNativePlatform?.() === true;
+
+      const result = isNativePlatform
+        ? await loginWithGoogleNative()
+        : await loginWithGoogle();
+
+      if (result?.user) {
+        setSuccess("¡Inicio de sesión exitoso!");
+        setLoginSuccess(true);
+        router.push("/home");
+      } else {
+        setError("Error al autenticar con Google");
+      }
+    } catch (error: unknown) {
+      console.error("Error en login con Google:", error);
+
+      if (error && typeof error === "object" && "code" in error) {
+        const firebaseError = error as { code: string; message?: string };
+        switch (firebaseError.code) {
+          case "auth/popup-closed-by-user":
+            setError("Cerraste la ventana de Google. Intenta nuevamente.");
+            break;
+          case "auth/popup-blocked":
+            setError(
+              "El navegador bloqueó la ventana. Permite popups e intenta nuevamente."
+            );
+            break;
+          case "auth/cancelled-popup-request":
+            setError(
+              "Solo se puede abrir una ventana a la vez. Espera un momento."
+            );
+            break;
+          default:
+            setError(
+              `Error al autenticar con Google: ${
+                firebaseError.message || "Error desconocido"
+              }`
+            );
+        }
+      } else if (error instanceof Error) {
+        setError(`Error al autenticar con Google: ${error.message}`);
+      } else {
+        setError("Error al autenticar con Google. Intenta nuevamente.");
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -599,12 +671,11 @@ export default function AuthForm() {
                 {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
               </Button>
             </form>
-            {/* Botón de Google temporalmente oculto */}
-            {/* <Separator className="my-6" />
+            <Separator className="my-6" />
             <Button
               variant="outline"
               onClick={handleGoogleSignUp}
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
               className="w-full h-12 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium text-base rounded-xl transition-all duration-200"
             >
               {isGoogleLoading && (
@@ -614,7 +685,7 @@ export default function AuthForm() {
               {mode === "login"
                 ? "Continuar con Google"
                 : "Registrarse con Google"}
-            </Button> */}
+            </Button>
             <div className="text-center pt-4">
               {mode === "login" ? (
                 <>
