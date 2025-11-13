@@ -1,4 +1,4 @@
-import { ScrapingScriptsManager } from "@/components/admin/discounts/manager/scripts/ScrapingScriptsManager";
+import { ScrapingScriptsManager } from "@/components/admin/scripts/ScrapingScriptsManager";
 import {
   Card,
   CardContent,
