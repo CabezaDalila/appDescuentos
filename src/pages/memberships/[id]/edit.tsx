@@ -646,7 +646,7 @@ export default function EditMembershipPage() {
                         </Select>
                         {isCardExpired(card.expiryDate) && (
                           <div className="text-xs text-red-600 mt-1">
-                            ⚠️ Tarjeta vencida
+                            Tarjeta vencida
                           </div>
                         )}
                       </div>

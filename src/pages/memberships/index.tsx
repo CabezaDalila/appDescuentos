@@ -1,18 +1,18 @@
 import { Button } from "@/components/Share/button";
 import { Input } from "@/components/Share/input";
 import {
-    CreateMembershipData,
-    Membership,
-    MEMBERSHIP_CATEGORIES,
+  CreateMembershipData,
+  Membership,
+  MEMBERSHIP_CATEGORIES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedMemberships } from "@/hooks/useCachedMemberships";
 import {
-    checkMembershipExists,
-    createMembership,
-    deleteCardFromMembership,
-    deleteMembership,
-    updateMembership,
+  checkMembershipExists,
+  createMembership,
+  deleteCardFromMembership,
+  deleteMembership,
+  updateMembership,
 } from "@/lib/firebase/memberships";
 import type { MembershipItem } from "@/types/membership";
 
@@ -30,7 +30,12 @@ export default function MembershipsPage() {
   const [scrollY, setScrollY] = useState(0);
 
   // Usar hook con caché para membresías
-  const { activeMemberships, inactiveMemberships, loading: loadingMemberships, refreshMemberships } = useCachedMemberships();
+  const {
+    activeMemberships,
+    inactiveMemberships,
+    loading: loadingMemberships,
+    refreshMemberships,
+  } = useCachedMemberships();
 
   const allMemberships = [...activeMemberships, ...inactiveMemberships];
 
@@ -51,7 +56,7 @@ export default function MembershipsPage() {
       await createMembership({ ...membershipData, userId: user.uid });
       await refreshMemberships();
     } catch (err) {
-      console.error("❌ Error al crear la membresía:", err);
+      console.error("Error al crear la membresía:", err);
     }
   };
 
@@ -63,7 +68,7 @@ export default function MembershipsPage() {
       await updateMembership(membershipId, updateData);
       await refreshMemberships();
     } catch (error) {
-      console.error("❌ Error al actualizar la membresía:", error);
+      console.error("Error al actualizar la membresía:", error);
     }
   };
 
@@ -84,7 +89,7 @@ export default function MembershipsPage() {
       await refreshMemberships();
       toast.success("Membresía eliminada exitosamente");
     } catch (error) {
-      console.error("❌ Error al eliminar la membresía:", error);
+      console.error("Error al eliminar la membresía:", error);
       toast.error("Error al eliminar la membresía");
     }
   };
@@ -122,7 +127,7 @@ export default function MembershipsPage() {
         return result;
       }
     } catch (error) {
-      console.error("❌ Error al eliminar tarjeta de Firestore:", error);
+      console.error("Error al eliminar tarjeta de Firestore:", error);
       throw error; // Re-lanzar para que el modal maneje el error
     }
   };

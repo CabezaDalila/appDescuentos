@@ -297,55 +297,53 @@ export default function AuthForm() {
         switch (firebaseError.code) {
           case "auth/user-not-found":
             setError(
-              "❌ No encontramos una cuenta con este email. ¿Estás seguro de que te registraste?"
+              "No encontramos una cuenta con este email. ¿Estás seguro de que te registraste?"
             );
             break;
           case "auth/wrong-password":
             setError(
-              "❌ La contraseña es incorrecta. ¿Podrías intentar nuevamente?"
+              "La contraseña es incorrecta. ¿Podrías intentar nuevamente?"
             );
             break;
           case "auth/invalid-email":
             setError(
-              "❌ El formato del email no es válido. Por favor, verifica que esté bien escrito."
+              "El formato del email no es válido. Por favor, verifica que esté bien escrito."
             );
             break;
           case "auth/user-disabled":
             setError(
-              "❌ Esta cuenta ha sido deshabilitada. Contacta al soporte para más información."
+              "Esta cuenta ha sido deshabilitada. Contacta al soporte para más información."
             );
             break;
           case "auth/too-many-requests":
             setError(
-              "❌ Demasiados intentos fallidos. Espera unos minutos antes de intentar nuevamente."
+              "Demasiados intentos fallidos. Espera unos minutos antes de intentar nuevamente."
             );
             break;
           case "auth/email-already-in-use":
             setError(
-              "❌ Ya existe una cuenta con este email. ¿Quieres iniciar sesión en su lugar?"
+              "Ya existe una cuenta con este email. ¿Quieres iniciar sesión en su lugar?"
             );
             break;
           case "auth/weak-password":
             setError(
-              "❌ La contraseña es muy débil. Usa al menos 8 caracteres con mayúsculas, minúsculas y números."
+              "La contraseña es muy débil. Usa al menos 8 caracteres con mayúsculas, minúsculas y números."
             );
             break;
           case "auth/network-request-failed":
             setError(
-              "❌ Error de conexión. Verifica tu internet e intenta nuevamente."
+              "Error de conexión. Verifica tu internet e intenta nuevamente."
             );
             break;
           default:
             setError(
-              `❌ ${firebaseError.message || "Ocurrió un error inesperado"}`
+              `${firebaseError.message || "Ocurrió un error inesperado"}`
             );
         }
       } else if (error instanceof Error) {
-        setError(`❌ ${error.message}`);
+        setError(`${error.message}`);
       } else {
-        setError(
-          "❌ Ocurrió un error inesperado. Por favor, intenta nuevamente."
-        );
+        setError("Ocurrió un error inesperado. Por favor, intenta nuevamente.");
       }
     } finally {
       setIsLoading(false);

@@ -1,9 +1,4 @@
-import { useState } from "react";
 import { Button } from "@/components/Share/button";
-import { sendNotificationToAll, sendNotificationToUser } from "@/lib/onesignal-api";
-import { useAuth } from "@/hooks/useAuth";
-import toast from "react-hot-toast";
-import { Bell, Send } from "lucide-react";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
@@ -13,6 +8,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/Share/select";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  sendNotificationToAll,
+  sendNotificationToUser,
+} from "@/lib/onesignal-api";
+import { Bell, Send } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
 
 type NotificationType =
   | "vencimiento_tarjeta"
@@ -28,7 +31,9 @@ export default function TestNotificationButton() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("¡Nueva oferta disponible! 🎉");
-  const [message, setMessage] = useState("Descubre nuestros descuentos exclusivos");
+  const [message, setMessage] = useState(
+    "Descubre nuestros descuentos exclusivos"
+  );
   const [url, setUrl] = useState("/home");
   const [type, setType] = useState<NotificationType>("promocion");
 
@@ -40,25 +45,27 @@ export default function TestNotificationButton() {
 
     setLoading(true);
     try {
-      const result = await sendNotificationToAll(
-        title,
-        message,
-        {
-          url: url || "/home",
-          data: {
-            type: type,
-            timestamp: new Date().toISOString(),
-            sentBy: user?.email || "admin",
-          },
-        }
-      );
+      const result = await sendNotificationToAll(title, message, {
+        url: url || "/home",
+        data: {
+          type: type,
+          timestamp: new Date().toISOString(),
+          sentBy: user?.email || "admin",
+        },
+      });
 
       if (result.success) {
         const recipients = result.recipients || 0;
         if (recipients === 0) {
-          toast.success("✅ Notificación enviada, pero no hay usuarios suscritos aún");
+          toast.success(
+            "Notificación enviada, pero no hay usuarios suscritos aún"
+          );
         } else {
-          toast.success(`✅ Notificación enviada a ${recipients} usuario${recipients > 1 ? 's' : ''}`);
+          toast.success(
+            `Notificación enviada a ${recipients} usuario${
+              recipients > 1 ? "s" : ""
+            }`
+          );
         }
       } else {
         const errorMsg = result.error || "Error al enviar notificación";
@@ -88,23 +95,18 @@ export default function TestNotificationButton() {
 
     setLoading(true);
     try {
-      const result = await sendNotificationToUser(
-        user.uid,
-        title,
-        message,
-        {
-          url: url || "/notifications",
-          data: {
-            type: type,
-            test: true,
-            userId: user.uid,
-            timestamp: new Date().toISOString(),
-          },
-        }
-      );
+      const result = await sendNotificationToUser(user.uid, title, message, {
+        url: url || "/notifications",
+        data: {
+          type: type,
+          test: true,
+          userId: user.uid,
+          timestamp: new Date().toISOString(),
+        },
+      });
 
       if (result.success) {
-        toast.success("✅ Notificación de prueba enviada correctamente");
+        toast.success("Notificación de prueba enviada correctamente");
       } else {
         toast.error(result.error || "Error al enviar notificación");
       }
@@ -172,7 +174,9 @@ export default function TestNotificationButton() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="promocion">Promoción</SelectItem>
-              <SelectItem value="vencimiento_tarjeta">Vencimiento de Tarjeta</SelectItem>
+              <SelectItem value="vencimiento_tarjeta">
+                Vencimiento de Tarjeta
+              </SelectItem>
               <SelectItem value="recordatorio">Recordatorio</SelectItem>
               <SelectItem value="sistema">Sistema</SelectItem>
               <SelectItem value="info">Información</SelectItem>
@@ -239,4 +243,3 @@ export default function TestNotificationButton() {
     </div>
   );
 }
-

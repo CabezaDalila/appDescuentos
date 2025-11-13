@@ -122,7 +122,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({
       toast.success("Banco y tarjeta creados exitosamente");
       handleClose();
     } catch (error) {
-      console.error("❌ Error al crear banco con tarjeta:", error);
+      console.error("Error al crear banco con tarjeta:", error);
       toast.error("Error al crear el banco y tarjeta. Inténtalo de nuevo.");
     } finally {
       setIsCreating(false);

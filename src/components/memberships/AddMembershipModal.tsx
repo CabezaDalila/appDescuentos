@@ -141,7 +141,7 @@ const AddMembershipModal: React.FC<AddMembershipModalProps> = ({
       await onCreate(membershipData);
       handleClose();
     } catch (error) {
-      console.error("❌ Error al crear membresía:", error);
+      console.error("Error al crear membresía:", error);
     } finally {
       setIsCreating(false);
     }

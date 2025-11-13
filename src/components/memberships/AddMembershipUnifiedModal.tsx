@@ -106,7 +106,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
     }
 
     // Asignar logo y gradiente automáticamente si es banco conocido
-    let logoUrl: string | undefined = undefined;
+    const logoUrl: string | undefined = undefined;
     let gradient: string | undefined = undefined;
     if (selectedCategory === "banco") {
       gradient = BANK_GRADIENTS[customName.trim()] || undefined;
@@ -136,7 +136,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
       toast.success("Membresía creada exitosamente");
       handleClose();
     } catch (error) {
-      console.error("❌ Error al crear membresía:", error);
+      console.error("Error al crear membresía:", error);
       toast.error("Error al crear la membresía. Inténtalo de nuevo.");
     } finally {
       setIsCreating(false);
@@ -188,7 +188,7 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
       toast.success("Banco y tarjeta creados exitosamente");
       handleClose(); // Cerrar el modal automáticamente
     } catch (error) {
-      console.error("❌ Error al crear banco con tarjeta:", error);
+      console.error("Error al crear banco con tarjeta:", error);
       toast.error("Error al crear el banco y tarjeta. Inténtalo de nuevo.");
     } finally {
       setIsCreating(false);

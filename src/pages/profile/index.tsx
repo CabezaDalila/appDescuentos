@@ -4,9 +4,9 @@ import ProfileSection, {
 } from "@/components/profile/ProfileSection";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { checkAdminRole } from "@/lib/admin";
 import { getUserMemberships } from "@/lib/firebase/memberships";
 import { Shield } from "lucide-react";
 import { useRouter } from "next/router";
@@ -14,27 +14,11 @@ import { useEffect, useState } from "react";
 
 export default function Profile() {
   const { user, logout, loading, loggingOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [membershipsCount, setMembershipsCount] = useState(0);
   const router = useRouter();
-
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (user && !loading) {
-        try {
-          const adminStatus = await checkAdminRole(user.uid);
-          setIsAdmin(adminStatus);
-        } catch (error) {
-          console.error("Error verificando rol de admin:", error);
-          setIsAdmin(false);
-        }
-      }
-    };
-
-    checkAdmin();
-  }, [user, loading]);
 
   useEffect(() => {
     const loadMembershipsCount = async () => {
@@ -67,8 +51,12 @@ export default function Profile() {
     );
   }
 
-  const sections = createProfileSections(router, logout, () =>
-    setSettingsOpen(true), membershipsCount, loggingOut
+  const sections = createProfileSections(
+    router,
+    logout,
+    () => setSettingsOpen(true),
+    membershipsCount,
+    loggingOut
   );
 
   return (

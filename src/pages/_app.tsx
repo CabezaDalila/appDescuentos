@@ -1,7 +1,6 @@
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAndroidBackButton } from "@/hooks/useAndroidBackButton";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { usePreload } from "@/hooks/usePreload";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { LayoutHome } from "@/layouts/layout-home";
@@ -47,7 +46,6 @@ declare global {
 function MyApp({ Component, pageProps }: AppProps) {
   const { user, loading } = useAuth();
   const { isAdmin, adminLoading } = useAdmin();
-  const isMobile = useIsMobile();
   const router = useRouter();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
 
@@ -84,7 +82,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           });
         }
       } catch (err) {
-        console.error("❌ Error al inicializar Google Auth:", err);
+        console.error("Error al inicializar Google Auth:", err);
       }
     };
 
@@ -114,9 +112,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     const isOnboardingRoute = currentPath.startsWith("/onboarding");
     const isAdminRoute = currentPath.startsWith("/admin");
 
-    // Si está en login y ya tiene usuario, redirigir según onboarding
     if (currentPath === "/login") {
-      // Esperar a que termine de cargar el admin antes de redirigir
       if (adminLoading) {
         return;
       }
@@ -153,7 +149,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     profileLoading,
     profile?.onboarding?.completed,
     isAdmin,
-    router.pathname, // Usar pathname en lugar de router completo
+    router.pathname,
   ]);
 
   // Inicializar OneSignal cuando el usuario esté autenticado
@@ -167,7 +163,6 @@ function MyApp({ Component, pageProps }: AppProps) {
       (window as unknown as { OneSignalInitialized: boolean })
         ?.OneSignalInitialized
     ) {
-      // Si ya está inicializado, solo configurar listeners si es necesario
       if (user?.uid) {
         const setupListeners = async () => {
           const { setupNotificationListenersForUser } = await import(
@@ -194,11 +189,9 @@ function MyApp({ Component, pageProps }: AppProps) {
 
       // Verificar límite de intentos
       if (attempts > maxAttempts) {
-        console.warn("⚠️ OneSignal no se cargó después de múltiples intentos");
+        console.warn("OneSignal no se cargó después de múltiples intentos");
         return;
       }
-
-      // Verificar si ya se inicializó mientras esperábamos
       if (
         (window as unknown as { OneSignalInitialized: boolean })
           ?.OneSignalInitialized
@@ -259,7 +252,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     initOneSignal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, loading]); // user?.uid es suficiente, no necesitamos user completo
+  }, [user?.uid, loading]);
 
   if (
     (!user || (user && router.pathname === "/login")) &&

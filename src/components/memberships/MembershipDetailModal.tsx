@@ -209,7 +209,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     } catch (error) {
       // Revertir actualización optimista en caso de error
       setLocalMembership(membership);
-      console.error("❌ Error al guardar tarjeta:", error);
+      console.error("Error al guardar tarjeta:", error);
       toast.error("Error al guardar la tarjeta. Inténtalo de nuevo.");
     }
   };
@@ -244,7 +244,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     } catch (error) {
       // Revertir actualización optimista en caso de error
       setLocalMembership({ ...localMembership, cards: prevCards });
-      console.error("❌ Error al eliminar tarjeta:", error);
+      console.error("Error al eliminar tarjeta:", error);
       toast.error("Error al eliminar la tarjeta. Inténtalo de nuevo.");
     }
   };
