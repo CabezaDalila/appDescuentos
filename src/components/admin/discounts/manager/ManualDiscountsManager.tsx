@@ -1,12 +1,13 @@
 import { ConfirmationModal } from "@/components/Share/confirmation-modal";
-import { DiscountCard } from "@/components/admin/discounts/DiscountCard";
-import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
-import { DiscountsEmptyState } from "@/components/admin/discounts/DiscountsEmptyState";
-import { DiscountsSelectAll } from "@/components/admin/discounts/DiscountsSelectAll";
-import { DiscountsSelectionBar } from "@/components/admin/discounts/DiscountsSelectionBar";
+import { DiscountCard } from "@/components/admin/discounts/ui/DiscountCard";
+import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm";
+import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEmptyState";
+import { DiscountsSelectAll } from "@/components/admin/discounts/ui/DiscountsSelectAll";
+import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/DiscountsSelectionBar";
 import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
+import { ManualDiscount } from "@/types/admin";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -101,6 +102,12 @@ export function ManualDiscountsManager({
         setSelectedDiscounts([]);
       },
     });
+  };
+
+  // Handler para editar que actualiza el estado externo si existe
+  const handleEdit = (discount: ManualDiscount) => {
+    handleEditDiscount(discount);
+    setShowForm(true);
   };
 
   // Handlers para selección múltiple
@@ -260,7 +267,7 @@ export function ManualDiscountsManager({
                   discount={discount}
                   isSelected={selectedDiscounts.includes(discount.id!)}
                   onSelect={handleSelectDiscount}
-                  onEdit={handleEditDiscount}
+                  onEdit={handleEdit}
                   onDelete={handleDeleteDiscount}
                   onToggleVisibility={toggleVisibility}
                   deleting={deleting}

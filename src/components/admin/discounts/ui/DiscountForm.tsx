@@ -681,7 +681,7 @@ export function DiscountForm({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="discountAmount">Monto de Descuento</Label>
+              <Label htmlFor="discountAmount">Tope de Descuento</Label>
               <Input
                 id="discountAmount"
                 type="number"

@@ -11,10 +11,8 @@ export function DiscountsManager() {
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
-    // Si estamos en /admin/approvals, activar el tab de aprobaciones
     if (router.pathname === "/admin/approvals") {
       setActiveTab("approvals");
-      // Redirigir a /admin/discounts pero mantener el tab activo
       router.replace("/admin/discounts?tab=approvals", undefined, {
         shallow: true,
       });
@@ -26,7 +24,6 @@ export function DiscountsManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.pathname, router.query.tab]);
 
-  // Cerrar el formulario cuando cambia el tab
   useEffect(() => {
     setShowForm(false);
   }, [activeTab]);

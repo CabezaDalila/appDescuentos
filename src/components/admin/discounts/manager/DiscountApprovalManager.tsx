@@ -1,8 +1,8 @@
-import { DiscountCard } from "@/components/admin/discounts/DiscountCard";
-import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
-import { DiscountsEmptyState } from "@/components/admin/discounts/DiscountsEmptyState";
-import { DiscountsSelectAll } from "@/components/admin/discounts/DiscountsSelectAll";
-import { DiscountsSelectionBar } from "@/components/admin/discounts/DiscountsSelectionBar";
+import { DiscountCard } from "@/components/admin/discounts/ui/DiscountCard";
+import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm";
+import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEmptyState";
+import { DiscountsSelectAll } from "@/components/admin/discounts/ui/DiscountsSelectAll";
+import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/DiscountsSelectionBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { approveDiscount, getPendingDiscounts } from "@/lib/discounts";
