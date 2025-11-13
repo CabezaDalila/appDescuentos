@@ -13,6 +13,7 @@ export default function DiscountDetail() {
   const { id, distance: urlDistance } = router.query;
   const [discountData, setDiscountData] = useState<Discount | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   // Usar hook de distancia - si hay distancia en URL, la usa directamente
   const { distance, loading: distanceLoading } = useDistance({
@@ -23,10 +24,13 @@ export default function DiscountDetail() {
 
   useEffect(() => {
     const loadDiscount = async () => {
-      if (!id) return;
+      if (!router.isReady || !id || typeof id !== "string") {
+        return;
+      }
 
       try {
         setLoading(true);
+        setNotFound(false);
         const allDiscounts = await getDiscounts();
         const discount = allDiscounts.find((d) => d.id === id);
 
@@ -39,24 +43,38 @@ export default function DiscountDetail() {
             ...discount,
             image: image,
           });
-
-          // La distancia se calculará automáticamente con el hook useDistance
         } else {
-          // Si no se encuentra, redirigir a 404 o mostrar error
-          router.push("/404");
+          setNotFound(true);
         }
       } catch (error) {
         console.error("Error cargando descuento:", error);
-        router.push("/404");
+        setNotFound(true);
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      loadDiscount();
-    }
-  }, [id, router]);
+    loadDiscount();
+  }, [id, router.isReady, router]);
+
+  if (!router.isReady) {
+    return (
+      <div className="min-h-screen with-bottom-nav-pb">
+        <div className="flex items-center p-1">
+          <BackButton className="mr-4" />
+          <h1 className="text-lg font-semibold text-gray-700">
+            Detalle del Descuento
+          </h1>
+        </div>
+        <div className="p-4">
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando descuento...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen with-bottom-nav-pb">
@@ -76,6 +94,10 @@ export default function DiscountDetail() {
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-gray-600">Cargando descuento...</p>
+          </div>
+        ) : notFound ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Descuento no encontrado</p>
           </div>
         ) : discountData ? (
           <>
@@ -119,11 +141,7 @@ export default function DiscountDetail() {
               </div>
             )}
           </>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-600">Descuento no encontrado</p>
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
