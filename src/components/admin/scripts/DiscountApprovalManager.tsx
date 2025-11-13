@@ -1,7 +1,6 @@
 import { DiscountCard } from "@/components/admin/discounts/DiscountCard";
 import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
 import { DiscountsEmptyState } from "@/components/admin/discounts/DiscountsEmptyState";
-import { DiscountsSectionHeader } from "@/components/admin/discounts/DiscountsListHeader";
 import { DiscountsSelectAll } from "@/components/admin/discounts/DiscountsSelectAll";
 import { DiscountsSelectionBar } from "@/components/admin/discounts/DiscountsSelectionBar";
 import { useAuth } from "@/hooks/useAuth";
@@ -251,11 +250,6 @@ export function DiscountApprovalManager({
 
       {/* Lista de Descuentos */}
       <div className="space-y-4">
-        <DiscountsSectionHeader
-          title="Descuentos Existentes"
-          count={pendingDiscounts.length}
-        />
-
         {pendingDiscounts.length === 0 ? (
           <DiscountsEmptyState
             message="No hay descuentos pendientes de aprobación"

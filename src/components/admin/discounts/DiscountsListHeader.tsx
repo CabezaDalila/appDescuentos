@@ -3,7 +3,7 @@ import { Button } from "@/components/Share/button";
 import { Plus, X } from "lucide-react";
 
 interface DiscountsListHeaderProps {
-  title: string;
+  title?: string;
   description?: string;
   count?: number;
   showNewButton?: boolean;
@@ -25,7 +25,7 @@ export function DiscountsListHeader({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+        {title && <h2 className="text-2xl font-bold text-gray-900">{title}</h2>}
         {description && <p className="text-gray-600 mt-1">{description}</p>}
       </div>
       {showNewButton && onToggleForm && (

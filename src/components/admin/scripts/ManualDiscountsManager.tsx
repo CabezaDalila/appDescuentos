@@ -2,7 +2,6 @@ import { ConfirmationModal } from "@/components/Share/confirmation-modal";
 import { DiscountCard } from "@/components/admin/discounts/DiscountCard";
 import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
 import { DiscountsEmptyState } from "@/components/admin/discounts/DiscountsEmptyState";
-import { DiscountsListHeader } from "@/components/admin/discounts/DiscountsListHeader";
 import { DiscountsSelectAll } from "@/components/admin/discounts/DiscountsSelectAll";
 import { DiscountsSelectionBar } from "@/components/admin/discounts/DiscountsSelectionBar";
 import { useConfirmation } from "@/hooks/useConfirmation";
@@ -10,6 +9,11 @@ import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
 import { useState } from "react";
 import toast from "react-hot-toast";
+
+interface ManualDiscountsManagerProps {
+  showForm?: boolean;
+  onShowFormChange?: (show: boolean) => void;
+}
 
 /**
  * Componente principal para la gestión de descuentos manuales
@@ -24,7 +28,10 @@ import toast from "react-hot-toast";
  * @author [Tu Nombre] - Tesis de Grado
  * @version 1.0.0
  */
-export function ManualDiscountsManager() {
+export function ManualDiscountsManager({
+  showForm: externalShowForm,
+  onShowFormChange,
+}: ManualDiscountsManagerProps = {}) {
   // Hooks personalizados para separar la lógica de negocio
   const {
     discounts,
@@ -39,15 +46,26 @@ export function ManualDiscountsManager() {
 
   const {
     formData,
-    showForm,
+    showForm: internalShowForm,
     editingDiscount,
-    setShowForm,
+    setShowForm: setInternalShowForm,
     setFormData,
     handleCategoryChange,
     handleEditDiscount,
     resetForm,
     validateForm,
   } = useDiscountForm();
+
+  // Usar el estado externo si se proporciona, sino usar el interno
+  const showForm =
+    externalShowForm !== undefined ? externalShowForm : internalShowForm;
+  const setShowForm = (value: boolean) => {
+    if (onShowFormChange) {
+      onShowFormChange(value);
+    } else {
+      setInternalShowForm(value);
+    }
+  };
 
   const { confirmationModal, showConfirmation, hideConfirmation } =
     useConfirmation();
@@ -196,17 +214,6 @@ export function ManualDiscountsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <DiscountsListHeader
-        title="Descuentos Manuales"
-        description="Carga descuentos manualmente para complementar la extracción automática"
-        showNewButton={true}
-        showForm={showForm}
-        onToggleForm={() => setShowForm(!showForm)}
-        newButtonText="Nuevo Descuento"
-        cancelButtonText="Cancelar"
-      />
-
       {/* Formulario para crear y editar descuentos */}
       <DiscountForm
         formData={formData}
