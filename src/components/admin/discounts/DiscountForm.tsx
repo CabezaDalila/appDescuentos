@@ -69,6 +69,10 @@ interface DiscountFormProps {
   onResetForm: () => void;
   onSubmit: (e: React.FormEvent) => void;
   submitting?: boolean;
+  customFooterButtons?: React.ReactNode;
+  showRejectionReason?: boolean;
+  rejectionReason?: string;
+  onRejectionReasonChange?: (value: string) => void;
 }
 
 const CATEGORIES = getAllCategories().map((cat) => cat.name);
@@ -84,6 +88,10 @@ export function DiscountForm({
   onResetForm,
   onSubmit,
   submitting,
+  customFooterButtons,
+  showRejectionReason,
+  rejectionReason,
+  onRejectionReasonChange,
 }: DiscountFormProps) {
   const [credentialError, setCredentialError] = useState<string>("");
   const [membershipError, setMembershipError] = useState<string>("");
@@ -741,33 +749,56 @@ export function DiscountForm({
             </p>
           </div>
 
+          {/* Campo de razón de rechazo si está habilitado */}
+          {showRejectionReason && (
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason" className="text-sm font-medium">
+                Razón del rechazo (si aplica)
+              </Label>
+              <Textarea
+                id="rejectionReason"
+                value={rejectionReason || ""}
+                onChange={(e) => onRejectionReasonChange?.(e.target.value)}
+                rows={3}
+                placeholder="Especifica la razón del rechazo..."
+                className="w-full"
+              />
+            </div>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onShowFormChange(false);
-                onResetForm();
-              }}
-              className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={!!submitting}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {submitting
-                ? isEditing
-                  ? "Actualizando..."
-                  : "Guardando..."
-                : isEditing
-                ? "Actualizar Descuento"
-                : "Guardar Descuento"}
-            </Button>
+            {customFooterButtons ? (
+              customFooterButtons
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onShowFormChange(false);
+                    onResetForm();
+                  }}
+                  className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!!submitting}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {submitting
+                    ? isEditing
+                      ? "Actualizando..."
+                      : "Guardando..."
+                    : isEditing
+                    ? "Actualizar Descuento"
+                    : "Guardar Descuento"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

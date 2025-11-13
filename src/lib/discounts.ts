@@ -241,31 +241,58 @@ export const createScrapedDiscount = async (
 };
 
 // Obtener descuentos pendientes de aprobación
+// Incluye descuentos con approvalStatus "pending" o sin approvalStatus (sin status)
 export const getPendingDiscounts = async (): Promise<Discount[]> => {
   try {
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "pending")
+    // Obtener todos los descuentos y filtrar en memoria
+    // Esto es necesario porque Firestore no puede hacer OR queries fácilmente
+    const allSnapshot = await getDocs(collection(db, "discounts"));
+
+    const statusCounts: Record<string, number> = {};
+    allSnapshot.docs.forEach((doc) => {
+      const data = doc.data() as FirestoreDiscount;
+      const status = data.approvalStatus || "sin status";
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    console.log(
+      "[getPendingDiscounts] Todos los descuentos por approvalStatus:",
+      statusCounts
+    );
+    console.log(
+      `[getPendingDiscounts] Total de descuentos: ${allSnapshot.docs.length}`
     );
 
-    const snapshot = await getDocs(q);
-    const items = snapshot.docs.map((doc) => {
-      const data = doc.data() as FirestoreDiscount;
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        validUntil: data.validUntil?.toDate?.() || new Date(),
-        approvalStatus: data.approvalStatus || "pending",
-        source: data.source || "scraping",
-      } as Discount;
-    });
-    // Ordenar por createdAt desc en cliente
+    // Filtrar descuentos pendientes: los que tienen "pending" o no tienen approvalStatus
+    const items = allSnapshot.docs
+      .filter((doc) => {
+        const data = doc.data() as FirestoreDiscount;
+        const status = data.approvalStatus;
+        // Incluir si es "pending" o si no tiene approvalStatus (undefined/null)
+        return !status || status === "pending";
+      })
+      .map((doc) => {
+        const data = doc.data() as FirestoreDiscount;
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || new Date(),
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+          validUntil: data.validUntil?.toDate?.() || new Date(),
+          approvalStatus: data.approvalStatus || "pending", // Si no tiene, marcarlo como pending
+          source: data.source || "scraping",
+        } as Discount;
+      });
+
+    console.log(
+      `[getPendingDiscounts] Obtenidos ${items.length} descuentos pendientes (incluyendo sin status)`
+    );
+
+    // Ordenar por createdAt desc (más recientes primero)
     items.sort(
       (a, b) =>
         (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0)
     );
+
     return items;
   } catch (error) {
     console.error("Error al obtener descuentos pendientes:", error);
@@ -472,7 +499,6 @@ export const getPersonalizedDiscounts = async (
 
       return false;
     });
-
 
     // Convertir a formato HomePageDiscount y limitar resultados
     return matchedDiscounts

@@ -1,14 +1,13 @@
-import { Badge } from "@/components/Share/badge";
-import { Button } from "@/components/Share/button";
-import { Card, CardContent } from "@/components/Share/card";
 import { ConfirmationModal } from "@/components/Share/confirmation-modal";
 import { DiscountCard } from "@/components/admin/discounts/DiscountCard";
 import { DiscountForm } from "@/components/admin/discounts/DiscountForm";
+import { DiscountsEmptyState } from "@/components/admin/discounts/DiscountsEmptyState";
+import { DiscountsListHeader } from "@/components/admin/discounts/DiscountsListHeader";
+import { DiscountsSelectAll } from "@/components/admin/discounts/DiscountsSelectAll";
+import { DiscountsSelectionBar } from "@/components/admin/discounts/DiscountsSelectionBar";
 import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
-import { ADMIN_CONSTANTS } from "@/utils/admin";
-import { Gift, Plus, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -62,9 +61,9 @@ export function ManualDiscountsManager() {
     const discount = discounts.find((d) => d.id === discountId);
     showConfirmation({
       title: "Eliminar Descuento",
-      description: ADMIN_CONSTANTS.CONFIRMATION_MESSAGES.DELETE_SINGLE(
+      description: `¿Estás seguro de que deseas eliminar "${
         discount?.title || "este descuento"
-      ),
+      }"? Esta acción no se puede deshacer.`,
       variant: "destructive",
       onConfirm: () => deleteDiscountById(discountId),
     });
@@ -77,9 +76,7 @@ export function ManualDiscountsManager() {
 
     showConfirmation({
       title: "Eliminar Múltiples Descuentos",
-      description: ADMIN_CONSTANTS.CONFIRMATION_MESSAGES.DELETE_MULTIPLE(
-        selectedDiscounts.length
-      ),
+      description: `¿Estás seguro de que deseas eliminar ${selectedDiscounts.length} descuento(s)? Esta acción no se puede deshacer.`,
       variant: "destructive",
       onConfirm: () => {
         deleteMultipleDiscountsByIds(selectedDiscounts);
@@ -200,25 +197,15 @@ export function ManualDiscountsManager() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">
-            {ADMIN_CONSTANTS.UI_TEXT.HEADER_TITLE}
-          </h2>
-          <p className="text-muted-foreground">
-            {ADMIN_CONSTANTS.UI_TEXT.HEADER_DESCRIPTION}
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2"
-        >
-          {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showForm
-            ? ADMIN_CONSTANTS.UI_TEXT.CANCEL_BUTTON
-            : ADMIN_CONSTANTS.UI_TEXT.NEW_DISCOUNT_BUTTON}
-        </Button>
-      </div>
+      <DiscountsListHeader
+        title="Descuentos Manuales"
+        description="Carga descuentos manualmente para complementar la extracción automática"
+        showNewButton={true}
+        showForm={showForm}
+        onToggleForm={() => setShowForm(!showForm)}
+        newButtonText="Nuevo Descuento"
+        cancelButtonText="Cancelar"
+      />
 
       {/* Formulario para crear y editar descuentos */}
       <DiscountForm
@@ -235,75 +222,28 @@ export function ManualDiscountsManager() {
 
       {/* Lista de Descuentos */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Descuentos Existentes</h3>
-          <Badge variant="outline">
-            {ADMIN_CONSTANTS.UI_TEXT.DISCOUNTS_COUNT(discounts.length)}
-          </Badge>
-        </div>
-
         {discounts.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Gift className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">
-                {ADMIN_CONSTANTS.UI_TEXT.NO_DISCOUNTS_MESSAGE}
-                <br />
-                {ADMIN_CONSTANTS.UI_TEXT.NO_DISCOUNTS_SUBTITLE}
-              </p>
-            </CardContent>
-          </Card>
+          <DiscountsEmptyState
+            message="No hay descuentos manuales cargados."
+            subtitle="Crea el primero para comenzar a gestionar ofertas manualmente."
+          />
         ) : (
           <div className="space-y-4">
-            {/* Barra de acciones para selección múltiple */}
-            {selectedDiscounts.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-blue-800 font-medium">
-                    {selectedDiscounts.length} descuentos seleccionados
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedDiscounts([])}
-                    disabled={deleting}
-                    className="text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Cancelar
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteSelected}
-                    disabled={deleting}
-                  >
-                    {deleting
-                      ? "Eliminando..."
-                      : `Eliminar (${selectedDiscounts.length})`}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <DiscountsSelectionBar
+              selectedCount={selectedDiscounts.length}
+              onCancel={() => setSelectedDiscounts([])}
+              onAction={handleDeleteSelected}
+              actionLabel={`Eliminar (${selectedDiscounts.length})`}
+              actionLoading={deleting}
+              actionVariant="destructive"
+            />
 
-            {/* Checkbox para seleccionar todos */}
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <input
-                type="checkbox"
-                checked={
-                  selectedDiscounts.length === discounts.length &&
-                  discounts.length > 0
-                }
-                onChange={handleSelectAll}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm font-medium">
-                {ADMIN_CONSTANTS.UI_TEXT.SELECT_ALL} ({discounts.length}{" "}
-                descuentos)
-              </span>
-            </div>
+            <DiscountsSelectAll
+              totalCount={discounts.length}
+              selectedCount={selectedDiscounts.length}
+              onSelectAll={handleSelectAll}
+              label="Seleccionar todos"
+            />
 
             {/* Lista de descuentos */}
             <div className="grid gap-4">

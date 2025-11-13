@@ -2,7 +2,6 @@ import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BarChart3,
-  CheckSquare,
   Gift,
   Home,
   LogOut,
@@ -29,16 +28,10 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
       current: router.pathname === "/admin",
     },
     {
-      name: "Aprobaciones",
-      href: "/admin/approvals",
-      icon: CheckSquare,
-      current: router.pathname.startsWith("/admin/approvals"),
-    },
-    {
       name: "Descuentos",
       href: "/admin/discounts",
       icon: Gift,
-      current: router.pathname.startsWith("/admin/discounts"),
+      current: router.pathname.startsWith("/admin/discounts") || router.pathname.startsWith("/admin/approvals"),
     },
     {
       name: "Scripts",
