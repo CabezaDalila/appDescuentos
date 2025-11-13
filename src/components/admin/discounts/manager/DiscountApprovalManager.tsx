@@ -119,7 +119,7 @@ export function DiscountApprovalManager({
       setSubmitting(true);
 
       // Preparar los datos de actualización
-      const updateData: Record<string, unknown> = {
+      const updateData: any = {
         title: formData.title.trim(),
         name: formData.title.trim(), // Mantener compatibilidad
         origin: formData.origin.trim(),
