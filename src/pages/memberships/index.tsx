@@ -1,19 +1,9 @@
 import { Button } from "@/components/Share/button";
 import { Input } from "@/components/Share/input";
-import {
-  CreateMembershipData,
-  Membership,
-  MEMBERSHIP_CATEGORIES,
-} from "@/constants/membership";
+import { Membership, MEMBERSHIP_CATEGORIES } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedMemberships } from "@/hooks/useCachedMemberships";
-import {
-  checkMembershipExists,
-  createMembership,
-  deleteCardFromMembership,
-  deleteMembership,
-  updateMembership,
-} from "@/lib/firebase/memberships";
+import { deleteMembership } from "@/lib/firebase/memberships";
 import type { MembershipItem } from "@/types/membership";
 
 import { ArrowLeft, Plus, Search } from "lucide-react";
@@ -23,7 +13,7 @@ import toast from "react-hot-toast";
 type TabType = "all" | "active" | "inactive";
 
 export default function MembershipsPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,41 +26,6 @@ export default function MembershipsPage() {
     loading: loadingMemberships,
     refreshMemberships,
   } = useCachedMemberships();
-
-  const allMemberships = [...activeMemberships, ...inactiveMemberships];
-
-  const handleCreateMembership = async (
-    membershipData: CreateMembershipData & { cards?: unknown[] }
-  ) => {
-    if (!user) return;
-
-    try {
-      const exists = await checkMembershipExists(
-        membershipData.name,
-        membershipData.category
-      );
-      if (exists) {
-        return;
-      }
-
-      await createMembership({ ...membershipData, userId: user.uid });
-      await refreshMemberships();
-    } catch (err) {
-      console.error("Error al crear la membresía:", err);
-    }
-  };
-
-  const handleUpdateMembership = async (
-    membershipId: string,
-    updateData: Record<string, unknown>
-  ) => {
-    try {
-      await updateMembership(membershipId, updateData);
-      await refreshMemberships();
-    } catch (error) {
-      console.error("Error al actualizar la membresía:", error);
-    }
-  };
 
   const handleDeleteMembership = async (
     membershipId: string,
@@ -109,28 +64,6 @@ export default function MembershipsPage() {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
-
-  const handleDeleteCardFromMembership = async (
-    membershipId: string,
-    cardId: string
-  ) => {
-    try {
-      const result = await deleteCardFromMembership(membershipId, cardId);
-
-      if (result.membershipDeleted) {
-        // Si se eliminó la membresía completa, recargar la lista
-        await refreshMemberships();
-        return result;
-      } else {
-        // Si solo se eliminó la tarjeta, recargar para actualizar contadores
-        await refreshMemberships();
-        return result;
-      }
-    } catch (error) {
-      console.error("Error al eliminar tarjeta de Firestore:", error);
-      throw error; // Re-lanzar para que el modal maneje el error
-    }
-  };
 
   const filteredMemberships = useMemo(() => {
     let filtered;
@@ -308,8 +241,6 @@ export default function MembershipsPage() {
 function MembershipListItem({
   membership,
   isActive,
-  onDelete,
-  onEdit,
   onView,
 }: {
   membership: MembershipItem;
@@ -318,27 +249,6 @@ function MembershipListItem({
   onEdit: (id: string) => void;
   onView: (id: string) => void;
 }) {
-  const router = useRouter();
-
-  const getCategoryIcon = (category: Membership["category"]) => {
-    switch (category) {
-      case "banco":
-        return "🏦";
-      case "club":
-        return "🏆";
-      case "salud":
-        return "❤️";
-      case "educacion":
-        return "🎓";
-      case "seguro":
-        return "🛡️";
-      case "telecomunicacion":
-        return "📱";
-      default:
-        return "🏢";
-    }
-  };
-
   const getStatusText = () => {
     if (isActive) return "Activa";
     return "Inactiva";

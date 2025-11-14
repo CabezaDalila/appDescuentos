@@ -58,22 +58,7 @@ export default function AdminPage() {
 
   return (
     <LayoutAdmin>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Panel de Administración</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Dashboard principal con métricas y estadísticas de la plataforma
-          </p>
-        </div>
-
-        {/* Dashboard con métricas */}
-        <AdminDashboard />
-
-      </div>
+      <AdminDashboard />
     </LayoutAdmin>
   );
 }

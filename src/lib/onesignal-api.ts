@@ -11,7 +11,7 @@ export interface SendNotificationOptions {
 export interface SendNotificationResponse {
   success: boolean;
   notificationId?: string;
-  recipients?: number;
+  recipients?: number | null;
   error?: string;
 }
 

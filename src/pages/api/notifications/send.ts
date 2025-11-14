@@ -138,8 +138,9 @@ export default async function handler(
     return res.status(200).json({
       success: true,
       notificationId: oneSignalResult.id,
-      recipients: oneSignalResult.recipients,
+      recipients: oneSignalResult.recipients ?? null,
       message: "Notificación enviada correctamente",
+      send_to_all,
     });
   } catch (error: any) {
     console.error("Error enviando notificación:", error);
