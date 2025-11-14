@@ -175,7 +175,7 @@ export default async function handler(
     console.error("Error enviando notificación:", error);
     return res.status(500).json({
       error: "Error interno del servidor",
-      details: error.message,
+      details: error instanceof Error ? error.message : String(error),
     });
   }
 }
