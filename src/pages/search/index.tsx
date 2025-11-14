@@ -17,7 +17,7 @@ import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
 import { getFavoriteIds } from "@/utils/favorites";
 import { Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Tipo para descuentos de la página de inicio
 type HomePageDiscount = {
@@ -45,7 +45,9 @@ export default function Search() {
   const [filteredDiscounts, setFilteredDiscounts] = useState<SearchDiscount[]>(
     []
   );
+  const [allDiscounts, setAllDiscounts] = useState<SearchDiscount[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasInitialLoad = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isLocationFilter, setIsLocationFilter] = useState(false);
@@ -124,6 +126,135 @@ export default function Search() {
     }, 500);
     return () => clearTimeout(handler);
   }, [searchTerm, search, q, category, router]);
+
+  // Helper geolocation
+  const getCurrentPosition = () =>
+    new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation no soportada"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }),
+        (error) => reject(error),
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+  // Función para aplicar filtros localmente (sin recargar desde servidor)
+  const applyFiltersLocal = (
+    discounts: SearchDiscount[],
+    categoryIds: string[]
+  ) => {
+    let filtered = discounts;
+
+    if (categoryIds && categoryIds.length > 0) {
+      const includeFavorites = categoryIds.includes("favoritos");
+      const categoryIdsOnly = categoryIds.filter(
+        (categoryId) => categoryId !== "favoritos"
+      );
+
+      if (discounts.length > 0) {
+        const favoriteIdSet = includeFavorites
+          ? new Set(getFavoriteIds())
+          : null;
+
+        if ("name" in discounts[0]) {
+          const fullDiscounts = discounts as Discount[];
+          filtered = fullDiscounts.filter((discountItem) => {
+            const isFavorite = includeFavorites
+              ? favoriteIdSet!.has(discountItem.id)
+              : false;
+            const matchesCat =
+              categoryIdsOnly.length === 0
+                ? false
+                : categoryIdsOnly.some((categoryId) =>
+                    matchesCategory(discountItem.category, categoryId)
+                  );
+            return (
+              isFavorite ||
+              matchesCat ||
+              (!includeFavorites && categoryIdsOnly.length === 0)
+            );
+          }) as SearchDiscount[];
+        } else {
+          filtered = (discounts as HomePageDiscount[]).filter(
+            (discountItem) => {
+              const isFavorite = includeFavorites
+                ? favoriteIdSet!.has(discountItem.id)
+                : false;
+              const matchesCat =
+                categoryIdsOnly.length === 0
+                  ? false
+                  : categoryIdsOnly.some((categoryId) =>
+                      matchesCategory(discountItem.category || "", categoryId)
+                    );
+              return (
+                isFavorite ||
+                matchesCat ||
+                (!includeFavorites && categoryIdsOnly.length === 0)
+              );
+            }
+          ) as SearchDiscount[];
+        }
+      }
+    }
+
+    setFilteredDiscounts(filtered);
+  };
+
+  // Función para aplicar filtros en tiempo real (sin cerrar el popup) - solo filtra localmente
+  const applyFiltersRealtime = useCallback(async () => {
+    setSelectedCategories(draftCategories);
+    setIsLocationFilter(draftNearby);
+
+    // Aplicar filtros localmente sin recargar desde el servidor
+    if (draftNearby) {
+      // Si se activa el filtro de ubicación, necesitamos recargar
+      try {
+        const pos = await getCurrentPosition();
+        const queryObj: Record<string, string> = {};
+        if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
+        if (draftCategories.length > 0)
+          queryObj.categories = draftCategories.join(",");
+        queryObj.location = "true";
+        queryObj.lat = String(pos.lat);
+        queryObj.lng = String(pos.lng);
+        router.push({ pathname: "/search", query: queryObj }, undefined, {
+          shallow: true,
+        });
+      } catch {
+        // Si falla geolocalización, solo aplicar filtros de categorías localmente
+        applyFiltersLocal(allDiscounts, draftCategories);
+      }
+    } else {
+      // Solo aplicar filtros de categorías localmente
+      applyFiltersLocal(allDiscounts, draftCategories);
+    }
+  }, [draftCategories, draftNearby, allDiscounts, searchTerm, router]);
+
+  // Sincronizar drafts con los valores actuales cuando se abre el popup
+  useEffect(() => {
+    if (showFilters) {
+      setDraftCategories(selectedCategories);
+      setDraftNearby(isLocationFilter);
+    }
+  }, [showFilters, selectedCategories, isLocationFilter]);
+
+  // Aplicar filtros en tiempo real cuando cambian los drafts (solo si el popup está abierto)
+  useEffect(() => {
+    if (showFilters) {
+      // Usar un pequeño delay para evitar múltiples llamadas rápidas
+      const timeoutId = setTimeout(() => {
+        applyFiltersRealtime();
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [draftCategories, draftNearby, showFilters, applyFiltersRealtime]);
 
   const applyFilters = (
     allDiscounts: SearchDiscount[],
@@ -209,6 +340,38 @@ export default function Search() {
       router.push(`/discount/${id}`);
       return;
     }
+
+    // Si solo cambian las categorías y ya tenemos datos cargados, solo aplicar filtros localmente
+    const categoriesRaw = router.query.categories as unknown;
+    const urlCategories: string[] = [];
+    if (typeof categoriesRaw === "string") {
+      urlCategories.push(
+        ...(categoriesRaw as string)
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean)
+      );
+    } else if (typeof category === "string") {
+      urlCategories.push(category as string);
+    }
+
+    // Si solo cambió categories y ya tenemos datos, solo filtrar localmente
+    const hasOnlyCategoryChange =
+      hasInitialLoad.current &&
+      allDiscounts.length > 0 &&
+      !location &&
+      !lat &&
+      !lng &&
+      !personalized &&
+      !search &&
+      !q;
+
+    if (hasOnlyCategoryChange) {
+      // Solo aplicar filtros localmente sin recargar
+      applyFilters(allDiscounts, urlCategories);
+      return;
+    }
+
     const loadDiscounts = async () => {
       try {
         setLoading(true);
@@ -282,6 +445,10 @@ export default function Search() {
           data = await getHomePageDiscounts();
         }
 
+        // Guardar todos los descuentos sin filtrar
+        setAllDiscounts(data);
+        hasInitialLoad.current = true;
+
         // Obtener categorías desde la URL (nuevo 'categories', compat 'category')
         let urlCategories: string[] = [];
         const categoriesRaw = router.query.categories as unknown;
@@ -324,47 +491,32 @@ export default function Search() {
     }
   };
 
-  // Helper geolocation
-  const getCurrentPosition = () =>
-    new Promise<{ lat: number; lng: number }>((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation no soportada"));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        (position) =>
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }),
-        (error) => reject(error),
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    });
-
   // (clear location se hace inline donde se usa)
 
   // Función para aplicar filtros y cerrar el popup
-  const applyFiltersAndClose = async () => {
+  const applyFiltersAndClose = () => {
+    // Solo cerrar el popup - los filtros ya se aplicaron en tiempo real
     setShowFilters(false);
-    setSelectedCategories(draftCategories);
 
-    // Construir query
+    // Actualizar la URL sin recargar (solo para mantener sincronización con la URL)
+    // Usar replace en lugar de push para evitar que se dispare el useEffect de carga
     const queryObj: Record<string, string> = {};
     if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
     if (draftCategories.length > 0)
       queryObj.categories = draftCategories.join(",");
     if (draftNearby) {
-      try {
-        const pos = await getCurrentPosition();
+      // Si hay filtro de ubicación, ya se manejó en applyFiltersRealtime
+      const lat = router.query.lat as string;
+      const lng = router.query.lng as string;
+      if (lat && lng) {
         queryObj.location = "true";
-        queryObj.lat = String(pos.lat);
-        queryObj.lng = String(pos.lng);
-      } catch {
-        // Si falla geolocalización, mantener sin ubicación
+        queryObj.lat = lat;
+        queryObj.lng = lng;
       }
     }
-    router.push({ pathname: "/search", query: queryObj });
+    router.replace({ pathname: "/search", query: queryObj }, undefined, {
+      shallow: true,
+    });
   };
 
   // Función para limpiar todos los filtros y mostrar todos los descuentos
