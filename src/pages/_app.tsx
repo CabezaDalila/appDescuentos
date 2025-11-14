@@ -49,10 +49,8 @@ function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
 
-  // Precargar datos críticos en segundo plano
   usePreload();
 
-  // Manejar botón de retroceso de Android
   useAndroidBackButton();
 
   useEffect(() => {
@@ -61,7 +59,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     // Inicializar Google Auth correctamente
     const loadGapi = async () => {
       try {
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve) => {
           const check = () => {
             if (
               typeof window !== "undefined" &&
@@ -214,12 +212,12 @@ function MyApp({ Component, pageProps }: AppProps) {
       try {
         // Stub seguro y guard contra doble init
         if (typeof window !== "undefined") {
-          (window as any).OneSignal = (window as any).OneSignal || [];
+          window.OneSignal = window.OneSignal || ({} as OneSignal);
         }
 
         // Esperar a que el SDK esté disponible
-        if (typeof window !== "undefined" && (window as any).OneSignal?.init) {
-          await (window as any).OneSignal.init({
+        if (typeof window !== "undefined" && window.OneSignal?.init) {
+          await window.OneSignal?.init({
             appId: appId,
             allowLocalhostAsSecureOrigin: true,
             autoResubscribe: true,
