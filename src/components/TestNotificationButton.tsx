@@ -34,7 +34,9 @@ export default function TestNotificationButton() {
   const [message, setMessage] = useState(
     "Descubre nuestros descuentos exclusivos"
   );
-  const [url, setUrl] = useState("/home");
+  const [url, setUrl] = useState(
+    "https://app-descuentos-dalilacabeza-gmailcoms-projects.vercel.app/home/"
+  );
   const [type, setType] = useState<NotificationType>("promocion");
 
   const handleSendToAll = async () => {

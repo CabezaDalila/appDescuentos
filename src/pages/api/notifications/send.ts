@@ -1,4 +1,6 @@
+import { db } from "@/lib/firebase/firebase";
 import { saveNotificationToFirestore } from "@/lib/notifications";
+import { collection, getDocs } from "firebase/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 interface SendNotificationRequest {
@@ -119,13 +121,40 @@ export default async function handler(
       });
     }
 
-    if (userId && !send_to_all) {
+    if (send_to_all) {
+      try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const savePromises = usersSnapshot.docs.map((userDoc) =>
+          saveNotificationToFirestore({
+            userId: userDoc.id,
+            title,
+            message,
+            type: data?.type || "sistema",
+          }).catch((error) => {
+            console.error(
+              `Error guardando notificación para usuario ${userDoc.id}:`,
+              error
+            );
+          })
+        );
+
+        await Promise.all(savePromises);
+        console.log(
+          `Notificaciones guardadas en Firestore para ${usersSnapshot.size} usuarios`
+        );
+      } catch (firestoreError) {
+        console.error(
+          "Error guardando notificaciones en Firestore para todos los usuarios:",
+          firestoreError
+        );
+      }
+    } else if (userId) {
       try {
         await saveNotificationToFirestore({
           userId,
           title,
           message,
-          type: (data?.type as any) || "sistema",
+          type: data?.type || "sistema",
         });
       } catch (firestoreError) {
         console.error(
@@ -142,7 +171,7 @@ export default async function handler(
       message: "Notificación enviada correctamente",
       send_to_all,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error enviando notificación:", error);
     return res.status(500).json({
       error: "Error interno del servidor",
