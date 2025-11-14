@@ -1,16 +1,17 @@
+import { NavigationBar } from "@/components/home/navigation-bar";
 import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
   BarChart3,
+  Bell,
   Gift,
   Home,
   LogOut,
   Settings,
   Users,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/router";
-import React from "react";
+import { useEffect, useState } from "react";
 
 interface LayoutAdminProps {
   children: React.ReactNode;
@@ -19,116 +20,128 @@ interface LayoutAdminProps {
 export function LayoutAdmin({ children }: LayoutAdminProps) {
   const router = useRouter();
   const { logout, user, loggingOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
 
-  const navigationItems = [
+  const tabs = [
     {
-      name: "Panel Principal",
-      href: "/admin",
+      id: "dashboard",
+      label: "Panel Principal",
       icon: BarChart3,
-      current: router.pathname === "/admin",
+      path: "/admin",
     },
     {
-      name: "Descuentos",
-      href: "/admin/discounts",
+      id: "discounts",
+      label: "Descuentos",
       icon: Gift,
-      current: router.pathname.startsWith("/admin/discounts") || router.pathname.startsWith("/admin/approvals"),
+      path: "/admin/discounts",
     },
     {
-      name: "Scripts",
-      href: "/admin/scripts",
+      id: "scripts",
+      label: "Scripts",
       icon: Settings,
-      current: router.pathname.startsWith("/admin/scripts"),
+      path: "/admin/scripts",
     },
     {
-      name: "Usuarios",
-      href: "/admin/users",
+      id: "notifications",
+      label: "Notificaciones",
+      icon: Bell,
+      path: "/admin/notifications",
+    },
+    {
+      id: "users",
+      label: "Usuarios",
       icon: Users,
-      current: router.pathname.startsWith("/admin/users"),
+      path: "/admin/users",
     },
   ];
 
-  return (
-    <div className="h-screen bg-gray-50 flex admin-layout">
-      {/* Sidebar - Solo visible en desktop */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
-          {/* Logo/Header */}
-          <div className="flex items-center flex-shrink-0 px-4">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Gift className="h-5 w-5 text-white" />
-              </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">
-                Admin Panel
+  useEffect(() => {
+    const getActiveTabFromPath = () => {
+      if (router.pathname === "/admin") {
+        return "dashboard";
+      } else if (
+        router.pathname.startsWith("/admin/discounts") ||
+        router.pathname.startsWith("/admin/approvals")
+      ) {
+        return "discounts";
+      } else if (router.pathname.startsWith("/admin/scripts")) {
+        return "scripts";
+      } else if (router.pathname.startsWith("/admin/notifications")) {
+        return "notifications";
+      } else if (router.pathname.startsWith("/admin/users")) {
+        return "users";
+      }
+      return "dashboard";
+    };
+    setActiveTab(getActiveTabFromPath());
+  }, [router.pathname]);
+
+  const handleTabsChange = (tabId: string) => {
+    setActiveTab(tabId);
+    const tab = tabs.find((t) => t.id === tabId);
+    if (tab) {
+      router.push(tab.path);
+    }
+  };
+
+  const header = (
+    <div className="flex items-center">
+      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+        <Gift className="h-5 w-5 text-white" />
+      </div>
+      <span className="ml-3 text-xl font-bold text-gray-900">Admin Panel</span>
+    </div>
+  );
+
+  const footer = (
+    <div className="space-y-4">
+      <div className="px-2 xl:px-4 pt-4">
+        <div className="flex items-center justify-center xl:justify-start">
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <span className="text-sm font-medium text-gray-700">
+                {user?.email?.charAt(0).toUpperCase()}
               </span>
             </div>
           </div>
-
-          {/* Navigation */}
-          <div className="mt-8 flex-grow flex flex-col">
-            <nav className="flex-1 px-2 space-y-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`${
-                      item.current
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    } group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200`}
-                  >
-                    <Icon
-                      className={`${
-                        item.current
-                          ? "text-white"
-                          : "text-gray-600 group-hover:text-gray-700"
-                      } mr-3 h-5 w-5`}
-                    />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* User info and logout */}
-          <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700 truncate">
-                  {user?.email}
-                </p>
-                <p className="text-xs text-gray-600">Administrador</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Logout button */}
-          <div className="px-4 pb-4">
-            <Button
-              variant="outline"
-              onClick={logout}
-              disabled={loggingOut}
-              className="w-full justify-start text-gray-700 hover:text-gray-900"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              {loggingOut ? "Cerrando sesión..." : "Cerrar Sesión"}
-            </Button>
+          <div className="xl:ml-3 flex-1 min-w-0 hidden xl:block">
+            <p className="text-sm font-medium text-gray-700 truncate">
+              {user?.email}
+            </p>
+            <p className="text-xs text-gray-600">Administrador</p>
           </div>
         </div>
       </div>
+      <div className="px-2 xl:px-4 pb-4">
+        <Button
+          variant="outline"
+          onClick={logout}
+          disabled={loggingOut}
+          className="w-full justify-center xl:justify-start text-gray-700 hover:text-gray-900 border-gray-300"
+        >
+          <LogOut className="h-4 w-4 xl:mr-2" />
+          <span className="hidden xl:inline">
+            {loggingOut ? "Cerrando sesión..." : "Cerrar Sesión"}
+          </span>
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-screen bg-gray-50 flex admin-layout">
+      {/* Navigation Bar - Reutilizada del usuario (solo desktop) */}
+      <NavigationBar
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabsChange={handleTabsChange}
+        header={header}
+        footer={footer}
+        hideMobile={true}
+      />
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden lg:ml-16 xl:ml-64">
         {/* Top bar - Solo visible en desktop */}
         <div className="hidden lg:flex lg:items-center lg:justify-between lg:px-6 lg:py-4 bg-white border-b border-gray-200">
           <div className="flex items-center">
@@ -175,7 +188,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
         </div>
 
         {/* Page content */}
-        <main className="flex-1 admin-main-content">
+        <main className="flex-1 admin-main-content overflow-y-auto">
           <div className="py-6 admin-content-wrapper">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               {children}
