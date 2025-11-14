@@ -104,7 +104,7 @@ export function createProfileSections(router: any, onLogout: () => void, onSetti
   const soporteItems: ProfileItem[] = [
     {
       icon: <HelpCircle className="h-5 w-5" />,
-      title: "Ayuda y soporte",
+      title: "Acerca de y asistencia",
       description: "¿Necesitas ayuda?",
       onClick: () => router.push("/support"),
     },
