@@ -21,13 +21,18 @@ export const initializeOneSignal = async (firebaseUserId?: string) => {
   } else {
     if (typeof window !== "undefined" && window.OneSignal) {
       try {
-        if (!(window as any).OneSignalInitialized) {
+        if (
+          !(window as unknown as { OneSignalInitialized: boolean })
+            .OneSignalInitialized
+        ) {
           await window.OneSignal.init({
             appId: ONESIGNAL_CONFIG.APP_ID,
             allowLocalhostAsSecureOrigin: true,
             autoResubscribe: true,
           });
-          (window as any).OneSignalInitialized = true;
+          (
+            window as unknown as { OneSignalInitialized: boolean }
+          ).OneSignalInitialized = true;
         }
         oneSignalInitialized = true;
 
@@ -58,7 +63,16 @@ const setupNotificationListeners = (firebaseUserId: string) => {
             userId: firebaseUserId,
             title: event.heading || "Nueva notificación",
             message: event.content || "",
-            type: (event.data?.type as any) || "sistema",
+            type:
+              (event.data?.type as
+                | "sistema"
+                | "vencimiento_tarjeta"
+                | "promocion"
+                | "recordatorio"
+                | "info"
+                | "warning"
+                | "success"
+                | "error") || "sistema",
           });
         } catch (error) {
           console.error("Error guardando notificación en Firestore:", error);
@@ -66,8 +80,8 @@ const setupNotificationListeners = (firebaseUserId: string) => {
       });
     }
 
-    if ((window.OneSignal as any).push) {
-      (window.OneSignal as any).push([
+    if ((window.OneSignal as unknown as { push: any }).push) {
+      (window.OneSignal as unknown as { push: any }).push([
         "addListenerForNotificationOpened",
         async (data: any) => {
           try {
@@ -75,7 +89,16 @@ const setupNotificationListeners = (firebaseUserId: string) => {
               userId: firebaseUserId,
               title: data.heading || "Nueva notificación",
               message: data.content || "",
-              type: (data.data?.type as any) || "sistema",
+              type:
+                (data.data?.type as
+                  | "sistema"
+                  | "vencimiento_tarjeta"
+                  | "promocion"
+                  | "recordatorio"
+                  | "info"
+                  | "warning"
+                  | "success"
+                  | "error") || "sistema",
             });
           } catch (error) {
             console.error("Error guardando notificación en Firestore:", error);
@@ -112,24 +135,7 @@ export const getOneSignalPlayerId = async (): Promise<string | null> => {
     return null;
   }
   if (typeof window !== "undefined" && window.OneSignal) {
-    try {
-      const userId = await window.OneSignal.getUserId();
-      return userId;
-    } catch (error) {
-      console.error("Error obteniendo Player ID:", error);
-      return null;
-    }
+    return await window.OneSignal.getUserId();
   }
   return null;
-};
-
-export const isOneSignalEnabled = async (): Promise<boolean> => {
-  if (Capacitor.isNativePlatform()) {
-    return true;
-  } else {
-    if (typeof window !== "undefined" && window.OneSignal) {
-      return await window.OneSignal.isPushNotificationsEnabled();
-    }
-    return false;
-  }
 };

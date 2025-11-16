@@ -1,4 +1,3 @@
-import { isOneSignalEnabled } from "@/lib/onesignal-config";
 import { Capacitor } from "@capacitor/core";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,6 +10,12 @@ interface NotificationButtonProps {
   showIcon?: boolean;
   showText?: boolean;
   className?: string;
+}
+
+interface OneSignalPermissionStatus {
+  subscriptionStatus?: {
+    subscribed?: boolean;
+  };
 }
 
 export default function NotificationButton({
@@ -30,9 +35,25 @@ export default function NotificationButton({
   const checkSubscriptionStatus = async () => {
     try {
       if (Capacitor.isNativePlatform()) {
-        // Para móvil
-        const isEnabled = await isOneSignalEnabled();
-        setIsSubscribed(isEnabled);
+        try {
+          const OneSignal = (await import("onesignal-cordova-plugin")).default;
+
+          const subscriptionState = await new Promise<boolean>((resolve) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (OneSignal as any).getPermissionSubscriptionState(
+              (status: OneSignalPermissionStatus) => {
+                const isSubscribed =
+                  status?.subscriptionStatus?.subscribed ?? false;
+                resolve(isSubscribed);
+              }
+            );
+          });
+
+          setIsSubscribed(subscriptionState);
+        } catch (error) {
+          console.error("Error verificando estado en nativo:", error);
+          setIsSubscribed(false);
+        }
       } else {
         // Para web
         if (typeof window === "undefined" || !window.OneSignal) {
@@ -43,7 +64,7 @@ export default function NotificationButton({
         setIsSubscribed(isEnabled);
       }
     } catch (error) {
-      console.error("❌ Error verificando estado:", error);
+      console.error("Error verificando estado:", error);
       setIsSubscribed(false);
     }
   };
@@ -59,25 +80,47 @@ export default function NotificationButton({
       }
 
       if (Capacitor.isNativePlatform()) {
-        // Para móvil - OneSignal se configura automáticamente
         try {
-          // Verificar si ya está suscrito
-          const isEnabled = await isOneSignalEnabled();
-          if (isEnabled) {
-            toast.success("¡Notificaciones activadas en móvil!");
-            setIsSubscribed(true);
-          } else {
-            toast.success(
-              "Notificaciones configuradas. Revisa la configuración del dispositivo."
-            );
-            setIsSubscribed(true);
-          }
-        } catch (error) {
-          console.error("Error configurando notificaciones móviles:", error);
-          toast.error("Error configurando notificaciones");
-        }
+          const OneSignal = (await import("onesignal-cordova-plugin")).default;
 
-        setIsLoading(false);
+          // Solicitar permisos
+          OneSignal.Notifications.requestPermission(true);
+
+          setTimeout(async () => {
+            try {
+              const subscriptionState = await new Promise<boolean>(
+                (resolve) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (OneSignal as any).getPermissionSubscriptionState(
+                    (status: OneSignalPermissionStatus) => {
+                      const isSubscribed =
+                        status?.subscriptionStatus?.subscribed ?? false;
+                      resolve(isSubscribed);
+                    }
+                  );
+                }
+              );
+
+              setIsSubscribed(subscriptionState);
+
+              if (subscriptionState) {
+                toast.success("¡Notificaciones activadas en móvil!");
+              } else {
+                toast.error(
+                  "Permisos denegados. Verifica la configuración del dispositivo."
+                );
+              }
+            } catch (error) {
+              console.error("Error verificando estado:", error);
+              toast.error("Error al verificar el estado de las notificaciones");
+            }
+            setIsLoading(false);
+          }, 1000);
+        } catch (error) {
+          console.error("Error solicitando permisos en nativo:", error);
+          toast.error("Error al configurar notificaciones");
+          setIsLoading(false);
+        }
       } else {
         // Para web
         if (typeof window === "undefined" || !window.OneSignal) {
@@ -116,13 +159,13 @@ export default function NotificationButton({
               }
             }
           } catch (error) {
-            console.error("❌ Error verificando estado:", error);
+            console.error("Error verificando estado:", error);
           }
           setIsLoading(false);
         }, 1000);
       }
     } catch (error) {
-      console.error("❌ Error:", error);
+      console.error("Error:", error);
       toast.error("Error al configurar notificaciones");
       setIsLoading(false);
     }
@@ -155,8 +198,10 @@ export default function NotificationButton({
     }
   };
 
-  // Verificar si OneSignal está disponible
-  if (typeof window === "undefined" || !window.OneSignal) {
+  if (
+    !Capacitor.isNativePlatform() &&
+    (typeof window === "undefined" || !window.OneSignal)
+  ) {
     return (
       <div className="w-full p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div className="flex items-center gap-3">

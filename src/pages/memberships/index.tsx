@@ -1,4 +1,5 @@
 import { Button } from "@/components/Share/button";
+<<<<<<< HEAD
 import { PageHeader } from "@/components/Share/page-header";
 import { SearchSection } from "@/components/home/search-section";
 import {
@@ -6,15 +7,13 @@ import {
   Membership,
   MEMBERSHIP_CATEGORIES,
 } from "@/constants/membership";
+=======
+import { Input } from "@/components/Share/input";
+import { Membership, MEMBERSHIP_CATEGORIES } from "@/constants/membership";
+>>>>>>> 6ead8cbebadcbf13fc08b7f5562c1ecb7ae69515
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedMemberships } from "@/hooks/useCachedMemberships";
-import {
-  checkMembershipExists,
-  createMembership,
-  deleteCardFromMembership,
-  deleteMembership,
-  updateMembership,
-} from "@/lib/firebase/memberships";
+import { deleteMembership } from "@/lib/firebase/memberships";
 import type { MembershipItem } from "@/types/membership";
 
 import { Plus } from "lucide-react";
@@ -24,7 +23,7 @@ import toast from "react-hot-toast";
 type TabType = "all" | "active" | "inactive";
 
 export default function MembershipsPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,41 +35,6 @@ export default function MembershipsPage() {
     loading: loadingMemberships,
     refreshMemberships,
   } = useCachedMemberships();
-
-  const allMemberships = [...activeMemberships, ...inactiveMemberships];
-
-  const handleCreateMembership = async (
-    membershipData: CreateMembershipData & { cards?: unknown[] }
-  ) => {
-    if (!user) return;
-
-    try {
-      const exists = await checkMembershipExists(
-        membershipData.name,
-        membershipData.category
-      );
-      if (exists) {
-        return;
-      }
-
-      await createMembership({ ...membershipData, userId: user.uid });
-      await refreshMemberships();
-    } catch (err) {
-      console.error("Error al crear la membresía:", err);
-    }
-  };
-
-  const handleUpdateMembership = async (
-    membershipId: string,
-    updateData: Record<string, unknown>
-  ) => {
-    try {
-      await updateMembership(membershipId, updateData);
-      await refreshMemberships();
-    } catch (error) {
-      console.error("Error al actualizar la membresía:", error);
-    }
-  };
 
   const handleDeleteMembership = async (
     membershipId: string,
@@ -99,6 +63,7 @@ export default function MembershipsPage() {
     return activeMemberships.length + inactiveMemberships.length;
   };
 
+<<<<<<< HEAD
   const handleDeleteCardFromMembership = async (
     membershipId: string,
     cardId: string
@@ -120,6 +85,14 @@ export default function MembershipsPage() {
       throw error; // Re-lanzar para que el modal maneje el error
     }
   };
+=======
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+>>>>>>> 6ead8cbebadcbf13fc08b7f5562c1ecb7ae69515
 
   const filteredMemberships = useMemo(() => {
     let filtered;
@@ -292,8 +265,6 @@ export default function MembershipsPage() {
 function MembershipListItem({
   membership,
   isActive,
-  onDelete,
-  onEdit,
   onView,
 }: {
   membership: MembershipItem;
@@ -302,27 +273,6 @@ function MembershipListItem({
   onEdit: (id: string) => void;
   onView: (id: string) => void;
 }) {
-  const router = useRouter();
-
-  const getCategoryIcon = (category: Membership["category"]) => {
-    switch (category) {
-      case "banco":
-        return "🏦";
-      case "club":
-        return "🏆";
-      case "salud":
-        return "❤️";
-      case "educacion":
-        return "🎓";
-      case "seguro":
-        return "🛡️";
-      case "telecomunicacion":
-        return "📱";
-      default:
-        return "🏢";
-    }
-  };
-
   const getStatusText = () => {
     if (isActive) return "Activa";
     return "Inactiva";

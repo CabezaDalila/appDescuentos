@@ -195,10 +195,6 @@ const AddMembershipUnifiedModal: React.FC<AddMembershipUnifiedModalProps> = ({
     }
   };
 
-  const handleRemoveCard = (cardId: string) => {
-    setCards(cards.filter((card) => card.id !== cardId));
-  };
-
   const handleClose = () => {
     setStep("category");
     setSelectedCategory("");

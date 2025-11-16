@@ -34,7 +34,9 @@ export default function TestNotificationButton() {
   const [message, setMessage] = useState(
     "Descubre nuestros descuentos exclusivos"
   );
-  const [url, setUrl] = useState("/home");
+  const [url, setUrl] = useState(
+    "https://app-descuentos-dalilacabeza-gmailcoms-projects.vercel.app/home/"
+  );
   const [type, setType] = useState<NotificationType>("promocion");
 
   const handleSendToAll = async () => {
@@ -55,18 +57,7 @@ export default function TestNotificationButton() {
       });
 
       if (result.success) {
-        const recipients = result.recipients || 0;
-        if (recipients === 0) {
-          toast.success(
-            "Notificación enviada, pero no hay usuarios suscritos aún"
-          );
-        } else {
-          toast.success(
-            `Notificación enviada a ${recipients} usuario${
-              recipients > 1 ? "s" : ""
-            }`
-          );
-        }
+        toast.success("Notificación enviada");
       } else {
         const errorMsg = result.error || "Error al enviar notificación";
         toast.error(errorMsg, {
