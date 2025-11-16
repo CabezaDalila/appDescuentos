@@ -9,6 +9,7 @@ import {
   LogOut,
   Settings,
   Users,
+  HelpCircle,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -53,6 +54,12 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
       icon: Users,
       path: "/admin/users",
     },
+    {
+      id: "support",
+      label: "Contenido de Soporte",
+      icon: HelpCircle,
+      path: "/admin/support-content",
+    },
   ];
 
   useEffect(() => {
@@ -70,6 +77,8 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
         return "notifications";
       } else if (router.pathname.startsWith("/admin/users")) {
         return "users";
+      } else if (router.pathname.startsWith("/admin/support-content")) {
+        return "support";
       }
       return "dashboard";
     };

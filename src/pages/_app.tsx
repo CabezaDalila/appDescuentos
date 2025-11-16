@@ -55,6 +55,32 @@ function MyApp({ Component, pageProps }: AppProps) {
   // Manejar botón de retroceso de Android
   useAndroidBackButton();
 
+  // Scroll al top cuando cambia la ruta
+  useEffect(() => {
+    const handleRouteChange = () => {
+      // Scroll del window
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+
+      // También hacer scroll en contenedores internos que puedan tener scroll
+      setTimeout(() => {
+        const scrollContainers = document.querySelectorAll(
+          '[class*="overflow-y-auto"], [class*="overflow-auto"]'
+        );
+        scrollContainers.forEach((container) => {
+          if (container instanceof HTMLElement) {
+            container.scrollTop = 0;
+          }
+        });
+      }, 0);
+    };
+
+    router.events.on("routeChangeComplete", handleRouteChange);
+
+    return () => {
+      router.events.off("routeChangeComplete", handleRouteChange);
+    };
+  }, [router]);
+
   useEffect(() => {
     initializeGoogleAuth();
 

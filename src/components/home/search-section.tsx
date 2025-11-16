@@ -18,6 +18,8 @@ interface SearchSectionProps {
   onFilterClick?: () => void;
   // Props para controlar el padding
   compact?: boolean;
+  // Placeholder personalizado
+  placeholder?: string;
 }
 
 export function SearchSection({
@@ -34,6 +36,7 @@ export function SearchSection({
   hasActiveFilters = false,
   onFilterClick,
   compact = false,
+  placeholder = "¿Qué estás buscando hoy?",
 }: SearchSectionProps) {
   const paddingClass = compact
     ? "px-4"
@@ -47,12 +50,8 @@ export function SearchSection({
   const iconSize = compact ? "w-4 h-4" : "w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6";
   const iconLeft = compact ? "left-3.5" : "left-3 sm:left-4 lg:left-6";
   const inputPaddingLeft = compact ? "pl-10" : "pl-10 sm:pl-12 lg:pl-14";
-  const inputPaddingY = compact
-    ? "py-2.5"
-    : "py-2.5 sm:py-3.5 lg:py-4";
-  const inputTextSize = compact
-    ? "text-sm"
-    : "text-sm sm:text-base lg:text-lg";
+  const inputPaddingY = compact ? "py-2.5" : "py-2.5 sm:py-3.5 lg:py-4";
+  const inputTextSize = compact ? "text-sm" : "text-sm sm:text-base lg:text-lg";
 
   return (
     <div className={`w-full ${paddingClass} ${marginClass}`}>
@@ -62,7 +61,7 @@ export function SearchSection({
         />
         <input
           type="text"
-          placeholder="¿Qué estás buscando hoy?"
+          placeholder={placeholder}
           value={searchTerm}
           className={`w-full ${inputPaddingLeft} ${inputPaddingRight} ${inputPaddingY} ${inputTextSize} text-gray-900 placeholder:text-gray-500 caret-purple-600 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 bg-white shadow-sm hover:shadow-md transition-all`}
           onChange={(e) => onSearchChange(e.target.value)}

@@ -1,5 +1,6 @@
 import { Button } from "@/components/Share/button";
-import { Input } from "@/components/Share/input";
+import { PageHeader } from "@/components/Share/page-header";
+import { SearchSection } from "@/components/home/search-section";
 import {
   CreateMembershipData,
   Membership,
@@ -16,9 +17,9 @@ import {
 } from "@/lib/firebase/memberships";
 import type { MembershipItem } from "@/types/membership";
 
-import { ArrowLeft, Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 type TabType = "all" | "active" | "inactive";
 
@@ -27,7 +28,6 @@ export default function MembershipsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [scrollY, setScrollY] = useState(0);
 
   // Usar hook con caché para membresías
   const {
@@ -94,21 +94,10 @@ export default function MembershipsPage() {
     }
   };
 
-  const handleScroll = () => {
-    setScrollY(window.scrollY);
-  };
-
   // Función para calcular el total de elementos (tarjetas + membresías)
   const getTotalItemsCount = () => {
     return activeMemberships.length + inactiveMemberships.length;
   };
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
 
   const handleDeleteCardFromMembership = async (
     membershipId: string,
@@ -172,50 +161,45 @@ export default function MembershipsPage() {
     );
   }
 
-  const headerOpacity = Math.max(0.7, 1 - scrollY / 200);
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div
-        className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10 transition-opacity duration-200 safe-area-pt"
-        style={{ opacity: headerOpacity }}
-      >
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => router.push("/profile")}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
-          </button>
-          <div className="flex-1 ml-4">
-            <h1 className="text-lg font-bold text-gray-900">Mis Membresías</h1>
-            <div className="text-sm text-gray-600 mt-1">
-              {activeMemberships.length} activas • {inactiveMemberships.length}{" "}
-              inactivas
-            </div>
-          </div>
-          <Button
-            onClick={() => router.push("/memberships/add")}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Añadir
-          </Button>
-        </div>
-      </div>
+    <div className="w-full min-h-screen bg-gray-50 with-bottom-nav-pb">
+      {/* Header y buscador unificados en sticky */}
+      <div className="sticky top-0 z-40 bg-white shadow-sm">
+        {/* Header con título y botón de retroceso */}
+        <PageHeader
+          title="Mis Membresías"
+          subtitle={`${activeMemberships.length} activas • ${inactiveMemberships.length} inactivas`}
+          onBack={() => router.push("/profile")}
+          rightAction={
+            <Button
+              onClick={() => router.push("/memberships/add")}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Añadir
+            </Button>
+          }
+        />
 
-      {/* Barra de búsqueda y filtros */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar membresías..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-          />
+        {/* Buscador */}
+        <div className="border-b border-gray-200">
+          <div className="py-3">
+            <SearchSection
+              searchTerm={searchQuery}
+              searchResults={[]}
+              isSearching={false}
+              showSearchResults={false}
+              onSearchChange={setSearchQuery}
+              onSearchFocus={() => {}}
+              onSearchBlur={() => {}}
+              onClearSearch={() => setSearchQuery("")}
+              onSelectResult={() => {}}
+              showFilterButton={false}
+              compact={true}
+              placeholder="Buscar membresías..."
+            />
+          </div>
         </div>
       </div>
 

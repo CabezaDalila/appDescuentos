@@ -33,7 +33,8 @@ export function LayoutHome({ children }: LayoutHomeProps) {
       return "favorites";
     } else if (
       router.pathname === "/profile" ||
-      router.pathname.startsWith("/memberships")
+      router.pathname.startsWith("/memberships") ||
+      router.pathname.startsWith("/support")
     ) {
       return "profile";
     } else if (router.pathname === "/notifications") {
@@ -57,10 +58,11 @@ export function LayoutHome({ children }: LayoutHomeProps) {
     }
   };
 
-  // Para páginas que tienen su propio layout (perfil, membresías, notificaciones)
+  // Para páginas que tienen su propio layout (perfil, membresías, notificaciones, soporte)
   if (
     router.pathname === "/profile" ||
     router.pathname.startsWith("/memberships") ||
+    router.pathname.startsWith("/support") ||
     router.pathname === "/notifications"
   ) {
     return (
