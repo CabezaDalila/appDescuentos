@@ -18,7 +18,7 @@ import {
   type FAQItem,
   type TermsContent,
 } from "@/lib/firebase/support-content";
-import { HelpCircle, FileText, Plus, Trash2, Save } from "lucide-react";
+import { FileText, HelpCircle, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -92,7 +92,10 @@ export default function AdminSupportContent() {
   };
 
   const handleSaveTerms = async () => {
-    if (!termsContent.termsOfService.trim() || !termsContent.privacyPolicy.trim()) {
+    if (
+      !termsContent.termsOfService.trim() ||
+      !termsContent.privacyPolicy.trim()
+    ) {
       toast.error("Los términos y la política de privacidad son requeridos");
       return;
     }
@@ -138,7 +141,7 @@ export default function AdminSupportContent() {
                   key={faq.id}
                   className="border border-gray-200 rounded-lg p-4"
                 >
-                  {editingFAQ?.id === faq.id ? (
+                  {editingFAQ && editingFAQ.id === faq.id ? (
                     <div className="space-y-3">
                       <div>
                         <Label>Pregunta</Label>
@@ -183,7 +186,9 @@ export default function AdminSupportContent() {
                       </div>
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => handleSaveFAQ(editingFAQ)}
+                          onClick={() =>
+                            editingFAQ && handleSaveFAQ(editingFAQ)
+                          }
                           disabled={saving}
                           size="sm"
                         >
@@ -281,7 +286,9 @@ export default function AdminSupportContent() {
                       await handleSaveFAQ(newFAQ);
                       setNewFAQ({ question: "", answer: "", order: 0 });
                     }}
-                    disabled={saving || !newFAQ.question.trim() || !newFAQ.answer.trim()}
+                    disabled={
+                      saving || !newFAQ.question.trim() || !newFAQ.answer.trim()
+                    }
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Agregar FAQ
@@ -345,4 +352,3 @@ export default function AdminSupportContent() {
     </LayoutAdmin>
   );
 }
-

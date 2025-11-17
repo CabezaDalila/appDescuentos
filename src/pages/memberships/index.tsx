@@ -1,19 +1,13 @@
 import { Button } from "@/components/Share/button";
-<<<<<<< HEAD
 import { PageHeader } from "@/components/Share/page-header";
 import { SearchSection } from "@/components/home/search-section";
-import {
-  CreateMembershipData,
-  Membership,
-  MEMBERSHIP_CATEGORIES,
-} from "@/constants/membership";
-=======
-import { Input } from "@/components/Share/input";
 import { Membership, MEMBERSHIP_CATEGORIES } from "@/constants/membership";
->>>>>>> 6ead8cbebadcbf13fc08b7f5562c1ecb7ae69515
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedMemberships } from "@/hooks/useCachedMemberships";
-import { deleteMembership } from "@/lib/firebase/memberships";
+import {
+  deleteCardFromMembership,
+  deleteMembership,
+} from "@/lib/firebase/memberships";
 import type { MembershipItem } from "@/types/membership";
 
 import { Plus } from "lucide-react";
@@ -63,7 +57,6 @@ export default function MembershipsPage() {
     return activeMemberships.length + inactiveMemberships.length;
   };
 
-<<<<<<< HEAD
   const handleDeleteCardFromMembership = async (
     membershipId: string,
     cardId: string
@@ -85,14 +78,6 @@ export default function MembershipsPage() {
       throw error; // Re-lanzar para que el modal maneje el error
     }
   };
-=======
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
->>>>>>> 6ead8cbebadcbf13fc08b7f5562c1ecb7ae69515
 
   const filteredMemberships = useMemo(() => {
     let filtered;
