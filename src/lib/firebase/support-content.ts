@@ -64,20 +64,25 @@ export const getFAQs = async (): Promise<FAQItem[]> => {
 
 export const saveFAQ = async (faq: FAQItem): Promise<string> => {
   try {
-    const faqData = {
-      question: faq.question,
-      answer: faq.answer,
-      order: faq.order || 0,
-      updatedAt: Timestamp.now(),
-    };
-
     if (faq.id) {
       // Actualizar existente
+      const faqData = {
+        question: faq.question,
+        answer: faq.answer,
+        order: faq.order || 0,
+        updatedAt: Timestamp.now(),
+      };
       await setDoc(doc(db, FAQ_COLLECTION, faq.id), faqData, { merge: true });
       return faq.id;
     } else {
       // Crear nuevo
-      faqData.createdAt = Timestamp.now();
+      const faqData = {
+        question: faq.question,
+        answer: faq.answer,
+        order: faq.order || 0,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      };
       const docRef = doc(collection(db, FAQ_COLLECTION));
       await setDoc(docRef, faqData);
       return docRef.id;
