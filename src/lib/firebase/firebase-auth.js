@@ -65,7 +65,9 @@ export const logout = async () => {
 export const resetPassword = async (email) => {
   const actionCodeSettings = {
     // URL a la que se redirigirá después de hacer clic en el enlace
-    url: "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/reset-password",
+    url: typeof window !== "undefined" 
+      ? `${window.location.origin}/reset-password`
+      : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/reset-password",
     // Configuración adicional
     handleCodeInApp: true,
   };

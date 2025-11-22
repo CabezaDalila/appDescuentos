@@ -120,10 +120,38 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     const currentPath = router.pathname;
     const isAuthRoute = ["/login", "/reset-password"].includes(currentPath);
+    
+    // Detectar si hay un código de reset password en la URL y redirigir a la página correcta
+    const { oobCode, mode } = router.query;
+    
+    // Verificar también en el hash de la URL (Firebase a veces envía el código ahí)
+    let resetCode = oobCode;
+    let resetMode = mode;
+    
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashCode = hashParams.get("oobCode");
+      const hashMode = hashParams.get("mode");
+      if (hashCode) resetCode = hashCode;
+      if (hashMode) resetMode = hashMode;
+    }
+    
+    // Si hay un código de reset password pero estamos en login, redirigir a reset-password
+    if ((resetMode === "resetPassword" || (resetCode && typeof resetCode === "string")) && currentPath === "/login") {
+      const resetUrl = `/reset-password${resetCode ? `?oobCode=${resetCode}` : ""}${resetMode ? `&mode=${resetMode}` : ""}`;
+      router.replace(resetUrl);
+      return;
+    }
 
     // Si no hay usuario y no está en ruta de auth, redirigir a login
     if (!user && !isAuthRoute) {
       router.push("/login");
+      return;
+    }
+
+    // Si estamos en reset-password, no hacer ninguna redirección automática
+    // El usuario debe completar el proceso de reset
+    if (currentPath === "/reset-password") {
       return;
     }
 
@@ -181,6 +209,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     profile?.onboarding?.completed,
     isAdmin,
     router.pathname,
+    router.query,
   ]);
 
   // Inicializar OneSignal cuando el usuario esté autenticado
@@ -304,6 +333,25 @@ function MyApp({ Component, pageProps }: AppProps) {
       </>
     );
   }
+  
+  // Permitir que reset-password se renderice sin layout
+  if (router.pathname === "/reset-password") {
+    return (
+      <>
+        {/* Scripts de Google para autenticación */}
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://apis.google.com/js/platform.js"
+          strategy="beforeInteractive"
+        />
+        <Component {...pageProps} />
+      </>
+    );
+  }
+  
   if (router.pathname.startsWith("/admin")) {
     return (
       <>

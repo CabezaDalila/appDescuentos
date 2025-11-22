@@ -23,7 +23,7 @@ import {
 } from "@/lib/firebase/firebase-auth";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Loader2, Mail } from "lucide-react";
+import { CheckCircle, Loader2, Mail } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -130,6 +130,8 @@ export default function AuthForm() {
     useState(false);
   const [showEmailVerificationMessage, setShowEmailVerificationMessage] =
     useState(false);
+  const [showPasswordResetSuccess, setShowPasswordResetSuccess] =
+    useState(false);
 
   const clearMessages = () => {
     setError("");
@@ -194,6 +196,15 @@ export default function AuthForm() {
     handleEmailVerification();
   }, [router.query]);
 
+  // Manejar mensaje de éxito después de reset password
+  useEffect(() => {
+    if (router.query.passwordReset === "true") {
+      setShowPasswordResetSuccess(true);
+      // Limpiar el parámetro de la URL
+      router.replace("/login", undefined, { shallow: true });
+    }
+  }, [router.query.passwordReset]);
+
   const handleResetPassword = async () => {
     if (!resetEmail) {
       setError("Por favor ingresa tu email");
@@ -255,6 +266,10 @@ export default function AuthForm() {
     // Limpiar el email pendiente de verificación si el usuario cambia el email
     if (field === "email") {
       setPendingVerificationEmail(null);
+    }
+    // Limpiar el mensaje de éxito de reset password cuando el usuario empieza a escribir
+    if (showPasswordResetSuccess) {
+      setShowPasswordResetSuccess(false);
     }
   };
 
@@ -661,6 +676,23 @@ export default function AuthForm() {
                         Revisa tu bandeja de entrada y haz clic en el enlace de
                         verificación para activar tu cuenta. Una vez activada,
                         podrás iniciar sesión.
+                      </p>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            {mode === "login" && showPasswordResetSuccess && (
+              <Alert className="border-green-200 bg-green-50">
+                <AlertDescription className="text-green-800">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium mb-1">
+                        ¡Contraseña restablecida exitosamente!
+                      </p>
+                      <p className="text-sm">
+                        Tu contraseña ha sido cambiada. Ahora puedes iniciar sesión con tu nueva contraseña.
                       </p>
                     </div>
                   </div>

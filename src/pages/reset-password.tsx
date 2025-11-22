@@ -8,7 +8,11 @@ import {
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import { auth } from "@/lib/firebase/firebase";
-import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import {
+  confirmPasswordReset,
+  signInWithEmailAndPassword,
+  verifyPasswordResetCode,
+} from "firebase/auth";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -43,25 +47,89 @@ export default function ResetPasswordPage() {
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [showPasswordRequirements, setShowPasswordRequirements] =
+    useState(false);
+
+  // Validaciones de contraseña en tiempo real (igual que en registro)
+  const passwordChecks = {
+    minLength: password.length >= 8,
+    hasUpperCase: /[A-Z]/.test(password),
+    hasLowerCase: /[a-z]/.test(password),
+    hasNumber: /\d/.test(password),
+  };
+
+  const passwordIsValid = Object.values(passwordChecks).every(Boolean);
+  const passwordsMatch =
+    password === confirmPassword && confirmPassword.length > 0;
 
   useEffect(() => {
     // Obtener el código de restablecimiento de la URL
-    const { oobCode: code } = router.query;
+    const { oobCode: code, mode: urlMode } = router.query;
+
+    // Firebase puede enviar el código como query param o en el hash
     if (code && typeof code === "string") {
       setOobCode(code);
       validateResetCode(code);
+    } else if (urlMode === "resetPassword" && !code) {
+      // Si hay modo pero no código, puede estar en el hash de la URL
+      // Intentar obtenerlo del hash
+      if (typeof window !== "undefined" && window.location.hash) {
+        const hashParams = new URLSearchParams(
+          window.location.hash.substring(1)
+        );
+        const hashCode = hashParams.get("oobCode");
+        if (hashCode) {
+          setOobCode(hashCode);
+          validateResetCode(hashCode);
+          return;
+        }
+      }
+      // Si no hay código, mostrar error
+      setIsValidating(false);
+      setError("No se encontró un código de restablecimiento válido en la URL");
+    } else if (!code && !urlMode) {
+      // Si no hay código ni modo, el usuario llegó directamente sin enlace
+      setIsValidating(false);
+      setError(
+        "No se encontró un código de restablecimiento válido. Por favor, usa el enlace que recibiste por email."
+      );
     }
   }, [router.query]);
 
   const validateResetCode = async (code: string) => {
+    if (!code || code.trim() === "") {
+      setError("No se encontró un código de restablecimiento válido");
+      setIsValidating(false);
+      return;
+    }
+
     try {
       const email = await verifyPasswordResetCode(auth, code);
       setEmail(email);
       setIsValidating(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error validando código de restablecimiento:", error);
-      setError("El enlace de restablecimiento no es válido o ha expirado");
       setIsValidating(false);
+
+      if (error && typeof error === "object" && "code" in error) {
+        const firebaseError = error as { code: string; message?: string };
+        switch (firebaseError.code) {
+          case "auth/expired-action-code":
+            setError(
+              "El enlace de restablecimiento ha expirado. Por favor, solicita un nuevo email de restablecimiento."
+            );
+            break;
+          case "auth/invalid-action-code":
+            setError("El enlace de restablecimiento no es válido.");
+            break;
+          default:
+            setError(
+              "El enlace de restablecimiento no es válido o ha expirado"
+            );
+        }
+      } else {
+        setError("El enlace de restablecimiento no es válido o ha expirado");
+      }
     }
   };
 
@@ -79,17 +147,50 @@ export default function ResetPasswordPage() {
         { abortEarly: false }
       );
 
+      // Verificar que tenemos el código antes de intentar restablecer
+      if (!oobCode || oobCode.trim() === "") {
+        setError(
+          "No se encontró un código de restablecimiento válido. Por favor, usa el enlace que recibiste por email."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar que la nueva contraseña no sea la misma que la anterior
+      // Intentamos hacer login con la nueva contraseña antes de cambiarla
+      try {
+        const loginResult = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        // Si el login funciona, significa que la contraseña es la misma que la anterior
+        // Cerramos sesión inmediatamente para evitar redirecciones
+        if (loginResult.user) {
+          await auth.signOut();
+        }
+        setError(
+          "La nueva contraseña no puede ser la misma que la anterior. Por favor, elige una contraseña diferente."
+        );
+        setIsLoading(false);
+        // Limpiar los campos de contraseña para que el usuario pueda ingresar una nueva
+        setPassword("");
+        setConfirmPassword("");
+        return;
+      } catch (loginError: unknown) {
+        // Si el login falla, significa que la contraseña es diferente (lo cual es bueno)
+        // Continuamos con el cambio de contraseña
+        // Ignoramos el error porque esperamos que falle si la contraseña es diferente
+      }
+
       // Restablecer la contraseña
       await confirmPasswordReset(auth, oobCode, password);
 
-      setSuccess(
-        "¡Contraseña restablecida exitosamente! Redirigiendo al login..."
-      );
+      // Limpiar la URL después de restablecer la contraseña (por seguridad)
+      router.replace("/reset-password", undefined, { shallow: true });
 
-      // Redirigir al login después de 2 segundos
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      // Redirigir al login con mensaje de éxito
+      router.push("/login?passwordReset=true");
     } catch (error: unknown) {
       console.error("Error restableciendo contraseña:", error);
 
@@ -208,17 +309,99 @@ export default function ResetPasswordPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  onBlur={() => {
+                    // Ocultar solo si la contraseña es válida
+                    if (passwordIsValid) {
+                      setShowPasswordRequirements(false);
+                    }
+                  }}
                   disabled={isLoading}
-                  className={validationErrors.password ? "border-red-500" : ""}
+                  className={
+                    validationErrors.password
+                      ? "border-red-500"
+                      : password.length > 0 && passwordIsValid
+                      ? "border-green-500"
+                      : ""
+                  }
                 />
-                {validationErrors.password ? (
+                {password.length > 0 &&
+                  (showPasswordRequirements || !passwordIsValid) && (
+                    <div className="mt-2 space-y-1.5 rounded-md bg-gray-50 p-3 text-xs">
+                      <p className="mb-2 font-medium text-gray-700">
+                        Requisitos de contraseña:
+                      </p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {passwordChecks.minLength ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-400">○</span>
+                          )}
+                          <span
+                            className={
+                              passwordChecks.minLength
+                                ? "text-green-600"
+                                : "text-gray-600"
+                            }
+                          >
+                            Mínimo 8 caracteres
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordChecks.hasUpperCase ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-400">○</span>
+                          )}
+                          <span
+                            className={
+                              passwordChecks.hasUpperCase
+                                ? "text-green-600"
+                                : "text-gray-600"
+                            }
+                          >
+                            Una letra mayúscula
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordChecks.hasLowerCase ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-400">○</span>
+                          )}
+                          <span
+                            className={
+                              passwordChecks.hasLowerCase
+                                ? "text-green-600"
+                                : "text-gray-600"
+                            }
+                          >
+                            Una letra minúscula
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {passwordChecks.hasNumber ? (
+                            <span className="text-green-600">✓</span>
+                          ) : (
+                            <span className="text-gray-400">○</span>
+                          )}
+                          <span
+                            className={
+                              passwordChecks.hasNumber
+                                ? "text-green-600"
+                                : "text-gray-600"
+                            }
+                          >
+                            Un número
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                {validationErrors.password && (
                   <p className="text-sm text-red-500">
                     {validationErrors.password}
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-600">
-                    Mínimo 8 caracteres, una mayúscula, una minúscula y un
-                    número
                   </p>
                 )}
               </div>
@@ -238,9 +421,34 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
                   className={
-                    validationErrors.confirmPassword ? "border-red-500" : ""
+                    validationErrors.confirmPassword
+                      ? "border-red-500"
+                      : confirmPassword.length > 0 && passwordsMatch
+                      ? "border-green-500"
+                      : confirmPassword.length > 0 && !passwordsMatch
+                      ? "border-red-500"
+                      : ""
                   }
                 />
+                {confirmPassword.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs">
+                    {passwordsMatch ? (
+                      <>
+                        <span className="text-green-600">✓</span>
+                        <span className="text-green-600">
+                          Las contraseñas coinciden
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-red-500">✗</span>
+                        <span className="text-red-500">
+                          Las contraseñas no coinciden
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
                 {validationErrors.confirmPassword && (
                   <p className="text-sm text-red-500">
                     {validationErrors.confirmPassword}
@@ -254,7 +462,7 @@ export default function ResetPasswordPage() {
                 className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base rounded-xl shadow-lg transition-all duration-200"
               >
                 {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                {success ? "Redirigiendo..." : "Restablecer Contraseña"}
+                {isLoading ? "Restableciendo..." : "Restablecer Contraseña"}
               </Button>
             </form>
 
