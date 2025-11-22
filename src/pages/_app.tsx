@@ -141,7 +141,12 @@ function MyApp({ Component, pageProps }: AppProps) {
         return;
       }
 
-      // Redirigir según el estado del onboarding
+      // NO redirigir si el email no está verificado - el usuario debe verificar primero
+      if (user && !user.emailVerified) {
+        return; // Mantener en login para que verifique su email
+      }
+
+      // Redirigir según el estado del onboarding solo si el email está verificado
       if (!onboardingCompleted) {
         router.push("/onboarding");
       } else {
@@ -151,11 +156,13 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
 
     // Si no completó onboarding y no es admin ni está en onboarding, redirigir
+    // PERO solo si el email está verificado
     if (
       !onboardingCompleted &&
       !isAdmin &&
       !isOnboardingRoute &&
-      !isAdminRoute
+      !isAdminRoute &&
+      user?.emailVerified // Solo redirigir si el email está verificado
     ) {
       router.push("/onboarding");
       return;

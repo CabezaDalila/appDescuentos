@@ -1,6 +1,8 @@
 import {
+  applyActionCode,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithCredential,
   signInWithEmailAndPassword,
@@ -19,12 +21,39 @@ import { auth, db } from "./firebase";
 // Registro
 export const register = async (email, password) => {
   const result = await createUserWithEmailAndPassword(auth, email, password);
+
+  // Guardar datos del usuario antes de cerrar sesión
   await saveUserToFirestore(result.user);
+
+  // Enviar email de verificación
+  const actionCodeSettings = {
+    // URL a la que se redirigirá después de hacer clic en el enlace
+    url:
+      typeof window !== "undefined"
+        ? `${window.location.origin}/login`
+        : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/login",
+    // Configuración adicional
+    handleCodeInApp: true,
+  };
+
+  await sendEmailVerification(result.user, actionCodeSettings);
+
+  // Cerrar sesión inmediatamente para que el usuario tenga que verificar su email primero
+  await signOut(auth);
+
   return result;
 };
 
 export const login = async (email, password) => {
   const result = await signInWithEmailAndPassword(auth, email, password);
+
+  // Verificar si el email está verificado
+  if (!result.user.emailVerified) {
+    // Cerrar sesión si el email no está verificado
+    await signOut(auth);
+    throw new Error("EMAIL_NOT_VERIFIED");
+  }
+
   await saveUserToFirestore(result.user);
   return result;
 };
@@ -119,6 +148,16 @@ const saveUserToFirestore = async (user) => {
       // Preservar el estado del onboarding si ya existe
       if (existingData?.onboarding) {
         userData.onboarding = existingData.onboarding;
+      } else if (user.emailVerified) {
+        // Si el email está verificado pero no hay onboarding, inicializarlo
+        // Esto ocurre cuando el usuario inicia sesión por primera vez después de verificar
+        userData.onboarding = {
+          completed: false,
+          answers: {
+            interests: [],
+            goals: [],
+          },
+        };
       }
       // Preservar el rol si ya existe (importante para admins)
       if (existingData?.role) {
@@ -160,4 +199,24 @@ export const loginWithGoogleNative = async () => {
     console.error("Error en login nativo con Google:", error);
     throw error;
   }
+};
+
+// Verificar email con código de acción
+export const verifyEmail = async (oobCode) => {
+  return applyActionCode(auth, oobCode);
+};
+
+// Reenviar email de verificación
+export const resendEmailVerification = async (user) => {
+  const actionCodeSettings = {
+    // URL a la que se redirigirá después de hacer clic en el enlace
+    url:
+      typeof window !== "undefined"
+        ? `${window.location.origin}/login`
+        : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/login",
+    // Configuración adicional
+    handleCodeInApp: true,
+  };
+
+  return sendEmailVerification(user, actionCodeSettings);
 };
