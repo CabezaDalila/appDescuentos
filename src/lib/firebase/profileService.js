@@ -69,8 +69,8 @@ async function cleanDuplicateProfileFields(userId) {
  * @param {Object} profileData - Datos del perfil a actualizar
  * @param {string} profileData.firstName - Nombre
  * @param {string} profileData.lastName - Apellido
- * @param {string} profileData.birthDate - Fecha de nacimiento
- * @param {string} profileData.gender - Género (masculino, femenino, otro)
+ * @param {string|null} profileData.birthDate - Fecha de nacimiento (puede ser null)
+ * @param {string|null} profileData.gender - Género (masculino, femenino, otro) (puede ser null)
  */
 export async function updateUserProfile(userId, profileData) {
     if (!userId) throw new Error("userId es requerido");

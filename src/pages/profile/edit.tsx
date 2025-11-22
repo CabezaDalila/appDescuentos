@@ -60,22 +60,23 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (user && profile) {
       // Obtener firstName y lastName del perfil, o del displayName si no existen
-      const firstName = profile.profile?.firstName || user.displayName?.split(" ")[0] || "";
-      const lastName = profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "";
+      // Asegurar que siempre sean strings
+      const firstName = String(profile.profile?.firstName || user.displayName?.split(" ")[0] || "");
+      const lastName = String(profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "");
       
       // Para fecha de nacimiento, usar birthDate del perfil
       // Si existe dateOfBirth (deprecated), migrarlo a birthDate
-      const birthDate = profile.profile?.birthDate || profile.profile?.dateOfBirth || "";
+      const birthDate = String(profile.profile?.birthDate || profile.profile?.dateOfBirth || "");
       
       // Convertir null a string vacío para gender también
-      const gender = profile.profile?.gender || "";
+      const gender = String(profile.profile?.gender || "");
       
       setFormData({
         firstName: firstName,
         lastName: lastName,
         email: user.email || "",
-        birthDate: birthDate || "",
-        gender: gender || "",
+        birthDate: birthDate,
+        gender: gender,
       });
       // Usar la foto actual del usuario si existe
       if (user.photoURL) {
@@ -88,10 +89,10 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (!user || !profile) return;
 
-    const currentFirstName = profile.profile?.firstName || user.displayName?.split(" ")[0] || "";
-    const currentLastName = profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "";
-    const currentBirthDate = profile.profile?.birthDate || profile.profile?.dateOfBirth || "";
-    const currentGender = profile.profile?.gender || "";
+    const currentFirstName = String(profile.profile?.firstName || user.displayName?.split(" ")[0] || "");
+    const currentLastName = String(profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "");
+    const currentBirthDate = String(profile.profile?.birthDate || profile.profile?.dateOfBirth || "");
+    const currentGender = String(profile.profile?.gender || "");
 
     const hasFormChanges =
       formData.firstName !== currentFirstName ||
@@ -236,11 +237,23 @@ export default function EditProfilePage() {
       // Guardar el género solo si tiene un valor, de lo contrario null
       const genderValue = formData.gender && formData.gender.trim() ? formData.gender.trim() : null;
       
-      await updateUserProfile(user.uid, {
+      // Preparar birthDate: si está vacío después de trim, usar null
+      const birthDateValue: string | null = formData.birthDate.trim() ? formData.birthDate.trim() : null;
+      
+      // Preparar el objeto de datos del perfil con tipos explícitos
+      const profileData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        birthDate: formData.birthDate.trim() || null,
+        birthDate: birthDateValue,
         gender: genderValue,
+      };
+      
+      // Type assertion: updateUserProfile acepta birthDate y gender como string | null
+      await updateUserProfile(user.uid, profileData as {
+        firstName: string;
+        lastName: string;
+        birthDate: string | null;
+        gender: string | null;
       });
 
       toast.success("Perfil actualizado exitosamente");
