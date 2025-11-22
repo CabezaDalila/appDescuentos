@@ -11,10 +11,10 @@ import { collection, getDocs } from "firebase/firestore";
 import {
   Activity,
   Calendar,
+  Database,
   Eye,
   Gift,
   Heart,
-  Share2,
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -319,7 +319,7 @@ export function AdminDashboard() {
             <CardTitle className="text-sm font-medium">
               Descuentos Scrapeados
             </CardTitle>
-            <Share2 className="h-4 w-4 text-muted-foreground" />
+            <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.scrapedDiscounts}</div>
