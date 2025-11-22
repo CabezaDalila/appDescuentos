@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/Share/card";
 import { User } from "firebase/auth";
 import Image from "next/image";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface ProfileHeaderProps {
   user: User;
@@ -54,6 +55,19 @@ export default function ProfileHeader({
   onSettingsClick,
   onEditPhoto,
 }: ProfileHeaderProps) {
+  const { profile } = useUserProfile(user?.uid);
+
+  // Obtener nombre completo del perfil o del displayName
+  const getFullName = () => {
+    if (profile?.profile?.firstName && profile?.profile?.lastName) {
+      return `${profile.profile.firstName} ${profile.profile.lastName}`.trim();
+    }
+    if (user.displayName) {
+      return user.displayName;
+    }
+    return "Usuario";
+  };
+
   return (
     <div className="mb-8">
       {/* Header con título */}
@@ -86,7 +100,7 @@ export default function ProfileHeader({
             {/* Información del usuario */}
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold text-gray-900 mb-1">
-                {user.displayName || "Usuario"}
+                {getFullName()}
               </h2>
               <p className="text-gray-600 text-sm mb-2">{user.email}</p>
               {getMemberSinceDate(user) && (

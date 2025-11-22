@@ -33,6 +33,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
       return "favorites";
     } else if (
       router.pathname === "/profile" ||
+      router.pathname.startsWith("/profile/") ||
       router.pathname.startsWith("/memberships") ||
       router.pathname.startsWith("/support")
     ) {
@@ -61,6 +62,7 @@ export function LayoutHome({ children }: LayoutHomeProps) {
   // Para páginas que tienen su propio layout (perfil, membresías, notificaciones, soporte)
   if (
     router.pathname === "/profile" ||
+    router.pathname.startsWith("/profile/") ||
     router.pathname.startsWith("/memberships") ||
     router.pathname.startsWith("/support") ||
     router.pathname === "/notifications"

@@ -4,6 +4,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -15,6 +16,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -29,6 +31,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 export {
   addDoc,
@@ -36,12 +39,14 @@ export {
   collection,
   db,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
   orderBy,
   query,
   setDoc,
+  storage,
   Timestamp,
   updateDoc,
   where,
