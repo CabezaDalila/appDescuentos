@@ -516,32 +516,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
                 </select>
               </div>
 
-              <div>
-                <Label htmlFor="cardName">Nombre (opcional)</Label>
-                <Input
-                  id="cardName"
-                  value={cardFormData.name}
-                  onChange={(e) =>
-                    setCardFormData({ ...cardFormData, name: e.target.value })
-                  }
-                  placeholder="Ej: Mi tarjeta principal"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cardExpiry">Vencimiento (opcional)</Label>
-                <Input
-                  id="cardExpiry"
-                  placeholder="MM/YY"
-                  value={cardFormData.expiryDate}
-                  onChange={(e) => {
-                    const formatted = formatExpiryInput(e.target.value);
-                    setCardFormData({ ...cardFormData, expiryDate: formatted });
-                  }}
-                  maxLength={5}
-                />
-              </div>
-
               <div className="flex gap-2">
                 <Button
                   onClick={handleSaveCard}

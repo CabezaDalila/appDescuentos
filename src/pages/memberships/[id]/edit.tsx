@@ -135,8 +135,6 @@ export default function EditMembershipPage() {
       type: newCard.type as "Crédito" | "Débito",
       brand: newCard.brand as any,
       level: newCard.level as any,
-      name: newCard.name || "",
-      expiryDate: newCard.expiryDate || "",
       status: "active" as const,
     };
 
@@ -461,33 +459,6 @@ export default function EditMembershipPage() {
                 </Select>
               </div>
 
-              <div>
-                <Label>Fecha de Vencimiento</Label>
-                <Input
-                  placeholder="MM/AA"
-                  value={newCard.expiryDate}
-                  onChange={(e) => handleExpiryDateChange(e.target.value)}
-                  className={
-                    expiryError
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }
-                />
-                {expiryError && (
-                  <p className="text-sm text-red-600 mt-1">{expiryError}</p>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <Label>Nombre en la Tarjeta (Opcional)</Label>
-                <Input
-                  placeholder="Nombre como aparece en la tarjeta"
-                  value={newCard.name}
-                  onChange={(e) =>
-                    setNewCard({ ...newCard, name: e.target.value })
-                  }
-                />
-              </div>
             </div>
 
             <Button onClick={handleAddCard} className="mt-4">
@@ -602,28 +573,6 @@ export default function EditMembershipPage() {
                       </div>
 
                       <div>
-                        <Label className="text-xs text-gray-500">
-                          Fecha Vencimiento
-                        </Label>
-                        <Input
-                          placeholder="MM/AA"
-                          value={card.expiryDate || ""}
-                          onChange={(e) => {
-                            const result = validateAndFormatExpiryInput(
-                              e.target.value
-                            );
-                            if (result.isValid) {
-                              handleEditCard(
-                                card.id,
-                                "expiryDate",
-                                result.formatted
-                              );
-                            }
-                          }}
-                        />
-                      </div>
-
-                      <div>
                         <Label className="text-xs text-gray-500">Estado</Label>
                         <Select
                           key={`existing-status-${card.id}-${
@@ -644,25 +593,7 @@ export default function EditMembershipPage() {
                             <SelectItem value="inactive">Inactiva</SelectItem>
                           </SelectContent>
                         </Select>
-                        {isCardExpired(card.expiryDate) && (
-                          <div className="text-xs text-red-600 mt-1">
-                            Tarjeta vencida
-                          </div>
-                        )}
                       </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <Label className="text-xs text-gray-500">
-                        Nombre en la Tarjeta
-                      </Label>
-                      <Input
-                        placeholder="Nombre como aparece en la tarjeta"
-                        value={card.name || ""}
-                        onChange={(e) =>
-                          handleEditCard(card.id, "name", e.target.value)
-                        }
-                      />
                     </div>
                   </div>
                 ))}

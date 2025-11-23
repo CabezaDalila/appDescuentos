@@ -315,33 +315,6 @@ export default function EditCardPage() {
                 </Select>
               </div>
 
-              <div>
-                <Label>Fecha de Vencimiento</Label>
-                <Input
-                  placeholder="MM/AA"
-                  value={cardData.expiryDate}
-                  onChange={(e) => handleExpiryDateChange(e.target.value)}
-                  className={
-                    expiryError
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                      : ""
-                  }
-                />
-                {expiryError && (
-                  <p className="text-sm text-red-600 mt-1">{expiryError}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label>Nombre en la Tarjeta</Label>
-              <Input
-                placeholder="Nombre como aparece en la tarjeta"
-                value={cardData.name}
-                onChange={(e) =>
-                  setCardData({ ...cardData, name: e.target.value })
-                }
-              />
             </div>
 
             {/* Estado de la tarjeta */}

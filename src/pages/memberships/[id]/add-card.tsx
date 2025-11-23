@@ -19,7 +19,6 @@ import {
   addCardToMembership,
   getMembershipById,
 } from "@/lib/firebase/memberships";
-import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -33,7 +32,6 @@ export default function AddCardPage() {
   const [loadingMembership, setLoadingMembership] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [expiryError, setExpiryError] = useState<string>("");
 
   // Datos para tarjetas de banco
   const [bankData, setBankData] = useState({
@@ -126,8 +124,6 @@ export default function AddCardPage() {
             type: bankData.cardType,
             brand: bankData.brand,
             level: bankData.level,
-            name: bankData.cardName,
-            expiryDate: bankData.expiryDate,
             status: "active",
           }
         : {
@@ -135,8 +131,6 @@ export default function AddCardPage() {
             type: formData.cardType,
             brand: formData.brand,
             level: formData.level,
-            name: formData.cardName,
-            expiryDate: formData.expiryDate,
             status: "active",
           };
 
@@ -169,14 +163,8 @@ export default function AddCardPage() {
     }
   };
 
-  const handleExpiryDateChange = (value: string) => {
-    const result = validateAndFormatExpiryInput(value);
-    setExpiryError(result.isValid ? "" : result.error || "");
-    setBankData((prev) => ({ ...prev, expiryDate: result.formatted }));
-  };
-
   const nextStep = () => {
-    const maxSteps = isBank ? 5 : 6; // Si es banco, solo 5 pasos (omite selección de banco)
+    const maxSteps = isBank ? 3 : 4; // Si es banco, solo 3 pasos (omite selección de banco)
     if (currentStep < maxSteps) {
       setCurrentStep(currentStep + 1);
     }
@@ -198,10 +186,6 @@ export default function AddCardPage() {
           return bankData.brand !== ""; // Marca
         case 3:
           return bankData.level !== ""; // Nivel
-        case 4:
-          return bankData.expiryDate !== "" && !expiryError; // Fecha de vencimiento
-        case 5:
-          return bankData.cardName !== ""; // Número y nombre
         default:
           return false;
       }
@@ -216,10 +200,6 @@ export default function AddCardPage() {
           return bankData.brand !== "";
         case 4:
           return bankData.level !== "";
-        case 5:
-          return bankData.expiryDate !== "" && !expiryError;
-        case 6:
-          return bankData.cardName !== "";
         default:
           return false;
       }
@@ -410,52 +390,6 @@ export default function AddCardPage() {
                   </div>
                 )}
 
-                {/* Paso 4 (bancos) / Paso 5 (no bancos): Fecha de vencimiento */}
-                {((isBank && currentStep === 4) ||
-                  (!isBank && currentStep === 5)) && (
-                  <div className="space-y-4">
-                    <Label htmlFor="expiryDate">Fecha de vencimiento</Label>
-                    <Input
-                      id="expiryDate"
-                      type="text"
-                      placeholder="MM/AA"
-                      value={bankData.expiryDate}
-                      onChange={(e) => handleExpiryDateChange(e.target.value)}
-                      maxLength={5}
-                      className={`text-center text-lg ${
-                        expiryError
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
-                    />
-                    {expiryError && (
-                      <p className="text-sm text-red-600 mt-1">{expiryError}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Paso 5 (bancos) / Paso 6 (no bancos): Nombre */}
-                {((isBank && currentStep === 5) ||
-                  (!isBank && currentStep === 6)) && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="cardName">Nombre en la tarjeta</Label>
-                      <Input
-                        id="cardName"
-                        type="text"
-                        placeholder="Nombre como aparece en la tarjeta"
-                        value={bankData.cardName}
-                        onChange={(e) =>
-                          setBankData((prev) => ({
-                            ...prev,
-                            cardName: e.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-
                 {/* Botones de navegación */}
                 <div className="flex gap-2 pt-8">
                   <Button
@@ -529,76 +463,25 @@ export default function AddCardPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiryDate">Fecha de Vencimiento</Label>
-                    <Input
-                      id="expiryDate"
-                      type="text"
-                      placeholder="MM/AA"
-                      value={formData.expiryDate}
-                      onChange={(e) => {
-                        const result = validateAndFormatExpiryInput(
-                          e.target.value
-                        );
-                        setExpiryError(
-                          result.isValid ? "" : result.error || ""
-                        );
-                        setFormData((prev) => ({
-                          ...prev,
-                          expiryDate: result.formatted,
-                        }));
-                      }}
-                      maxLength={5}
-                      required
-                      className={
-                        expiryError
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                          : ""
-                      }
-                    />
-                    {expiryError && (
-                      <p className="text-sm text-red-600 mt-1">{expiryError}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cardType">Tipo de Tarjeta</Label>
-                    <Select
-                      value={formData.cardType}
-                      onValueChange={(value) =>
-                        setFormData((prev) => ({ ...prev, cardType: value }))
-                      }
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="visa">Visa</SelectItem>
-                        <SelectItem value="mastercard">Mastercard</SelectItem>
-                        <SelectItem value="amex">American Express</SelectItem>
-                        <SelectItem value="debit">Débito</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 <div>
-                  <Label htmlFor="cardName">Nombre en la Tarjeta</Label>
-                  <Input
-                    id="cardName"
-                    type="text"
-                    placeholder="Nombre como aparece en la tarjeta"
-                    value={formData.cardName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        cardName: e.target.value,
-                      }))
+                  <Label htmlFor="cardType">Tipo de Tarjeta</Label>
+                  <Select
+                    value={formData.cardType}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, cardType: value }))
                     }
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="visa">Visa</SelectItem>
+                      <SelectItem value="mastercard">Mastercard</SelectItem>
+                      <SelectItem value="amex">American Express</SelectItem>
+                      <SelectItem value="debit">Débito</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -654,10 +537,6 @@ export default function AddCardPage() {
                   <div className="text-sm opacity-90">
                     {bankData.bank} • {bankData.cardType}
                   </div>
-                </div>
-
-                <div className="text-right text-sm">
-                  {bankData.expiryDate || "MM/AA"}
                 </div>
               </div>
             </CardContent>

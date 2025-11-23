@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
@@ -175,7 +174,7 @@ export default function AddMembershipPage() {
   };
 
   const nextStep = () => {
-    if (currentStep < 6) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -196,10 +195,6 @@ export default function AddMembershipPage() {
         return bankData.brand !== "";
       case 4:
         return bankData.level !== "";
-      case 5:
-        return bankData.expiryDate !== "" && !expiryError;
-      case 6:
-        return bankData.cardName !== "";
       default:
         return false;
     }
@@ -235,8 +230,6 @@ export default function AddMembershipPage() {
               type: bankData.cardType,
               brand: bankData.brand,
               level: bankData.level,
-              name: bankData.cardName,
-              expiryDate: bankData.expiryDate,
               status: "active",
             },
           ],
@@ -360,11 +353,11 @@ export default function AddMembershipPage() {
                 <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentStep / 6) * 100}%` }}
+                    style={{ width: `${(currentStep / 4) * 100}%` }}
                   ></div>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  Paso {currentStep} de 6
+                  Paso {currentStep} de 4
                 </p>
               </CardHeader>
               <CardContent className="px-4">
@@ -488,52 +481,6 @@ export default function AddMembershipPage() {
                     </div>
                   )}
 
-                  {/* Paso 5: Fecha de vencimiento */}
-                  {currentStep === 5 && (
-                    <div className="space-y-4">
-                      <Label htmlFor="expiryDate">Fecha de vencimiento</Label>
-                      <Input
-                        id="expiryDate"
-                        type="text"
-                        placeholder="MM/AA"
-                        value={bankData.expiryDate}
-                        onChange={(e) => handleExpiryDateChange(e.target.value)}
-                        maxLength={5}
-                        className={`text-center text-lg ${
-                          expiryError
-                            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                            : ""
-                        }`}
-                      />
-                      {expiryError && (
-                        <p className="text-sm text-red-600 mt-1">
-                          {expiryError}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Paso 6: Nombre */}
-                  {currentStep === 6 && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="cardName">Nombre en la tarjeta</Label>
-                        <Input
-                          id="cardName"
-                          type="text"
-                          placeholder="Nombre como aparece en la tarjeta"
-                          value={bankData.cardName}
-                          onChange={(e) =>
-                            setBankData((prev) => ({
-                              ...prev,
-                              cardName: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                  )}
-
                   {/* Botones de navegación */}
                   <div className="flex gap-2 pt-8">
                     <Button
@@ -557,7 +504,7 @@ export default function AddMembershipPage() {
                       </Button>
                     )}
 
-                    {currentStep < 6 ? (
+                    {currentStep < 4 ? (
                       <Button
                         type="button"
                         onClick={nextStep}
@@ -570,7 +517,7 @@ export default function AddMembershipPage() {
                     ) : (
                       <Button
                         type="submit"
-                        disabled={saving || !isStepComplete(6)}
+                        disabled={saving || !isStepComplete(4)}
                         className="flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         {saving ? "Guardando..." : "Crear"}
@@ -613,10 +560,6 @@ export default function AddMembershipPage() {
                         {bankData.bank ? `Banco ${bankData.bank}` : "Banco"} •{" "}
                         {bankData.cardType}
                       </div>
-                    </div>
-
-                    <div className="text-right text-sm">
-                      {bankData.expiryDate || "MM/AA"}
                     </div>
                   </div>
                 </CardContent>
