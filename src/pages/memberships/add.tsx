@@ -387,9 +387,10 @@ export default function AddMembershipPage() {
                           <button
                             key={bank}
                             type="button"
-                            onClick={() =>
-                              setBankData((prev) => ({ ...prev, bank }))
-                            }
+                            onClick={() => {
+                              setBankData((prev) => ({ ...prev, bank }));
+                              setTimeout(() => nextStep(), 100);
+                            }}
                             className={`p-3 border rounded-lg text-left transition-colors ${
                               bankData.bank === bank
                                 ? "border-blue-500 bg-blue-50 text-blue-700"
@@ -412,12 +413,13 @@ export default function AddMembershipPage() {
                           <button
                             key={type}
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
                               setBankData((prev) => ({
                                 ...prev,
                                 cardType: type,
-                              }))
-                            }
+                              }));
+                              setTimeout(() => nextStep(), 100);
+                            }}
                             className={`p-3 border rounded-lg text-center transition-colors ${
                               bankData.cardType === type
                                 ? "border-blue-500 bg-blue-50 text-blue-700"
@@ -440,9 +442,10 @@ export default function AddMembershipPage() {
                           <button
                             key={brand}
                             type="button"
-                            onClick={() =>
-                              setBankData((prev) => ({ ...prev, brand }))
-                            }
+                            onClick={() => {
+                              setBankData((prev) => ({ ...prev, brand }));
+                              setTimeout(() => nextStep(), 100);
+                            }}
                             className={`p-3 border rounded-lg text-center transition-colors ${
                               bankData.brand === brand
                                 ? "border-blue-500 bg-blue-50 text-blue-700"
