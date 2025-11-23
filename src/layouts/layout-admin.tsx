@@ -2,14 +2,14 @@ import { NavigationBar } from "@/components/home/navigation-bar";
 import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  BarChart3,
-  Bell,
-  Gift,
-  Home,
-  LogOut,
-  Settings,
-  Users,
-  HelpCircle,
+    BarChart3,
+    Bell,
+    Gift,
+    HelpCircle,
+    Home,
+    LogOut,
+    Settings,
+    Users,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -105,6 +105,17 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
   const footer = (
     <div className="space-y-4">
       <div className="px-2 xl:px-4 pt-4">
+        <button
+          className="w-full flex items-center gap-3 h-auto py-3 px-3 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
+          onClick={() => router.push("/home")}
+          title="Ver como Usuario"
+        >
+          <Home className="h-5 w-5 flex-shrink-0" />
+          <span className="text-sm font-medium hidden xl:inline">Ver como Usuario</span>
+          <span className="sr-only xl:hidden">Ver como Usuario</span>
+        </button>
+      </div>
+      <div className="px-2 xl:px-4">
         <div className="flex items-center justify-center xl:justify-start">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -159,14 +170,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
             </h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/home")}
-              className="flex items-center text-gray-700 hover:text-gray-900"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Ver como Usuario
-            </Button>
+            {/* Botón movido al sidebar */}
           </div>
         </div>
 
