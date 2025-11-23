@@ -292,9 +292,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
                       ref={languageRef as React.Ref<HTMLButtonElement>}
                       aria-label="Selecciona el idioma"
                     >
-                      <SelectValue>
-                        {formData.language === "es" ? "Español" : "English"}
-                      </SelectValue>
+                      <SelectValue placeholder="Selecciona idioma" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="es">Español</SelectItem>

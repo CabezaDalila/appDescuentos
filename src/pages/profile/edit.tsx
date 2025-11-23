@@ -469,11 +469,7 @@ export default function EditProfilePage() {
               onValueChange={(value) => handleFieldChange("gender", value)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona un género (opcional)">
-                  {formData.gender === "masculino" && "Masculino"}
-                  {formData.gender === "femenino" && "Femenino"}
-                  {formData.gender === "otro" && "Otro"}
-                </SelectValue>
+                <SelectValue placeholder="Selecciona un género (opcional)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="masculino">Masculino</SelectItem>

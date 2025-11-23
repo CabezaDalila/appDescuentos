@@ -152,16 +152,7 @@ export default function TestNotificationButton() {
             disabled={loading}
           >
             <SelectTrigger id="type" className="text-gray-900">
-              <SelectValue placeholder="Selecciona un tipo">
-                {type === "promocion" && "Promoción"}
-                {type === "vencimiento_tarjeta" && "Vencimiento de Tarjeta"}
-                {type === "recordatorio" && "Recordatorio"}
-                {type === "sistema" && "Sistema"}
-                {type === "info" && "Información"}
-                {type === "warning" && "Advertencia"}
-                {type === "success" && "Éxito"}
-                {type === "error" && "Error"}
-              </SelectValue>
+              <SelectValue placeholder="Selecciona un tipo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="promocion">Promoción</SelectItem>

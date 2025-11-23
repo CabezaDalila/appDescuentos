@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
   Select,
@@ -244,12 +243,7 @@ export default function EditCardPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo">
-                      {cardData.type
-                        ? CARD_TYPES.find((t) => t.value === cardData.type)
-                            ?.label
-                        : "Seleccionar tipo"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_TYPES.map((type) => (
@@ -271,12 +265,7 @@ export default function EditCardPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar marca">
-                      {cardData.brand
-                        ? CARD_BRANDS.find((b) => b.value === cardData.brand)
-                            ?.label
-                        : "Seleccionar marca"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar marca" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_BRANDS.map((brand) => (
@@ -298,12 +287,7 @@ export default function EditCardPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar nivel">
-                      {cardData.level
-                        ? CARD_LEVELS.find((l) => l.value === cardData.level)
-                            ?.label
-                        : "Seleccionar nivel"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar nivel" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_LEVELS.map((level) => (
@@ -314,7 +298,6 @@ export default function EditCardPage() {
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
 
             {/* Estado de la tarjeta */}

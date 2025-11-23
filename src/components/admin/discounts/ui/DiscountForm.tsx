@@ -183,13 +183,11 @@ export function DiscountForm({
             <div className="space-y-2">
               <Label htmlFor="origin">Origen/Tienda *</Label>
               <Select
-                value={formData.origin}
+                value={formData.origin || undefined}
                 onValueChange={(value) => {
-                  if (value && value.trim() !== "") {
-                    onFormDataChange({ ...formData, origin: value });
-                    if (formErrors.origin) {
-                      setFormErrors({ ...formErrors, origin: undefined });
-                    }
+                  onFormDataChange({ ...formData, origin: value });
+                  if (formErrors.origin) {
+                    setFormErrors({ ...formErrors, origin: undefined });
                   }
                 }}
               >
@@ -198,9 +196,7 @@ export function DiscountForm({
                     formErrors.origin ? "border-red-500" : ""
                   }`}
                 >
-                  <SelectValue placeholder="Selecciona un origen">
-                    {formData.origin || "Selecciona un origen"}
-                  </SelectValue>
+                  <SelectValue placeholder="Selecciona un origen" />
                 </SelectTrigger>
                 <SelectContent className="max-h-64 overflow-y-auto">
                   {ORIGINS.map((origin) => (
@@ -236,11 +232,7 @@ export function DiscountForm({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Banco">
-                        {formData.newCredentialBank
-                          ? formData.newCredentialBank.replace("Banco ", "")
-                          : "Banco"}
-                      </SelectValue>
+                      <SelectValue placeholder="Banco" />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
                       {ENTITIES_BY_CATEGORY.banco.map((bank) => (
@@ -268,9 +260,7 @@ export function DiscountForm({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Tipo">
-                        {formData.newCredentialType || "Tipo"}
-                      </SelectValue>
+                      <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_TYPES.map((type) => (
@@ -298,9 +288,7 @@ export function DiscountForm({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Marca">
-                        {formData.newCredentialBrand || "Marca"}
-                      </SelectValue>
+                      <SelectValue placeholder="Marca" />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_BRANDS.map((brand) => (
@@ -328,9 +316,7 @@ export function DiscountForm({
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Nivel">
-                        {formData.newCredentialLevel || "Nivel"}
-                      </SelectValue>
+                      <SelectValue placeholder="Nivel" />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
                       {CARD_LEVELS.map((level) => (
@@ -475,9 +461,7 @@ export function DiscountForm({
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Membresia">
-                          {formData.newMembershipEntity || "Entidad"}
-                        </SelectValue>
+                        <SelectValue placeholder="Membresia" />
                       </SelectTrigger>
                       <SelectContent className="max-h-64 overflow-y-auto">
                         {Object.entries(ENTITIES_BY_CATEGORY).flatMap(
@@ -580,7 +564,7 @@ export function DiscountForm({
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
-                  value={formData.category}
+                  value={formData.category || undefined}
                   onValueChange={(value) => {
                     onCategoryChange(value);
                     if (formErrors.category) {
@@ -593,9 +577,7 @@ export function DiscountForm({
                       formErrors.category ? "border-red-500" : ""
                     }`}
                   >
-                    <SelectValue placeholder="Selecciona una categoría">
-                      {formData.category || "Selecciona una categoría"}
-                    </SelectValue>
+                    <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent className="max-h-64 overflow-y-auto">
                     {CATEGORIES.map((category) => (

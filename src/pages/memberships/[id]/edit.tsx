@@ -351,13 +351,7 @@ export default function EditMembershipPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar estado">
-                    {membership.status === "active"
-                      ? "Activa"
-                      : membership.status === "inactive"
-                      ? "Inactiva"
-                      : "Seleccionar estado"}
-                  </SelectValue>
+                  <SelectValue placeholder="Seleccionar estado" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Activa</SelectItem>
@@ -388,12 +382,7 @@ export default function EditMembershipPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar tipo">
-                      {newCard.type
-                        ? CARD_TYPES.find((t) => t.value === newCard.type)
-                            ?.label
-                        : "Seleccionar tipo"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_TYPES.map((type) => (
@@ -415,12 +404,7 @@ export default function EditMembershipPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar marca">
-                      {newCard.brand
-                        ? CARD_BRANDS.find((b) => b.value === newCard.brand)
-                            ?.label
-                        : "Seleccionar marca"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar marca" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_BRANDS.map((brand) => (
@@ -442,12 +426,7 @@ export default function EditMembershipPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar nivel">
-                      {newCard.level
-                        ? CARD_LEVELS.find((l) => l.value === newCard.level)
-                            ?.label
-                        : "Seleccionar nivel"}
-                    </SelectValue>
+                    <SelectValue placeholder="Seleccionar nivel" />
                   </SelectTrigger>
                   <SelectContent>
                     {CARD_LEVELS.map((level) => (
@@ -526,13 +505,7 @@ export default function EditMembershipPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar marca">
-                              {card.brand
-                                ? CARD_BRANDS.find(
-                                    (b) => b.value === card.brand
-                                  )?.label
-                                : "Seleccionar marca"}
-                            </SelectValue>
+                            <SelectValue placeholder="Seleccionar marca" />
                           </SelectTrigger>
                           <SelectContent>
                             {CARD_BRANDS.map((brand) => (
@@ -554,13 +527,7 @@ export default function EditMembershipPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar nivel">
-                              {card.level
-                                ? CARD_LEVELS.find(
-                                    (l) => l.value === card.level
-                                  )?.label
-                                : "Seleccionar nivel"}
-                            </SelectValue>
+                            <SelectValue placeholder="Seleccionar nivel" />
                           </SelectTrigger>
                           <SelectContent>
                             {CARD_LEVELS.map((level) => (
@@ -584,9 +551,7 @@ export default function EditMembershipPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar estado">
-                              {getCardStatusText(card)}
-                            </SelectValue>
+                            <SelectValue placeholder="Seleccionar estado" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="active">Activa</SelectItem>
