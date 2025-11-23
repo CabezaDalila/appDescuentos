@@ -11,25 +11,17 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import {
-  getUserProfile,
-  updateUserProfile,
   updateDisplayName,
-  uploadProfilePhoto,
   updatePhotoURL,
+  updateUserProfile,
+  uploadProfilePhoto,
   validateDateOfBirth,
 } from "@/lib/firebase/profileService";
-import {
-  Calendar,
-  Camera,
-  User,
-  Mail,
-  ArrowLeft,
-  Users,
-} from "lucide-react";
-import { useRouter } from "next/router";
-import { useState, useEffect, useRef } from "react";
-import toast from "react-hot-toast";
+import { ArrowLeft, Calendar, Camera, Mail, User, Users } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/router";
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function EditProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -61,16 +53,24 @@ export default function EditProfilePage() {
     if (user && profile) {
       // Obtener firstName y lastName del perfil, o del displayName si no existen
       // Asegurar que siempre sean strings
-      const firstName = String(profile.profile?.firstName || user.displayName?.split(" ")[0] || "");
-      const lastName = String(profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "");
-      
+      const firstName = String(
+        profile.profile?.firstName || user.displayName?.split(" ")[0] || ""
+      );
+      const lastName = String(
+        profile.profile?.lastName ||
+          user.displayName?.split(" ").slice(1).join(" ") ||
+          ""
+      );
+
       // Para fecha de nacimiento, usar birthDate del perfil
       // Si existe dateOfBirth (deprecated), migrarlo a birthDate
-      const birthDate = String(profile.profile?.birthDate || profile.profile?.dateOfBirth || "");
-      
+      const birthDate = String(
+        profile.profile?.birthDate || profile.profile?.dateOfBirth || ""
+      );
+
       // Convertir null a string vacío para gender también
       const gender = String(profile.profile?.gender || "");
-      
+
       setFormData({
         firstName: firstName,
         lastName: lastName,
@@ -89,9 +89,17 @@ export default function EditProfilePage() {
   useEffect(() => {
     if (!user || !profile) return;
 
-    const currentFirstName = String(profile.profile?.firstName || user.displayName?.split(" ")[0] || "");
-    const currentLastName = String(profile.profile?.lastName || user.displayName?.split(" ").slice(1).join(" ") || "");
-    const currentBirthDate = String(profile.profile?.birthDate || profile.profile?.dateOfBirth || "");
+    const currentFirstName = String(
+      profile.profile?.firstName || user.displayName?.split(" ")[0] || ""
+    );
+    const currentLastName = String(
+      profile.profile?.lastName ||
+        user.displayName?.split(" ").slice(1).join(" ") ||
+        ""
+    );
+    const currentBirthDate = String(
+      profile.profile?.birthDate || profile.profile?.dateOfBirth || ""
+    );
     const currentGender = String(profile.profile?.gender || "");
 
     const hasFormChanges =
@@ -235,11 +243,16 @@ export default function EditProfilePage() {
 
       // 3. Actualizar datos del perfil en Firestore
       // Guardar el género solo si tiene un valor, de lo contrario null
-      const genderValue = formData.gender && formData.gender.trim() ? formData.gender.trim() : null;
-      
+      const genderValue =
+        formData.gender && formData.gender.trim()
+          ? formData.gender.trim()
+          : null;
+
       // Preparar birthDate: si está vacío después de trim, usar null
-      const birthDateValue: string | null = formData.birthDate.trim() ? formData.birthDate.trim() : null;
-      
+      const birthDateValue: string | null = formData.birthDate.trim()
+        ? formData.birthDate.trim()
+        : null;
+
       // Preparar el objeto de datos del perfil con tipos explícitos
       const profileData = {
         firstName: formData.firstName.trim(),
@@ -247,14 +260,17 @@ export default function EditProfilePage() {
         birthDate: birthDateValue,
         gender: genderValue,
       };
-      
+
       // Type assertion: updateUserProfile acepta birthDate y gender como string | null
-      await updateUserProfile(user.uid, profileData as {
-        firstName: string;
-        lastName: string;
-        birthDate: string | null;
-        gender: string | null;
-      });
+      await updateUserProfile(
+        user.uid,
+        profileData as {
+          firstName: string;
+          lastName: string;
+          birthDate: string | null;
+          gender: string | null;
+        }
+      );
 
       toast.success("Perfil actualizado exitosamente");
       setHasChanges(false);
@@ -316,12 +332,16 @@ export default function EditProfilePage() {
             disabled={saving || uploadingPhoto || !hasChanges}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? "Guardando..." : uploadingPhoto ? "Subiendo..." : "Guardar"}
+            {saving
+              ? "Guardando..."
+              : uploadingPhoto
+              ? "Subiendo..."
+              : "Guardar"}
           </Button>
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+      <div className="px-4 py-6 space-y-6">
         {/* Foto de perfil */}
         <div className="text-center">
           <div className="relative w-24 h-24 mx-auto">
@@ -335,7 +355,9 @@ export default function EditProfilePage() {
               />
             ) : (
               <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {user.displayName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                {user.displayName?.charAt(0).toUpperCase() ||
+                  user.email?.charAt(0).toUpperCase() ||
+                  "U"}
               </div>
             )}
             <button
@@ -374,7 +396,9 @@ export default function EditProfilePage() {
               value={formData.firstName}
               onChange={(e) => handleFieldChange("firstName", e.target.value)}
               placeholder="Juan"
-              className={`border-gray-300 ${errors.firstName ? "border-red-500" : ""}`}
+              className={`border-gray-300 ${
+                errors.firstName ? "border-red-500" : ""
+              }`}
             />
             {errors.firstName && (
               <p className="text-sm text-red-600">{errors.firstName}</p>
@@ -391,7 +415,9 @@ export default function EditProfilePage() {
               value={formData.lastName}
               onChange={(e) => handleFieldChange("lastName", e.target.value)}
               placeholder="Pérez"
-              className={`border-gray-300 ${errors.lastName ? "border-red-500" : ""}`}
+              className={`border-gray-300 ${
+                errors.lastName ? "border-red-500" : ""
+              }`}
             />
             {errors.lastName && (
               <p className="text-sm text-red-600">{errors.lastName}</p>
@@ -422,7 +448,9 @@ export default function EditProfilePage() {
               type="date"
               value={formData.birthDate}
               onChange={(e) => handleFieldChange("birthDate", e.target.value)}
-              className={`border-gray-300 ${errors.birthDate ? "border-red-500" : ""}`}
+              className={`border-gray-300 ${
+                errors.birthDate ? "border-red-500" : ""
+              }`}
               max={new Date().toISOString().split("T")[0]}
             />
             {errors.birthDate && (

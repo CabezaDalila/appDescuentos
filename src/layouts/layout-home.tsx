@@ -28,29 +28,26 @@ export function LayoutHome({ children }: LayoutHomeProps) {
   ];
   const router = useRouter();
 
-  const getActiveTabFromPath = () => {
-    if (router.pathname === "/home") {
-      return "home";
-    } else if (router.pathname === "/search") {
-      return "search";
-    } else if (router.pathname === "/favorites") {
-      return "favorites";
-    } else if (
-      router.pathname === "/profile" ||
-      router.pathname.startsWith("/profile/") ||
-      router.pathname.startsWith("/memberships") ||
-      router.pathname.startsWith("/support")
-    ) {
-      return "profile";
-    } else if (router.pathname === "/notifications") {
-      return "notifications";
-    }
-    return "home";
-  };
-
   // Sincronizar el estado local con la ruta cuando cambie
   useEffect(() => {
-    setActiveTab(getActiveTabFromPath());
+    const path = router.pathname;
+
+    if (path === "/home") {
+      setActiveTab("home");
+    } else if (path === "/search") {
+      setActiveTab("search");
+    } else if (path === "/notifications") {
+      setActiveTab("notifications");
+    } else if (
+      path === "/profile" ||
+      path.startsWith("/profile/") ||
+      path.startsWith("/memberships") ||
+      path.startsWith("/support")
+    ) {
+      setActiveTab("profile");
+    } else {
+      setActiveTab("home");
+    }
   }, [router.pathname]);
 
   const handleTabsChange = (tabId: string) => {
@@ -76,55 +73,10 @@ export function LayoutHome({ children }: LayoutHomeProps) {
       }
     : undefined;
 
-  // Para páginas que tienen su propio layout (perfil, membresías, notificaciones, soporte)
-  if (
-    router.pathname === "/profile" ||
-    router.pathname.startsWith("/profile/") ||
-    router.pathname.startsWith("/memberships") ||
-    router.pathname.startsWith("/support") ||
-    router.pathname === "/notifications"
-  ) {
-    return (
-      <div className="h-screen flex flex-col safe-area-insets">
-        <div className="flex-1 overflow-y-auto lg:ml-16 xl:ml-64 pb-20 lg:pb-0">
-          {children}
-        </div>
-        <NavigationBar
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabsChange={handleTabsChange}
-          adminFooter={adminFooterConfig}
-        />
-      </div>
-    );
-  }
-
-  // Para la página de home - sin Header
-  if (router.pathname === "/home") {
-    return (
-      <div className="h-screen flex flex-col safe-area-insets">
-        <div className="flex-1 overflow-hidden lg:ml-16 xl:ml-64">
-          <main className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
-            <ScrollArea className="h-screen lg:max-h-none">
-              {children}
-            </ScrollArea>
-          </main>
-        </div>
-        <NavigationBar
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabsChange={handleTabsChange}
-          adminFooter={adminFooterConfig}
-        />
-      </div>
-    );
-  }
-
-  // Para páginas que necesitan el layout con ScrollArea (search, etc.)
   return (
     <div className="h-screen flex flex-col safe-area-insets">
       <div className="flex-1 overflow-hidden lg:ml-16 xl:ml-64">
-        <main className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
+        <main className="w-full max-w-2xl lg:max-w-none lg:w-full mx-auto">
           <ScrollArea className="h-screen lg:max-h-none">{children}</ScrollArea>
         </main>
       </div>

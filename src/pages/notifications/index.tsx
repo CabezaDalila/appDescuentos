@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/Share/card";
 import { Notification, useNotifications } from "@/hooks/useNotifications";
 import {
+  AlertTriangle,
   ArrowLeft,
   Bell,
   Calendar,
@@ -9,7 +10,6 @@ import {
   Filter,
   Percent,
   Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -326,7 +326,7 @@ export default function Notifications() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 py-4 max-w-2xl pb-20">
+        <div className="px-4 py-4 pb-20">
           {loading ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
