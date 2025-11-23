@@ -1,15 +1,13 @@
 import { NavigationBar } from "@/components/home/navigation-bar";
-import { Button } from "@/components/Share/button";
 import { useAuth } from "@/hooks/useAuth";
 import {
-    BarChart3,
-    Bell,
-    Gift,
-    HelpCircle,
-    Home,
-    LogOut,
-    Settings,
-    Users,
+  BarChart3,
+  Bell,
+  Gift,
+  HelpCircle,
+  Home,
+  Settings,
+  Users
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -102,51 +100,16 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
     </div>
   );
 
-  const footer = (
-    <div className="space-y-4">
-      <div className="px-2 xl:px-4 pt-4">
-        <button
-          className="w-full flex items-center gap-3 h-auto py-3 px-3 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
-          onClick={() => router.push("/home")}
-          title="Ver como Usuario"
-        >
-          <Home className="h-5 w-5 flex-shrink-0" />
-          <span className="text-sm font-medium hidden xl:inline">Ver como Usuario</span>
-          <span className="sr-only xl:hidden">Ver como Usuario</span>
-        </button>
-      </div>
-      <div className="px-2 xl:px-4">
-        <div className="flex items-center justify-center xl:justify-start">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-gray-700">
-                {user?.email?.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          </div>
-          <div className="xl:ml-3 flex-1 min-w-0 hidden xl:block">
-            <p className="text-sm font-medium text-gray-700 truncate">
-              {user?.email}
-            </p>
-            <p className="text-xs text-gray-600">Administrador</p>
-          </div>
-        </div>
-      </div>
-      <div className="px-2 xl:px-4 pb-4">
-        <Button
-          variant="outline"
-          onClick={logout}
-          disabled={loggingOut}
-          className="w-full justify-center xl:justify-start text-gray-700 hover:text-gray-900 border-gray-300"
-        >
-          <LogOut className="h-4 w-4 xl:mr-2" />
-          <span className="hidden xl:inline">
-            {loggingOut ? "Cerrando sesión..." : "Cerrar Sesión"}
-          </span>
-        </Button>
-      </div>
-    </div>
-  );
+  const adminFooterConfig = {
+    ctaButton: {
+      label: "Ver como Usuario",
+      icon: Home,
+      onClick: () => router.push("/home"),
+    },
+    userEmail: user?.email,
+    onLogout: logout,
+    loggingOut,
+  };
 
   return (
     <div className="h-screen bg-gray-50 flex admin-layout">
@@ -156,7 +119,7 @@ export function LayoutAdmin({ children }: LayoutAdminProps) {
         activeTab={activeTab}
         onTabsChange={handleTabsChange}
         header={header}
-        footer={footer}
+        adminFooter={adminFooterConfig}
         hideMobile={true}
       />
 

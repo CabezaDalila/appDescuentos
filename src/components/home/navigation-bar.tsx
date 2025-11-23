@@ -1,5 +1,17 @@
-import { Gift, LucideIcon } from "lucide-react";
+import { Button } from "@/components/Share/button";
+import { Gift, LogOut, LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
+
+interface AdminFooterConfig {
+  ctaButton: {
+    label: string;
+    icon: LucideIcon;
+    onClick: () => void;
+  };
+  userEmail?: string | null;
+  onLogout: () => void;
+  loggingOut: boolean;
+}
 
 interface NavigationBarProps {
   activeTab?: string;
@@ -9,6 +21,7 @@ interface NavigationBarProps {
   footer?: ReactNode;
   title?: string;
   hideMobile?: boolean;
+  adminFooter?: AdminFooterConfig;
 }
 
 export function NavigationBar({
@@ -19,7 +32,62 @@ export function NavigationBar({
   footer,
   title,
   hideMobile = false,
+  adminFooter,
 }: NavigationBarProps) {
+  // Render admin footer if config is provided
+  const renderAdminFooter = () => {
+    if (!adminFooter) return null;
+
+    return (
+      <div className="space-y-4">
+        <div className="px-2 xl:px-4 pt-4">
+          <button
+            className="w-full flex items-center gap-3 h-auto py-3 px-3 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
+            onClick={adminFooter.ctaButton.onClick}
+            title={adminFooter.ctaButton.label}
+          >
+            <adminFooter.ctaButton.icon className="h-5 w-5 flex-shrink-0" />
+            <span className="text-sm font-medium hidden xl:inline">
+              {adminFooter.ctaButton.label}
+            </span>
+            <span className="sr-only xl:hidden">{adminFooter.ctaButton.label}</span>
+          </button>
+        </div>
+        <div className="px-2 xl:px-4">
+          <div className="flex items-center justify-center xl:justify-start">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-700">
+                  {adminFooter.userEmail?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div className="xl:ml-3 flex-1 min-w-0 hidden xl:block">
+              <p className="text-sm font-medium text-gray-700 truncate">
+                {adminFooter.userEmail}
+              </p>
+              <p className="text-xs text-gray-600">Administrador</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-2 xl:px-4 pb-4">
+          <Button
+            variant="outline"
+            onClick={adminFooter.onLogout}
+            disabled={adminFooter.loggingOut}
+            className="w-full justify-center xl:justify-start text-gray-700 hover:text-gray-900 border-gray-300"
+          >
+            <LogOut className="h-4 w-4 xl:mr-2" />
+            <span className="hidden xl:inline">
+              {adminFooter.loggingOut ? "Cerrando..." : "Cerrar Sesión"}
+            </span>
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const footerContent = adminFooter ? renderAdminFooter() : footer;
   return (
     <>
       {/* Mobile Navigation - Bottom */}
@@ -84,9 +152,9 @@ export function NavigationBar({
           </div>
 
           {/* Footer */}
-          {footer && (
+          {footerContent && (
             <div className="flex-shrink-0 border-t border-gray-200">
-              {footer}
+              {footerContent}
             </div>
           )}
         </div>
@@ -127,9 +195,9 @@ export function NavigationBar({
           </div>
 
           {/* Footer compacto */}
-          {footer && (
+          {footerContent && (
             <div className="flex-shrink-0 border-t border-gray-200 px-2 py-4">
-              {footer}
+              {footerContent}
             </div>
           )}
         </div>
