@@ -9,7 +9,7 @@ import {
   CardLevel,
   Membership,
 } from "../../constants/membership";
-import { formatExpiryInput, validateExpiry } from "../../lib/card-utils";
+import { validateExpiry } from "../../lib/card-utils";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import {
@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../Share/dialog";
-import { Input } from "../Share/input";
 import { Label } from "../Share/label";
 import {
   Select,
@@ -227,10 +226,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     const remainingCards = localMembership.cards.filter(
       (card) => card.id !== cardId
     );
-    const isLastCard = remainingCards.length === 0;
-    const isBank = localMembership.category === "banco";
 
-    // Actualización optimista
     const prevCards = localMembership.cards;
     setLocalMembership({
       ...localMembership,

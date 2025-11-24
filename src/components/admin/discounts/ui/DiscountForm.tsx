@@ -1,29 +1,29 @@
 import { Button } from "@/components/Share/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import { getAllCategories } from "@/constants/categories";
 import {
-    CARD_BRANDS,
-    CARD_LEVELS,
-    CARD_TYPES,
-    ENTITIES_BY_CATEGORY,
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
+  ENTITIES_BY_CATEGORY,
 } from "@/constants/membership";
 import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
@@ -101,7 +101,6 @@ export function DiscountForm({
     category?: string;
     expirationDate?: string;
   }>({});
-
 
   if (!showForm) return null;
 
@@ -184,7 +183,7 @@ export function DiscountForm({
             <div className="space-y-2">
               <Label htmlFor="origin">Origen/Tienda *</Label>
               <Select
-                value={formData.origin || undefined}
+                value={formData.origin}
                 onValueChange={(value) => {
                   onFormDataChange((prev) => ({ ...prev, origin: value }));
                   if (formErrors.origin) {
@@ -225,7 +224,7 @@ export function DiscountForm({
                   <Select
                     value={formData.newCredentialBank || undefined}
                     onValueChange={(value) => {
-                      setCredentialError(""); // Limpiar error al cambiar
+                      setCredentialError("");
                       onFormDataChange((prev) => ({
                         ...prev,
                         newCredentialBank: value,
@@ -251,7 +250,7 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialType || undefined}
+                    value={formData.newCredentialType}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
                       onFormDataChange((prev) => ({
@@ -279,7 +278,7 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialBrand || undefined}
+                    value={formData.newCredentialBrand}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
                       onFormDataChange((prev) => ({
@@ -307,7 +306,7 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialLevel || undefined}
+                    value={formData.newCredentialLevel}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
                       onFormDataChange((prev) => ({
@@ -453,7 +452,7 @@ export function DiscountForm({
                       value={formData.newMembershipEntity || undefined}
                       onValueChange={(value) => {
                         if (value && value.trim() !== "") {
-                          setMembershipError(""); // Limpiar error al cambiar
+                          setMembershipError("");
                           onFormDataChange((prev) => ({
                             ...prev,
                             newMembershipEntity: value,
@@ -565,7 +564,7 @@ export function DiscountForm({
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría *</Label>
                 <Select
-                  value={formData.category || undefined}
+                  value={formData.category}
                   onValueChange={(value) => {
                     onCategoryChange(value);
                     if (formErrors.category) {

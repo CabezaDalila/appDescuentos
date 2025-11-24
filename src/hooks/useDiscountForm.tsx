@@ -71,10 +71,9 @@ export function useDiscountForm(): UseDiscountFormReturn {
     null
   );
 
-  const handleCategoryChange = useCallback((value: string) => {
+  const handleCategoryChange = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      category: value || "",
     }));
   }, []);
 
@@ -83,7 +82,7 @@ export function useDiscountForm(): UseDiscountFormReturn {
     setFormData({
       title: discount.title,
       origin: discount.origin,
-      category: discount.category || "",
+      category: discount.category,
       expirationDate: discount.expirationDate
         ? new Date(discount.expirationDate).toISOString().split("T")[0]
         : "",

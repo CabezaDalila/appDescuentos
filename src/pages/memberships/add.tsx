@@ -15,7 +15,6 @@ import {
 } from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
-import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -33,9 +32,7 @@ export default function AddMembershipPage() {
 
   const [selectedMembership, setSelectedMembership] = useState("");
 
-  // Estados para el flujo de banco
   const [currentStep, setCurrentStep] = useState(1);
-  const [expiryError, setExpiryError] = useState<string>("");
   const [bankData, setBankData] = useState({
     bank: "",
     cardType: "",
@@ -224,12 +221,6 @@ export default function AddMembershipPage() {
       default:
         return false;
     }
-  };
-
-  const handleExpiryDateChange = (value: string) => {
-    const result = validateAndFormatExpiryInput(value);
-    setExpiryError(result.isValid ? "" : result.error || "");
-    setBankData((prev) => ({ ...prev, expiryDate: result.formatted }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
