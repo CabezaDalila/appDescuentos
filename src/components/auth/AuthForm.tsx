@@ -23,18 +23,28 @@ import {
 } from "@/lib/firebase/firebase-auth";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { CheckCircle, Loader2, Mail } from "lucide-react";
+import { CheckCircle, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
+import { FormField } from "./FormField";
 
-// Esquemas de validación con Yup
+// Constantes y regex fuera del componente para mejor performance
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NAME_FILTER_REGEX = /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g;
+const NON_DIGIT_REGEX = /\D/g;
+const UPPERCASE_REGEX = /[A-Z]/;
+const LOWERCASE_REGEX = /[a-z]/;
+const NUMBER_REGEX = /\d/;
+
+// Esquemas de validación con Yup (creados fuera del componente)
 const loginSchema = yup.object({
   email: yup
     .string()
     .required("El email es obligatorio")
-    .email("Por favor ingresa un correo electrónico válido"),
+    .email("Por favor ingresa un correo electrónico válido")
+    .matches(EMAIL_REGEX, "Por favor ingresa un correo electrónico válido"),
   password: yup
     .string()
     .required("La contraseña es obligatoria")
@@ -53,7 +63,8 @@ const registerSchema = yup.object({
   email: yup
     .string()
     .required("El email es obligatorio")
-    .email("Por favor ingresa un correo electrónico válido"),
+    .email("Por favor ingresa un correo electrónico válido")
+    .matches(EMAIL_REGEX, "Por favor ingresa un correo electrónico válido"),
   phone: yup
     .string()
     .required("El teléfono es obligatorio")
@@ -76,10 +87,6 @@ const registerSchema = yup.object({
       /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
       "La contraseña debe tener al menos una mayúscula, una minúscula y un número"
     ),
-  confirmPassword: yup
-    .string()
-    .required("Confirma tu contraseña")
-    .oneOf([yup.ref("password")], "Las contraseñas no coinciden"),
 });
 
 export default function AuthForm() {
@@ -94,21 +101,23 @@ export default function AuthForm() {
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
 
-  // Validaciones de contraseña en tiempo real
-  const passwordChecks = {
-    minLength: formData.password.length >= 8,
-    hasUpperCase: /[A-Z]/.test(formData.password),
-    hasLowerCase: /[a-z]/.test(formData.password),
-    hasNumber: /\d/.test(formData.password),
-  };
+  // Validaciones de contraseña en tiempo real (memoizadas para mejor performance)
+  const passwordChecks = useMemo(
+    () => ({
+      minLength: formData.password.length >= 8,
+      hasUpperCase: UPPERCASE_REGEX.test(formData.password),
+      hasLowerCase: LOWERCASE_REGEX.test(formData.password),
+      hasNumber: NUMBER_REGEX.test(formData.password),
+    }),
+    [formData.password]
+  );
 
-  const passwordIsValid = Object.values(passwordChecks).every(Boolean);
-  const passwordsMatch =
-    formData.password === formData.confirmPassword &&
-    formData.confirmPassword.length > 0;
+  const passwordIsValid = useMemo(
+    () => Object.values(passwordChecks).every(Boolean),
+    [passwordChecks]
+  );
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptMarketing, setAcceptMarketing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,12 +142,13 @@ export default function AuthForm() {
   const [showPasswordResetSuccess, setShowPasswordResetSuccess] =
     useState(false);
 
-  const clearMessages = () => {
+  // Memoizar clearMessages para evitar recreaciones innecesarias
+  const clearMessages = useCallback(() => {
     setError("");
     setSuccess("");
     setValidationErrors({});
     // NO limpiar showEmailVerificationMessage aquí - debe permanecer visible
-  };
+  }, []);
 
   // Manejar verificación de email desde el enlace
   useEffect(() => {
@@ -205,13 +215,13 @@ export default function AuthForm() {
     }
   }, [router.query.passwordReset]);
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = useCallback(async () => {
     if (!resetEmail) {
       setError("Por favor ingresa tu email");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
+    if (!EMAIL_REGEX.test(resetEmail)) {
       setError("Por favor ingresa un email válido");
       return;
     }
@@ -252,37 +262,41 @@ export default function AuthForm() {
     } finally {
       setIsResetting(false);
     }
-  };
+  }, [resetEmail, clearMessages]);
 
-  const handleInputChange = (field: string, value: string) => {
-    // Filtrar solo letras y espacios para nombre y apellido
-    if (field === "firstName" || field === "lastName") {
-      // Solo permitir letras, espacios y caracteres especiales comunes en nombres (á, é, í, ó, ú, ñ, etc.)
-      value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, "");
-    }
+  // Memoizar handleInputChange para evitar recreaciones innecesarias
+  const handleInputChange = useCallback(
+    (field: string, value: string) => {
+      // Filtrar solo letras y espacios para nombre y apellido
+      if (field === "firstName" || field === "lastName") {
+        // Solo permitir letras, espacios y caracteres especiales comunes en nombres (á, é, í, ó, ú, ñ, etc.)
+        value = value.replace(NAME_FILTER_REGEX, "");
+      }
 
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    clearMessages();
-    // Limpiar el email pendiente de verificación si el usuario cambia el email
-    if (field === "email") {
-      setPendingVerificationEmail(null);
-    }
-    // Limpiar el mensaje de éxito de reset password cuando el usuario empieza a escribir
-    if (showPasswordResetSuccess) {
-      setShowPasswordResetSuccess(false);
-    }
-  };
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      clearMessages();
+      // Limpiar el email pendiente de verificación si el usuario cambia el email
+      if (field === "email") {
+        setPendingVerificationEmail(null);
+      }
+      // Limpiar el mensaje de éxito de reset password cuando el usuario empieza a escribir
+      if (showPasswordResetSuccess) {
+        setShowPasswordResetSuccess(false);
+      }
+    },
+    [clearMessages, showPasswordResetSuccess]
+  );
 
-  // Obtener el número completo con código de país para guardar
-  const getFullPhoneNumber = () => {
+  // Obtener el número completo con código de país para guardar (memoizado)
+  const getFullPhoneNumber = useCallback(() => {
     if (countryCode === "+54") {
-      const areaDigits = areaCode.replace(/\D/g, "");
-      const phoneDigits = phoneNumber.replace(/\D/g, "");
+      const areaDigits = areaCode.replace(NON_DIGIT_REGEX, "");
+      const phoneDigits = phoneNumber.replace(NON_DIGIT_REGEX, "");
       return `${countryCode}${areaDigits}${phoneDigits}`;
     }
-    const phoneDigits = formData.phone.replace(/\D/g, "");
+    const phoneDigits = formData.phone.replace(NON_DIGIT_REGEX, "");
     return `${countryCode}${phoneDigits}`;
-  };
+  }, [countryCode, areaCode, phoneNumber, formData.phone]);
 
   // Resetear campos de teléfono cuando cambia el país
   useEffect(() => {
@@ -291,9 +305,9 @@ export default function AuthForm() {
       setPhoneNumber("");
       handleInputChange("phone", "");
     }
-  }, [countryCode]);
+  }, [countryCode, handleInputChange]);
 
-  const handleResendVerification = async () => {
+  const handleResendVerification = useCallback(async () => {
     if (!pendingVerificationEmail || !formData.password) {
       setError(
         "Por favor, ingresa tu contraseña para reenviar el email de verificación."
@@ -396,25 +410,25 @@ export default function AuthForm() {
     } finally {
       setIsResendingVerification(false);
     }
-  };
+  }, [pendingVerificationEmail, formData.password, clearMessages]);
 
-  const handleGoogleSignUp = async () => {
+  // Detectar si es plataforma nativa (memoizado para evitar verificaciones repetidas)
+  const isNativePlatform = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    interface CapacitorWindow extends Window {
+      Capacitor?: {
+        isNativePlatform?: () => boolean;
+      };
+    }
+    const capWindow = window as CapacitorWindow;
+    return capWindow.Capacitor?.isNativePlatform?.() === true;
+  }, []);
+
+  const handleGoogleSignUp = useCallback(async () => {
     clearMessages();
     setIsGoogleLoading(true);
 
     try {
-      // Detectar si es plataforma nativa (iOS/Android)
-      interface CapacitorWindow extends Window {
-        Capacitor?: {
-          isNativePlatform?: () => boolean;
-        };
-      }
-
-      const capWindow = window as CapacitorWindow;
-      const isNativePlatform =
-        typeof window !== "undefined" &&
-        capWindow.Capacitor?.isNativePlatform?.() === true;
-
       const result = isNativePlatform
         ? await loginWithGoogleNative()
         : await loginWithGoogle();
@@ -458,202 +472,218 @@ export default function AuthForm() {
     } finally {
       setIsGoogleLoading(false);
     }
-  };
+  }, [clearMessages, isNativePlatform]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearMessages();
-    setIsLoading(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      clearMessages();
+      setIsLoading(true);
 
-    try {
-      // Validar con Yup según el modo
-      const schema = mode === "login" ? loginSchema : registerSchema;
+      try {
+        // Validar con Yup según el modo
+        const schema = mode === "login" ? loginSchema : registerSchema;
 
-      // Validar datos del formulario
-      await schema.validate(formData, { abortEarly: false });
+        // Validar datos del formulario
+        await schema.validate(formData, { abortEarly: false });
 
-      // Validación adicional para registro
-      if (mode === "register" && !acceptTerms) {
-        setError("Debes aceptar los términos y condiciones");
-        return;
-      }
-
-      if (mode === "login") {
-        try {
-          await login(formData.email, formData.password);
-          setSuccess("¡Inicio de sesión exitoso!");
-        } catch (loginError: unknown) {
-          // Si el error es que el email no está verificado, lanzar error específico
-          if (
-            loginError instanceof Error &&
-            loginError.message === "EMAIL_NOT_VERIFIED"
-          ) {
-            setPendingVerificationEmail(formData.email);
-            setError(
-              "No has confirmado tu correo electrónico. Por favor, revisa tu bandeja de entrada y haz clic en el enlace de verificación que te enviamos para activar tu cuenta."
-            );
-            // Mantener el mensaje de verificación visible
-            setShowEmailVerificationMessage(true);
-            return;
-          }
-          throw loginError; // Re-lanzar otros errores para que se manejen en el catch general
+        // Validación adicional para registro
+        if (mode === "register" && !acceptTerms) {
+          setError("Debes aceptar los términos y condiciones");
+          return;
         }
-      } else {
-        const result = await register(formData.email, formData.password);
 
-        // Guardar solo el perfil, NO el onboarding hasta que el email esté verificado
-        // El onboarding se guardará cuando el usuario inicie sesión después de verificar
-        if (result?.user?.uid) {
-          await setDoc(
-            doc(db, "users", result.user.uid),
-            {
-              profile: {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phone: getFullPhoneNumber(),
+        if (mode === "login") {
+          // Limpiar errores de validación antes de intentar login
+          setValidationErrors({});
+          try {
+            await login(formData.email, formData.password);
+            setSuccess("¡Inicio de sesión exitoso!");
+          } catch (loginError: unknown) {
+            // Si el error es que el email no está verificado, lanzar error específico
+            if (
+              loginError instanceof Error &&
+              loginError.message === "EMAIL_NOT_VERIFIED"
+            ) {
+              setPendingVerificationEmail(formData.email);
+              setError(""); // No mostrar error, solo el mensaje de verificación
+              // Mantener el mensaje de verificación visible
+              setShowEmailVerificationMessage(true);
+              return;
+            }
+            throw loginError; // Re-lanzar otros errores para que se manejen en el catch general
+          }
+        } else {
+          const result = await register(formData.email, formData.password);
+
+          // Guardar solo el perfil, NO el onboarding hasta que el email esté verificado
+          // El onboarding se guardará cuando el usuario inicie sesión después de verificar
+          if (result?.user?.uid) {
+            await setDoc(
+              doc(db, "users", result.user.uid),
+              {
+                profile: {
+                  firstName: formData.firstName,
+                  lastName: formData.lastName,
+                  phone: getFullPhoneNumber(),
+                },
+                // NO guardar onboarding aquí - se guardará después de verificar el email
               },
-              // NO guardar onboarding aquí - se guardará después de verificar el email
-            },
-            { merge: true }
+              { merge: true }
+            );
+          }
+
+          // Limpiar el formulario
+          setFormData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            phone: "",
+            password: "",
+          });
+          setCountryCode("+54"); // Resetear código de país
+          setAreaCode(""); // Resetear código de área
+          setPhoneNumber(""); // Resetear número
+          setAcceptTerms(false);
+          setAcceptMarketing(false);
+
+          // Limpiar mensajes de error/éxito
+          setError("");
+          setSuccess("");
+
+          // Activar el mensaje de verificación de email ANTES de cambiar al modo login
+          setShowEmailVerificationMessage(true);
+
+          // Cambiar al modo login para que el usuario pueda iniciar sesión después de verificar
+          // Esto debe hacerse después de que la sesión se haya cerrado (ya se cerró en register)
+          setMode("login");
+        }
+      } catch (error: unknown) {
+        console.error("Error en autenticación:", error);
+
+        // Si es un error de validación de Yup
+        if (error instanceof yup.ValidationError) {
+          const errors: Record<string, string> = {};
+          error.inner.forEach((err) => {
+            if (err.path) {
+              errors[err.path] = err.message;
+            }
+          });
+          setValidationErrors(errors);
+          return;
+        }
+
+        // Manejar errores específicos de Firebase Auth
+        if (error && typeof error === "object" && "code" in error) {
+          const firebaseError = error as { code: string; message?: string };
+
+          // En modo login, limpiar errores de validación cuando hay error de autenticación
+          if (mode === "login") {
+            setValidationErrors({});
+          }
+
+          switch (firebaseError.code) {
+            case "auth/invalid-credential":
+            case "auth/wrong-password":
+            case "auth/user-not-found":
+              // En login, mostrar un mensaje genérico para no revelar información
+              if (mode === "login") {
+                setError(
+                  "Las credenciales no coinciden. Verifica tu email y contraseña."
+                );
+              } else {
+                // En registro, mantener mensajes específicos
+                if (firebaseError.code === "auth/user-not-found") {
+                  setError(
+                    "No encontramos una cuenta con este email. ¿Estás seguro de que te registraste?"
+                  );
+                } else {
+                  setError(
+                    "La contraseña es incorrecta. ¿Podrías intentar nuevamente?"
+                  );
+                }
+              }
+              break;
+            case "auth/invalid-email":
+              setError(
+                "El formato del email no es válido. Por favor, verifica que esté bien escrito."
+              );
+              break;
+            case "auth/user-disabled":
+              setError(
+                "Esta cuenta ha sido deshabilitada. Contacta al soporte para más información."
+              );
+              break;
+            case "auth/too-many-requests":
+              setError(
+                "Demasiados intentos fallidos. Espera unos minutos antes de intentar nuevamente."
+              );
+              break;
+            case "auth/email-already-in-use":
+              setError(
+                "Ya existe una cuenta con este email. ¿Quieres iniciar sesión en su lugar?"
+              );
+              break;
+            case "auth/weak-password":
+              setError(
+                "La contraseña es muy débil. Usa al menos 8 caracteres con mayúsculas, minúsculas y números."
+              );
+              break;
+            case "auth/network-request-failed":
+              setError(
+                "Error de conexión. Verifica tu internet e intenta nuevamente."
+              );
+              break;
+            default:
+              setError(
+                `${firebaseError.message || "Ocurrió un error inesperado"}`
+              );
+          }
+        } else if (error instanceof Error) {
+          setError(`${error.message}`);
+        } else {
+          setError(
+            "Ocurrió un error inesperado. Por favor, intenta nuevamente."
           );
         }
-
-        // Limpiar el formulario
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          password: "",
-          confirmPassword: "",
-        });
-        setCountryCode("+54"); // Resetear código de país
-        setAreaCode(""); // Resetear código de área
-        setPhoneNumber(""); // Resetear número
-        setAcceptTerms(false);
-        setAcceptMarketing(false);
-
-        // Limpiar mensajes de error/éxito
-        setError("");
-        setSuccess("");
-
-        // Activar el mensaje de verificación de email ANTES de cambiar al modo login
-        setShowEmailVerificationMessage(true);
-
-        // Cambiar al modo login para que el usuario pueda iniciar sesión después de verificar
-        // Esto debe hacerse después de que la sesión se haya cerrado (ya se cerró en register)
-        setMode("login");
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error: unknown) {
-      console.error("Error en autenticación:", error);
+    },
+    [mode, formData, acceptTerms, getFullPhoneNumber, clearMessages, router]
+  );
 
-      // Si es un error de validación de Yup
-      if (error instanceof yup.ValidationError) {
-        const errors: Record<string, string> = {};
-        error.inner.forEach((err) => {
-          if (err.path) {
-            errors[err.path] = err.message;
-          }
-        });
-        setValidationErrors(errors);
-        return;
-      }
+  // Callbacks para handlers de password (memoizados)
+  const handlePasswordFocus = useCallback(() => {
+    setShowPasswordRequirements(true);
+  }, []);
 
-      // Manejar errores específicos de Firebase Auth
-      if (error && typeof error === "object" && "code" in error) {
-        const firebaseError = error as { code: string; message?: string };
-        switch (firebaseError.code) {
-          case "auth/user-not-found":
-            setError(
-              "No encontramos una cuenta con este email. ¿Estás seguro de que te registraste?"
-            );
-            break;
-          case "auth/wrong-password":
-            setError(
-              "La contraseña es incorrecta. ¿Podrías intentar nuevamente?"
-            );
-            break;
-          case "auth/invalid-email":
-            setError(
-              "El formato del email no es válido. Por favor, verifica que esté bien escrito."
-            );
-            break;
-          case "auth/user-disabled":
-            setError(
-              "Esta cuenta ha sido deshabilitada. Contacta al soporte para más información."
-            );
-            break;
-          case "auth/too-many-requests":
-            setError(
-              "Demasiados intentos fallidos. Espera unos minutos antes de intentar nuevamente."
-            );
-            break;
-          case "auth/email-already-in-use":
-            setError(
-              "Ya existe una cuenta con este email. ¿Quieres iniciar sesión en su lugar?"
-            );
-            break;
-          case "auth/weak-password":
-            setError(
-              "La contraseña es muy débil. Usa al menos 8 caracteres con mayúsculas, minúsculas y números."
-            );
-            break;
-          case "auth/network-request-failed":
-            setError(
-              "Error de conexión. Verifica tu internet e intenta nuevamente."
-            );
-            break;
-          default:
-            setError(
-              `${firebaseError.message || "Ocurrió un error inesperado"}`
-            );
-        }
-      } else if (error instanceof Error) {
-        setError(`${error.message}`);
-      } else {
-        setError("Ocurrió un error inesperado. Por favor, intenta nuevamente.");
-      }
-    } finally {
-      setIsLoading(false);
+  const handlePasswordBlur = useCallback(() => {
+    if (passwordIsValid) {
+      setShowPasswordRequirements(false);
     }
-  };
+  }, [passwordIsValid]);
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="px-4 py-6">
-        <Card className="w-full max-w-md mx-auto border-0 shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="border-0 shadow-xl bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-6 pt-8">
+            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
               {mode === "login" ? "¡Bienvenido!" : "¡Únete a nosotros!"}
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-base text-gray-600">
               {mode === "login"
                 ? "Ingresa tus credenciales para acceder"
                 : "Crea tu cuenta y descubre ofertas exclusivas"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {error && (
+          <CardContent className="px-6 pb-8 space-y-5">
+            {error && !pendingVerificationEmail && (
               <Alert variant="destructive" className="border-red-200 bg-red-50">
                 <AlertDescription className="text-red-800">
                   {error}
                 </AlertDescription>
-                {pendingVerificationEmail && (
-                  <div className="mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResendVerification}
-                      disabled={isResendingVerification}
-                      className="w-full"
-                    >
-                      {isResendingVerification && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Reenviar email de verificación
-                    </Button>
-                  </div>
-                )}
               </Alert>
             )}
             {success && (
@@ -663,25 +693,36 @@ export default function AuthForm() {
                 </AlertDescription>
               </Alert>
             )}
-            {mode === "login" && showEmailVerificationMessage && (
-              <Alert className="border-blue-200 bg-blue-50">
-                <AlertDescription className="text-blue-800">
-                  <div className="flex items-start gap-2">
-                    <Mail className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-medium mb-1">
-                        Se te ha enviado un correo para verificar tu cuenta
-                      </p>
-                      <p className="text-sm">
-                        Revisa tu bandeja de entrada y haz clic en el enlace de
-                        verificación para activar tu cuenta. Una vez activada,
-                        podrás iniciar sesión.
-                      </p>
+            {mode === "login" &&
+              (pendingVerificationEmail || showEmailVerificationMessage) && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertDescription className="text-blue-800">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-5 w-5 flex-shrink-0 text-blue-600" />
+                      <div className="flex-1">
+                        <p className="text-sm">
+                          Verifica tu correo electrónico para continuar.
+                        </p>
+                      </div>
+                      {pendingVerificationEmail && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResendVerification}
+                          disabled={isResendingVerification}
+                          className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                        >
+                          {isResendingVerification ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Reenviar"
+                          )}
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
+                  </AlertDescription>
+                </Alert>
+              )}
             {mode === "login" && showPasswordResetSuccess && (
               <Alert className="border-green-200 bg-green-50">
                 <AlertDescription className="text-green-800">
@@ -692,110 +733,75 @@ export default function AuthForm() {
                         ¡Contraseña restablecida exitosamente!
                       </p>
                       <p className="text-sm">
-                        Tu contraseña ha sido cambiada. Ahora puedes iniciar sesión con tu nueva contraseña.
+                        Tu contraseña ha sido cambiada. Ahora puedes iniciar
+                        sesión con tu nueva contraseña.
                       </p>
                     </div>
                   </div>
                 </AlertDescription>
               </Alert>
             )}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {mode === "register" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="firstName"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Nombre
-                    </Label>
-                    <Input
-                      id="firstName"
-                      placeholder="Tu nombre"
-                      value={formData.firstName}
-                      onChange={(e) =>
-                        handleInputChange("firstName", e.target.value)
-                      }
-                      disabled={isLoading}
-                      className={
-                        validationErrors.firstName ? "border-red-500" : ""
-                      }
-                    />
-                    {validationErrors.firstName && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.firstName}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="lastName"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Apellido
-                    </Label>
-                    <Input
-                      id="lastName"
-                      placeholder="Tu apellido"
-                      value={formData.lastName}
-                      onChange={(e) =>
-                        handleInputChange("lastName", e.target.value)
-                      }
-                      disabled={isLoading}
-                      className={
-                        validationErrors.lastName ? "border-red-500" : ""
-                      }
-                    />
-                    {validationErrors.lastName && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.lastName}
-                      </p>
-                    )}
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    id="firstName"
+                    label="Nombre"
+                    placeholder="Tu nombre"
+                    value={formData.firstName}
+                    onChange={(e) =>
+                      handleInputChange("firstName", e.target.value)
+                    }
+                    disabled={isLoading}
+                    error={validationErrors.firstName}
+                    icon={User}
+                  />
+                  <FormField
+                    id="lastName"
+                    label="Apellido"
+                    placeholder="Tu apellido"
+                    value={formData.lastName}
+                    onChange={(e) =>
+                      handleInputChange("lastName", e.target.value)
+                    }
+                    disabled={isLoading}
+                    error={validationErrors.lastName}
+                    icon={User}
+                  />
                 </div>
               )}
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Correo electrónico
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@ejemplo.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  disabled={isLoading}
-                  className={validationErrors.email ? "border-red-500" : ""}
-                />
-                {validationErrors.email && (
-                  <p className="text-sm text-red-500">
-                    {validationErrors.email}
-                  </p>
-                )}
-              </div>
+              <FormField
+                id="email"
+                label="Correo electrónico"
+                type="email"
+                placeholder="tu@ejemplo.com"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                disabled={isLoading}
+                error={validationErrors.email}
+                icon={Mail}
+              />
               {mode === "register" && (
                 <div className="space-y-2">
                   <Label
                     htmlFor="phone"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-gray-700 flex items-center gap-2"
                   >
+                    <Phone className="h-4 w-4" />
                     Teléfono
                   </Label>
                   <div className="flex gap-2 items-stretch">
-                    <div className="flex items-center justify-center px-3 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-medium text-sm h-9">
+                    <div className="flex items-center justify-center px-3 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-medium text-sm h-10">
                       +54
                     </div>
                     <Input
                       id="areaCode"
                       type="tel"
-                      placeholder="11"
+                      placeholder="Area"
                       value={areaCode}
                       onChange={(e) => {
                         const value = e.target.value
-                          .replace(/\D/g, "")
+                          .replace(NON_DIGIT_REGEX, "")
                           .slice(0, 4);
                         setAreaCode(value);
                         const fullPhone =
@@ -805,8 +811,10 @@ export default function AuthForm() {
                         handleInputChange("phone", fullPhone);
                       }}
                       disabled={isLoading}
-                      className={`w-[80px] h-9 ${
-                        validationErrors.phone ? "border-red-500" : ""
+                      className={`w-[90px] h-10 ${
+                        validationErrors.phone
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
                       }`}
                       maxLength={4}
                     />
@@ -816,7 +824,7 @@ export default function AuthForm() {
                       placeholder="1234-5678"
                       value={phoneNumber}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
+                        let value = e.target.value.replace(NON_DIGIT_REGEX, "");
                         if (countryCode === "+54" && value.length > 4) {
                           value = `${value.slice(0, 4)}-${value.slice(4, 8)}`;
                         }
@@ -828,19 +836,18 @@ export default function AuthForm() {
                         handleInputChange("phone", fullPhone);
                       }}
                       disabled={isLoading}
-                      className={`flex-1 h-9 ${
-                        validationErrors.phone ? "border-red-500" : ""
+                      className={`flex-1 h-10 ${
+                        validationErrors.phone
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          : ""
                       }`}
                       maxLength={9}
                     />
                   </div>
-                  {validationErrors.phone ? (
-                    <p className="text-sm text-red-500">
+                  {validationErrors.phone && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <span>•</span>
                       {validationErrors.phone}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-600">
-                      Ejemplo: 11 1234-5678
                     </p>
                   )}
                 </div>
@@ -848,8 +855,9 @@ export default function AuthForm() {
               <div className="space-y-2">
                 <Label
                   htmlFor="password"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-gray-700 flex items-center gap-2"
                 >
+                  <Lock className="h-4 w-4" />
                   Contraseña
                 </Label>
                 <Input
@@ -860,19 +868,14 @@ export default function AuthForm() {
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
-                  onFocus={() => setShowPasswordRequirements(true)}
-                  onBlur={() => {
-                    // Ocultar solo si la contraseña es válida
-                    if (passwordIsValid) {
-                      setShowPasswordRequirements(false);
-                    }
-                  }}
+                  onFocus={handlePasswordFocus}
+                  onBlur={handlePasswordBlur}
                   disabled={isLoading}
                   className={
                     validationErrors.password
-                      ? "border-red-500"
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                       : formData.password.length > 0 && passwordIsValid
-                      ? "border-green-500"
+                      ? "border-green-500 focus:border-green-500 focus:ring-green-500"
                       : ""
                   }
                 />
@@ -952,103 +955,50 @@ export default function AuthForm() {
                     </div>
                   )}
                 {validationErrors.password && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <span>•</span>
                     {validationErrors.password}
                   </p>
-                )}
-                {mode === "login" && !validationErrors.password && (
-                  <p className="text-xs text-gray-600">Ingresa tu contraseña</p>
                 )}
               </div>
               {mode === "register" && (
                 <>
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="confirmPassword"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      Confirmar contraseña
-                    </Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.confirmPassword}
-                      onChange={(e) =>
-                        handleInputChange("confirmPassword", e.target.value)
-                      }
-                      disabled={isLoading}
-                      className={
-                        validationErrors.confirmPassword
-                          ? "border-red-500"
-                          : formData.confirmPassword.length > 0 &&
-                            passwordsMatch
-                          ? "border-green-500"
-                          : formData.confirmPassword.length > 0 &&
-                            !passwordsMatch
-                          ? "border-red-500"
-                          : ""
-                      }
-                    />
-                    {formData.confirmPassword.length > 0 && (
-                      <div className="flex items-center gap-2 text-xs">
-                        {passwordsMatch ? (
-                          <>
-                            <span className="text-green-600">✓</span>
-                            <span className="text-green-600">
-                              Las contraseñas coinciden
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-red-500">✗</span>
-                            <span className="text-red-500">
-                              Las contraseñas no coinciden
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    {validationErrors.confirmPassword && (
-                      <p className="text-sm text-red-500">
-                        {validationErrors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-start space-x-3">
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                       <Checkbox
                         id="terms"
                         checked={acceptTerms}
                         onCheckedChange={(checked) =>
                           setAcceptTerms(checked === true)
                         }
+                        className="mt-0.5"
                       />
                       <Label
                         htmlFor="terms"
-                        className="text-sm text-gray-600 leading-5"
+                        className="text-sm text-gray-600 leading-5 cursor-pointer"
                       >
                         Acepto los{" "}
-                        <span className="text-primary-600 font-medium">
+                        <span className="text-primary-600 font-medium hover:text-primary-700">
                           términos y condiciones
                         </span>{" "}
                         y la{" "}
-                        <span className="text-primary-600 font-medium">
+                        <span className="text-primary-600 font-medium hover:text-primary-700">
                           política de privacidad
                         </span>
                       </Label>
                     </div>
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50/50 border border-gray-100">
                       <Checkbox
                         id="marketing"
                         checked={acceptMarketing}
                         onCheckedChange={(checked) =>
                           setAcceptMarketing(checked === true)
                         }
+                        className="mt-0.5"
                       />
                       <Label
                         htmlFor="marketing"
-                        className="text-sm text-gray-600 leading-5"
+                        className="text-sm text-gray-600 leading-5 cursor-pointer"
                       >
                         Quiero recibir ofertas y promociones exclusivas por
                         email
@@ -1060,18 +1010,27 @@ export default function AuthForm() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-base rounded-xl shadow-lg transition-all duration-200"
+                className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base rounded-lg shadow-md hover:shadow-lg transition-all duration-200 mt-6"
               >
                 {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
               </Button>
             </form>
-            <Separator className="my-6" />
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">
+                  O continúa con
+                </span>
+              </div>
+            </div>
             <Button
               variant="outline"
               onClick={handleGoogleSignUp}
               disabled={isLoading || isGoogleLoading}
-              className="w-full h-12 border-gray-200 hover:bg-gray-50 text-gray-700 font-medium text-base rounded-xl transition-all duration-200"
+              className="w-full h-12 border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 font-medium text-base rounded-lg transition-all duration-200"
             >
               {isGoogleLoading && (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -1081,7 +1040,7 @@ export default function AuthForm() {
                 ? "Continuar con Google"
                 : "Registrarse con Google"}
             </Button>
-            <div className="text-center pt-4">
+            <div className="text-center pt-6">
               {mode === "login" ? (
                 <>
                   <div className="mb-3">
@@ -1130,34 +1089,29 @@ export default function AuthForm() {
 
       {/* Modal de restablecimiento de contraseña */}
       {showResetPassword && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Restablecer contraseña
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Ingresa tu email y te enviaremos un enlace para restablecer tu
-              contraseña.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <Label
-                  htmlFor="resetEmail"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Correo electrónico
-                </Label>
-                <Input
-                  id="resetEmail"
-                  type="email"
-                  placeholder="tu@ejemplo.com"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  disabled={isResetting}
-                  className="mt-1"
-                />
-              </div>
-              <div className="flex space-x-3">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md border-0 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-900">
+                Restablecer contraseña
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Ingresa tu email y te enviaremos un enlace para restablecer tu
+                contraseña.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                id="resetEmail"
+                label="Correo electrónico"
+                type="email"
+                placeholder="tu@ejemplo.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                disabled={isResetting}
+                icon={Mail}
+              />
+              <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1173,7 +1127,7 @@ export default function AuthForm() {
                 <Button
                   onClick={handleResetPassword}
                   disabled={isResetting || !resetEmail}
-                  className="flex-1"
+                  className="flex-1 bg-primary hover:bg-primary/90"
                 >
                   {isResetting && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1181,8 +1135,8 @@ export default function AuthForm() {
                   Enviar
                 </Button>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

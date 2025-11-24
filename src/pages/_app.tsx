@@ -7,6 +7,7 @@ import { LayoutHome } from "@/layouts/layout-home";
 import { initializeGoogleAuth } from "@/lib/google-auth-init";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
+import Head from "next/head";
 import { useRouter } from "next/router";
 import Script from "next/script";
 import { useEffect } from "react";
@@ -320,6 +321,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   ) {
     return (
       <>
+        <Head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+          />
+        </Head>
         {/* Scripts de Google para autenticación */}
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -338,6 +345,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   if (router.pathname === "/reset-password") {
     return (
       <>
+        <Head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+          />
+        </Head>
         {/* Scripts de Google para autenticación */}
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -355,6 +368,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   if (router.pathname.startsWith("/admin")) {
     return (
       <>
+        <Head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+          />
+        </Head>
         {/* Scripts de Google para autenticación */}
         <Script
           src="https://accounts.google.com/gsi/client"
@@ -373,6 +392,12 @@ function MyApp({ Component, pageProps }: AppProps) {
   if (router.pathname.startsWith("/onboarding")) {
     return (
       <>
+        <Head>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+          />
+        </Head>
         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="beforeInteractive"
@@ -389,6 +414,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+      </Head>
       {/* Scripts de Google para autenticación */}
       <Script
         src="https://accounts.google.com/gsi/client"

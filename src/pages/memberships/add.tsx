@@ -304,7 +304,7 @@ export default function AddMembershipPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
+            <div className="grid grid-cols-3 gap-3 pb-6">
               {membershipTypes.map((type) => (
                 <button
                   key={type.id}
@@ -319,23 +319,21 @@ export default function AddMembershipPage() {
                       setCurrentStep(1);
                     }
                   }}
-                  className="p-6 border border-gray-200 rounded-xl text-left transition-all duration-200 hover:border-gray-300 hover:shadow-lg hover:scale-105 group"
+                  className="aspect-square p-4 border border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:shadow-md active:scale-95 flex flex-col items-center justify-center gap-2 group bg-white"
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                      style={{ backgroundColor: type.color + "20" }}
-                    >
-                      {type.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-gray-700">
-                        {type.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 group-hover:text-gray-500">
-                        {type.description}
-                      </p>
-                    </div>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: type.color + "20" }}
+                  >
+                    {type.icon}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-900 text-sm group-hover:text-gray-700 leading-tight">
+                      {type.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      {type.description}
+                    </p>
                   </div>
                 </button>
               ))}
