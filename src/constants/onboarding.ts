@@ -90,4 +90,18 @@ export const GOAL_OPTIONS: OnboardingOption[] = [
   },
 ];
 
-export const ONBOARDING_TOTAL_STEPS = 3;
+export const ONBOARDING_TOTAL_STEPS = 4;
+
+// Lista de bancos disponibles para el onboarding
+export const BANK_OPTIONS: string[] = [
+  "Galicia",
+  "Santander",
+  "Nación",
+  "Provincia",
+  "Ciudad",
+  "Macro",
+  "Itaú",
+  "HSBC",
+  "BBVA",
+  "Supervielle",
+];

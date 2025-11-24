@@ -8,6 +8,12 @@ interface UserProfile {
     completedAt?: unknown;
     interests?: string[];
     goals?: string[];
+    banks?: string[];
+    answers?: {
+      interests?: string[];
+      goals?: string[];
+      banks?: string[];
+    };
   };
   preferences?: Record<string, unknown>;
   profile?: Record<string, unknown>;

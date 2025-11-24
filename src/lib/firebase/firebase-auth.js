@@ -155,10 +155,9 @@ const saveUserToFirestore = async (user) => {
         // Esto ocurre cuando el usuario inicia sesión por primera vez después de verificar
         userData.onboarding = {
           completed: false,
-          answers: {
-            interests: [],
-            goals: [],
-          },
+          interests: [],
+          goals: [],
+          banks: [],
         };
       }
       // Preservar el rol si ya existe (importante para admins)
