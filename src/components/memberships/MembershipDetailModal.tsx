@@ -21,6 +21,13 @@ import {
 } from "../Share/dialog";
 import { Input } from "../Share/input";
 import { Label } from "../Share/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../Share/select";
 import { Separator } from "../Share/separator";
 import { Switch } from "../Share/switch";
 
@@ -443,77 +450,77 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
             <div className="space-y-4">
               <div>
                 <Label htmlFor="cardType">Tipo</Label>
-                <select
-                  id="cardType"
-                  value={cardFormData.type}
-                  onChange={(e) =>
+                <Select
+                  value={cardFormData.type || undefined}
+                  onValueChange={(value) =>
                     setCardFormData({
                       ...cardFormData,
-                      type: e.target.value as Card["type"],
+                      type: value as Card["type"],
                     })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="" disabled>
-                    Selecciona el tipo
-                  </option>
-                  {CARD_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona el tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CARD_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <Label htmlFor="cardBrand">Marca</Label>
-                <select
-                  id="cardBrand"
-                  value={cardFormData.brand}
-                  onChange={(e) =>
+                <Select
+                  value={cardFormData.brand || undefined}
+                  onValueChange={(value) =>
                     setCardFormData({
                       ...cardFormData,
-                      brand: e.target.value as Card["brand"],
+                      brand: value as Card["brand"],
                     })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="" disabled>
-                    Selecciona la marca
-                  </option>
-                  {CARD_BRANDS.map((brand) => (
-                    <option key={brand.value} value={brand.value}>
-                      {brand.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona la marca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CARD_BRANDS.map((brand) => (
+                      <SelectItem key={brand.value} value={brand.value}>
+                        {brand.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <Label htmlFor="cardLevel">Nivel</Label>
-                <select
-                  id="cardLevel"
-                  value={cardFormData.level}
-                  onChange={(e) =>
+                <Select
+                  value={cardFormData.level || undefined}
+                  onValueChange={(value) =>
                     setCardFormData({
                       ...cardFormData,
-                      level: e.target.value as CardLevel,
+                      level: value as CardLevel,
                     })
                   }
-                  className="w-full p-2 border border-gray-300 rounded-md text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="" disabled className="text-gray-600">
-                    Selecciona un nivel
-                  </option>
-                  {CARD_LEVELS.map((lvl) => (
-                    <option key={lvl.value} value={lvl.value}>
-                      {lvl.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecciona un nivel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CARD_LEVELS.map((lvl) => (
+                      <SelectItem key={lvl.value} value={lvl.value}>
+                        {lvl.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex gap-2">

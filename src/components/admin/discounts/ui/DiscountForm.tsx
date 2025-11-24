@@ -1,29 +1,29 @@
 import { Button } from "@/components/Share/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import { getAllCategories } from "@/constants/categories";
 import {
-  CARD_BRANDS,
-  CARD_LEVELS,
-  CARD_TYPES,
-  ENTITIES_BY_CATEGORY,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+    ENTITIES_BY_CATEGORY,
 } from "@/constants/membership";
 import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
@@ -101,6 +101,7 @@ export function DiscountForm({
     category?: string;
     expirationDate?: string;
   }>({});
+
 
   if (!showForm) return null;
 
@@ -185,7 +186,7 @@ export function DiscountForm({
               <Select
                 value={formData.origin || undefined}
                 onValueChange={(value) => {
-                  onFormDataChange({ ...formData, origin: value });
+                  onFormDataChange((prev) => ({ ...prev, origin: value }));
                   if (formErrors.origin) {
                     setFormErrors({ ...formErrors, origin: undefined });
                   }
@@ -222,13 +223,13 @@ export function DiscountForm({
               >
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialBank}
+                    value={formData.newCredentialBank || undefined}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
-                      onFormDataChange({
-                        ...formData,
+                      onFormDataChange((prev) => ({
+                        ...prev,
                         newCredentialBank: value,
-                      });
+                      }));
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -250,13 +251,13 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialType}
+                    value={formData.newCredentialType || undefined}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
-                      onFormDataChange({
-                        ...formData,
+                      onFormDataChange((prev) => ({
+                        ...prev,
                         newCredentialType: value,
-                      });
+                      }));
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -278,13 +279,13 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialBrand}
+                    value={formData.newCredentialBrand || undefined}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
-                      onFormDataChange({
-                        ...formData,
+                      onFormDataChange((prev) => ({
+                        ...prev,
                         newCredentialBrand: value,
-                      });
+                      }));
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -306,13 +307,13 @@ export function DiscountForm({
 
                 <div className="flex-1">
                   <Select
-                    value={formData.newCredentialLevel}
+                    value={formData.newCredentialLevel || undefined}
                     onValueChange={(value) => {
                       setCredentialError(""); // Limpiar error al cambiar
-                      onFormDataChange({
-                        ...formData,
+                      onFormDataChange((prev) => ({
+                        ...prev,
                         newCredentialLevel: value,
-                      });
+                      }));
                     }}
                   >
                     <SelectTrigger className="w-full">
@@ -449,14 +450,14 @@ export function DiscountForm({
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <Select
-                      value={formData.newMembershipEntity || ""}
+                      value={formData.newMembershipEntity || undefined}
                       onValueChange={(value) => {
                         if (value && value.trim() !== "") {
                           setMembershipError(""); // Limpiar error al cambiar
-                          onFormDataChange({
-                            ...formData,
+                          onFormDataChange((prev) => ({
+                            ...prev,
                             newMembershipEntity: value,
-                          });
+                          }));
                         }
                       }}
                     >

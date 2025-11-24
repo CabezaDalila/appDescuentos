@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 interface DiscountFormData {
   title: string;
   origin: string;
-  category: string | undefined;
+  category: string;
   expirationDate: string;
   description: string;
   discountPercentage: string;
@@ -44,7 +44,7 @@ interface UseDiscountFormReturn {
 const initialFormData: DiscountFormData = {
   title: "",
   origin: "",
-  category: undefined,
+  category: "",
   expirationDate: "",
   description: "",
   discountPercentage: "",
@@ -72,12 +72,10 @@ export function useDiscountForm(): UseDiscountFormReturn {
   );
 
   const handleCategoryChange = useCallback((value: string) => {
-    if (value && value.trim() !== "") {
-      setFormData((prev) => ({
-        ...prev,
-        category: value,
-      }));
-    }
+    setFormData((prev) => ({
+      ...prev,
+      category: value || "",
+    }));
   }, []);
 
   const handleEditDiscount = useCallback((discount: ManualDiscount) => {
@@ -85,7 +83,7 @@ export function useDiscountForm(): UseDiscountFormReturn {
     setFormData({
       title: discount.title,
       origin: discount.origin,
-      category: discount.category,
+      category: discount.category || "",
       expirationDate: discount.expirationDate
         ? new Date(discount.expirationDate).toISOString().split("T")[0]
         : "",
@@ -137,7 +135,7 @@ export function useDiscountForm(): UseDiscountFormReturn {
     return !!(
       formData.title.trim() &&
       formData.origin.trim() &&
-      formData.category &&
+      formData.category.trim() &&
       formData.expirationDate
     );
   }, [formData]);

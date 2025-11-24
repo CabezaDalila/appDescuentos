@@ -6,6 +6,13 @@ import {
   CardTitle,
 } from "@/components/Share/card";
 import { Label } from "@/components/Share/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
 import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
@@ -609,22 +616,24 @@ export default function AddMembershipPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="membership">Selecciona la membresía</Label>
-                    <select
-                      id="membership"
-                      value={selectedMembership}
-                      onChange={(e) => setSelectedMembership(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    <Select
+                      value={selectedMembership || undefined}
+                      onValueChange={(value) => setSelectedMembership(value)}
                       required
                     >
-                      <option value="">Selecciona una opción...</option>
-                      {membershipOptions[
-                        formData.category as keyof typeof membershipOptions
-                      ]?.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona una opción..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {membershipOptions[
+                          formData.category as keyof typeof membershipOptions
+                        ]?.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <Button
