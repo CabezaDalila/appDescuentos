@@ -106,6 +106,20 @@ export const CATEGORY_MAPPING: CategoryMapping = {
     "idiomas",
     "capacitación",
   ],
+  wallets: [
+    "wallets",
+    "billeteras",
+    "billetera",
+    "wallet",
+    "mercado pago",
+    "mercadopago",
+    "personal pay",
+    "personalpay",
+    "yoy",
+    "pagos digitales",
+    "pago digital",
+    "dinero digital",
+  ],
 };
 
 /**
@@ -248,6 +262,20 @@ export const getImageByCategory = (category?: string): string => {
     escuela: "/education/default.avif",
     idiomas: "/education/default.avif",
     capacitación: "/education/default.avif",
+
+    // Billeteras
+    billeteras: "/wallets/default.avif",
+    billetera: "/wallets/default.avif",
+    wallets: "/wallets/default.avif",
+    wallet: "/wallets/default.avif",
+    "mercado pago": "/wallets/default.avif",
+    mercadopago: "/wallets/default.avif",
+    "personal pay": "/wallets/default.avif",
+    personalpay: "/wallets/default.avif",
+    yoy: "/wallets/default.avif",
+    "pagos digitales": "/wallets/default.avif",
+    "pago digital": "/wallets/default.avif",
+    "dinero digital": "/wallets/default.avif",
 
     // General (por defecto)
     general: "/imgDefault.svg",

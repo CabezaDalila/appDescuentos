@@ -27,7 +27,10 @@ export interface Membership {
     | "salud"
     | "educacion"
     | "seguro"
-    | "telecomunicacion";
+    | "telecomunicacion"
+    | "billeteras"
+    | "streaming"
+    | "gym";
   status: "active" | "inactive";
   color: string;
   cards: Card[];

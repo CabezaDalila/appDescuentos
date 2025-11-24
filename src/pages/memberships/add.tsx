@@ -81,6 +81,13 @@ export default function AddMembershipPage() {
       color: "#DDA0DD",
       icon: "🏦",
     },
+    {
+      id: "billeteras",
+      name: "Billeteras",
+      description: "MercadoPago, PersonalPay, Yoy",
+      color: "#00CED1",
+      icon: "💳",
+    },
   ];
 
   const banks = [
@@ -170,6 +177,18 @@ export default function AddMembershipPage() {
       "Functional",
       "Boxing",
       "Natación",
+    ],
+    billeteras: [
+      "MercadoPago",
+      "PersonalPay",
+      "Yoy",
+      "Ualá",
+      "Bimo",
+      "Brubank",
+      "Rebanking",
+      "Naranja X",
+      "Modo",
+      "Cuenta DNI",
     ],
   };
 

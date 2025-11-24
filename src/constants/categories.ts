@@ -11,6 +11,7 @@ import {
   Sparkles,
   Target,
   Utensils,
+  Wallet,
 } from "lucide-react";
 
 // Categorías predefinidas para descuentos
@@ -171,6 +172,27 @@ export const DISCOUNT_CATEGORIES: Category[] = [
   },
 
   {
+    id: "wallets",
+    name: "Billeteras",
+    displayName: "💳 Billeteras",
+    keywords: [
+      "billeteras",
+      "billetera",
+      "wallet",
+      "wallets",
+      "mercado pago",
+      "mercadopago",
+      "personal pay",
+      "personalpay",
+      "yoy",
+      "pagos digitales",
+      "pago digital",
+      "dinero digital",
+    ],
+    color: "bg-cyan-100 text-cyan-800",
+    icon: "💳",
+  },
+  {
     id: "general",
     name: "General",
     displayName: "🎯 General",
@@ -314,6 +336,12 @@ export const EXPLORE_CATEGORIES: ExploreCategory[] = [
     label: "Educación",
     color: "bg-gradient-to-br from-indigo-400 to-indigo-600",
     icon: BookOpen,
+  },
+  {
+    id: "wallets",
+    label: "Billeteras",
+    color: "bg-gradient-to-br from-cyan-400 to-cyan-600",
+    icon: Wallet,
   },
   {
     id: "general",
