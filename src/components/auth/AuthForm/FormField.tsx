@@ -1,5 +1,5 @@
-import { Label } from "@/components/Share/label";
 import { Input } from "@/components/Share/input";
+import { Label } from "@/components/Share/label";
 import { LucideIcon } from "lucide-react";
 import React, { memo } from "react";
 
@@ -53,7 +53,11 @@ export const FormField = memo(function FormField({
         maxLength={maxLength}
         onFocus={onFocus}
         onBlur={onBlur}
-        className={error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""}
+        className={
+          error
+            ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
+            : ""
+        }
       />
       {error && (
         <p className="text-sm text-red-500 flex items-center gap-1">
@@ -64,4 +68,3 @@ export const FormField = memo(function FormField({
     </div>
   );
 });
-

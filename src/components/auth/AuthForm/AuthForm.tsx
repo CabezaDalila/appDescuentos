@@ -763,7 +763,7 @@ export default function AuthForm() {
                       disabled={isLoading}
                       className={`w-[90px] h-10 ${
                         validationErrors.phone
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
                           : ""
                       }`}
                       maxLength={4}
@@ -788,7 +788,7 @@ export default function AuthForm() {
                       disabled={isLoading}
                       className={`flex-1 h-10 ${
                         validationErrors.phone
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                          ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
                           : ""
                       }`}
                       maxLength={9}
@@ -813,7 +813,7 @@ export default function AuthForm() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Ingresa tu contraseña"
                   value={formData.password}
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
@@ -823,9 +823,9 @@ export default function AuthForm() {
                   disabled={isLoading}
                   className={
                     validationErrors.password
-                      ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                      ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
                       : formData.password.length > 0 && passwordIsValid
-                      ? "border-green-500 focus:border-green-500 focus:ring-green-500"
+                      ? "border-green-500 focus-visible:border-green-500 focus-visible:ring-2 focus-visible:ring-green-500"
                       : ""
                   }
                 />
