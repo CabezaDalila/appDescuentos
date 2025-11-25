@@ -86,7 +86,6 @@ export function useDiscountForm(): UseDiscountFormReturn {
           .availableMemberships || [],
       newMembershipCategory: "",
       newMembershipEntity: "",
-      // Campo de ubicación simplificado
       locationAddress:
         (discount as unknown as ManualDiscount).location?.address || "",
       locationCoordinates: (() => {
