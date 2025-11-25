@@ -1,5 +1,13 @@
-import { ChevronRight, Pencil, CreditCard, Bell, Shield, MapPin, HelpCircle, LogOut } from "lucide-react";
-import { useRouter } from "next/router";
+import {
+  Bell,
+  ChevronRight,
+  CreditCard,
+  HelpCircle,
+  LogOut,
+  MapPin,
+  Pencil,
+  Shield,
+} from "lucide-react";
 
 interface ProfileSectionProps {
   title: string;
@@ -30,16 +38,26 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
               item.variant === "danger" ? "text-red-600 hover:bg-red-50" : ""
             } ${item.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              item.variant === "danger" ? "bg-red-100" : "bg-gray-100"
-            }`}>
-              <div className={item.variant === "danger" ? "text-red-600" : "text-gray-600"}>
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                item.variant === "danger" ? "bg-red-100" : "bg-gray-100"
+              }`}
+            >
+              <div
+                className={
+                  item.variant === "danger" ? "text-red-600" : "text-gray-600"
+                }
+              >
                 {item.icon}
               </div>
             </div>
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
-                <span className={`font-medium ${item.variant === "danger" ? "text-red-600" : "text-gray-900"}`}>
+                <span
+                  className={`font-medium ${
+                    item.variant === "danger" ? "text-red-600" : "text-gray-900"
+                  }`}
+                >
                   {item.title}
                 </span>
                 {item.badge && (
@@ -48,7 +66,11 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
                   </span>
                 )}
               </div>
-              <p className={`text-sm ${item.variant === "danger" ? "text-red-500" : "text-gray-600"}`}>
+              <p
+                className={`text-sm ${
+                  item.variant === "danger" ? "text-red-500" : "text-gray-600"
+                }`}
+              >
                 {item.description}
               </p>
             </div>
@@ -63,13 +85,19 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
 }
 
 // Función helper para crear las secciones del perfil
-export function createProfileSections(router: any, onLogout: () => void, onSettings: () => void, membershipsCount: number = 0, loggingOut: boolean = false) {
+export function createProfileSections(
+  router: any,
+  onLogout: () => void,
+  onSettings: () => void,
+  membershipsCount: number = 0,
+  loggingOut: boolean = false
+) {
   const miCuentaItems: ProfileItem[] = [
     {
       icon: <Pencil className="h-5 w-5" />,
       title: "Editar perfil",
       description: "Actualiza tu información personal",
-      onClick: () => router.push("/profile/edit"),
+      onClick: () => router.push("/profile/ProfileForm"),
     },
     {
       icon: <CreditCard className="h-5 w-5" />,

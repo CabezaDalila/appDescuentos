@@ -1,5 +1,5 @@
 import { DiscountCard } from "@/components/admin/discounts/ui/DiscountCard";
-import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm";
+import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm/DiscountForm";
 import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEmptyState";
 import { DiscountsSelectAll } from "@/components/admin/discounts/ui/DiscountsSelectAll";
 import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/DiscountsSelectionBar";

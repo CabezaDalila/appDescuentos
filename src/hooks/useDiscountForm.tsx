@@ -1,33 +1,6 @@
+import { DiscountFormData } from "@/components/admin/discounts/ui/DiscountForm/DiscountForm";
 import { ManualDiscount } from "@/types/admin";
 import { useCallback, useState } from "react";
-
-interface DiscountFormData {
-  title: string;
-  origin: string;
-  category: string;
-  expirationDate: string;
-  description: string;
-  discountPercentage: string;
-  discountAmount: string;
-  imageUrl: string;
-  url: string;
-  isVisible: boolean;
-  availableCredentials: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
-  newCredentialType: string;
-  newCredentialBrand: string;
-  newCredentialLevel: string;
-  newCredentialBank: string;
-  availableMemberships: string[];
-  newMembershipCategory: string;
-  newMembershipEntity: string;
-  locationAddress: string;
-  locationCoordinates?: { lat: number; lng: number };
-}
 
 interface UseDiscountFormReturn {
   formData: DiscountFormData;
@@ -71,9 +44,10 @@ export function useDiscountForm(): UseDiscountFormReturn {
     null
   );
 
-  const handleCategoryChange = useCallback(() => {
+  const handleCategoryChange = useCallback((value: string) => {
     setFormData((prev) => ({
       ...prev,
+      category: value,
     }));
   }, []);
 

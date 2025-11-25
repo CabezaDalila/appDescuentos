@@ -1,6 +1,22 @@
-import { AlertTriangle, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
-import React, { useState } from "react";
-import toast from "react-hot-toast";
+import { Badge } from "@/components/Share/badge";
+import { Button } from "@/components/Share/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/Share/dialog";
+import { Label } from "@/components/Share/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
+import { Separator } from "@/components/Share/separator";
+import { Switch } from "@/components/Share/switch";
 import {
   Card,
   CARD_BRANDS,
@@ -8,27 +24,12 @@ import {
   CARD_TYPES,
   CardLevel,
   Membership,
-} from "../../constants/membership";
-import { validateExpiry } from "../../lib/card-utils";
-import { Badge } from "../Share/badge";
-import { Button } from "../Share/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "../Share/dialog";
-import { Label } from "../Share/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../Share/select";
-import { Separator } from "../Share/separator";
-import { Switch } from "../Share/switch";
+} from "@/constants/membership";
+import { AlertTriangle, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import toast from "react-hot-toast";
+import * as yup from "yup";
+import { cardFormSchema } from "./validations";
 
 interface MembershipDetailModalProps {
   membership: Membership | null;
@@ -143,29 +144,19 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
       return;
     }
 
-    // Validar datos de la tarjeta
-    const errors: string[] = [];
-
-    if (!cardFormData.type) {
-      errors.push("Debe seleccionar un tipo de tarjeta");
+    // Validar con Yup
+    try {
+      await cardFormSchema.validate(cardFormData, { abortEarly: false });
+    } catch (error) {
+      if (error instanceof yup.ValidationError) {
+        error.inner.forEach((err) => {
+          toast.error(err.message);
+        });
+        return;
+      }
     }
 
-    if (!cardFormData.brand) {
-      errors.push("Debe seleccionar una marca de tarjeta");
-    }
-
-    if (!cardFormData.level) {
-      errors.push("Debe seleccionar un nivel de tarjeta");
-    }
-
-    // Validar formato de fecha de vencimiento
-    if (cardFormData.expiryDate && !validateExpiry(cardFormData.expiryDate)) {
-      errors.push(
-        "La fecha de vencimiento debe tener formato MM/YY y no puede ser una fecha pasada"
-      );
-    }
-
-    // Verificar duplicados
+    // Verificar duplicados (validación de negocio que no puede ir en Yup)
     const isDuplicate = localMembership.cards.some(
       (card) =>
         card.type === cardFormData.type &&
@@ -175,11 +166,7 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     );
 
     if (isDuplicate) {
-      errors.push("Ya existe una tarjeta con estas características");
-    }
-
-    if (errors.length > 0) {
-      errors.forEach((error) => toast.error(error));
+      toast.error("Ya existe una tarjeta con estas características");
       return;
     }
 

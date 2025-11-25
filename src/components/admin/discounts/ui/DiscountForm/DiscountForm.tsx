@@ -2,7 +2,6 @@ import { Button } from "@/components/Share/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -29,12 +28,15 @@ import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
 import { Edit, Gift, Save, X } from "lucide-react";
 import React, { useState } from "react";
-import { AddressSearch } from "./addressSearch";
+import toast from "react-hot-toast";
+import * as yup from "yup";
+import { AddressSearch } from "../addressSearch";
+import { discountFormSchema } from "./validations";
 
-interface DiscountFormData {
+export interface DiscountFormData {
   title: string;
   origin: string;
-  category: string | undefined;
+  category: string;
   expirationDate: string;
   description: string;
   discountPercentage: string;
@@ -95,73 +97,84 @@ export function DiscountForm({
 }: DiscountFormProps) {
   const [credentialError, setCredentialError] = useState<string>("");
   const [membershipError, setMembershipError] = useState<string>("");
-  const [formErrors, setFormErrors] = useState<{
-    title?: string;
-    origin?: string;
-    category?: string;
-    expirationDate?: string;
-  }>({});
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   if (!showForm) return null;
 
-  // Determinar si es edición o creación
   const isEditing = !!editingDiscount;
-
-  // Función de validación
-  const validateForm = () => {
-    const errors: {
-      title?: string;
-      origin?: string;
-      category?: string;
-      expirationDate?: string;
-    } = {};
-
-    if (!formData.title.trim()) {
-      errors.title = "El título es obligatorio";
-    }
-    if (!formData.origin.trim()) {
-      errors.origin = "El origen es obligatorio";
-    }
-    if (!formData.category) {
-      errors.category = "La categoría es obligatoria";
-    }
-    if (!formData.expirationDate) {
-      errors.expirationDate = "La fecha de expiración es obligatoria";
-    }
-
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
 
   return (
     <Dialog open={showForm} onOpenChange={onShowFormChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isEditing ? (
-              <Edit className="h-5 w-5" />
-            ) : (
-              <Gift className="h-5 w-5" />
-            )}
-            {isEditing ? "Editar Descuento" : "Nuevo Descuento"}
+          <DialogTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <Edit className="h-5 w-5" />
+              ) : (
+                <Gift className="h-5 w-5" />
+              )}
+              {isEditing ? "Editar Descuento" : "Nuevo Descuento"}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="isVisible" className="text-sm font-medium">
+                Visible
+              </Label>
+              <Switch
+                id="isVisible"
+                checked={formData.isVisible}
+                onCheckedChange={(checked: boolean) =>
+                  onFormDataChange({ ...formData, isVisible: checked })
+                }
+              />
+            </div>
           </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Modifica la información del descuento seleccionado"
-              : "Completa la información del descuento que deseas agregar"}
-          </DialogDescription>
         </DialogHeader>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            if (validateForm()) {
+
+            try {
+              await discountFormSchema.validate(formData, {
+                abortEarly: false,
+              });
+              setFormErrors({});
               onSubmit(e);
+            } catch (error) {
+              if (error instanceof yup.ValidationError) {
+                const errors: Record<string, string> = {};
+                error.inner.forEach((err) => {
+                  if (err.path) {
+                    errors[err.path] = err.message;
+                  }
+                });
+                setFormErrors(errors);
+                // Mostrar toast con resumen de errores
+                const errorCount = Object.keys(errors).length;
+                if (errorCount > 0) {
+                  toast.error(
+                    `Por favor corrige ${errorCount} error${
+                      errorCount > 1 ? "es" : ""
+                    } en el formulario`
+                  );
+                }
+                // Hacer scroll al primer error
+                const firstErrorField = document.querySelector(
+                  `[id="${error.inner[0]?.path}"], .border-red-500`
+                );
+                if (firstErrorField) {
+                  firstErrorField.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                }
+              }
             }
           }}
-          className="space-y-4"
+          className="flex flex-col gap-4"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="title">Título del Descuento *</Label>
               <Input
                 id="title"
@@ -169,25 +182,32 @@ export function DiscountForm({
                 onChange={(e) => {
                   onFormDataChange({ ...formData, title: e.target.value });
                   if (formErrors.title) {
-                    setFormErrors({ ...formErrors, title: undefined });
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.title;
+                      return newErrors;
+                    });
                   }
                 }}
                 placeholder="Ej: 50% off en smartphones"
-                required
                 className={formErrors.title ? "border-red-500" : ""}
               />
               {formErrors.title && (
-                <p className="text-red-500 text-sm">{formErrors.title}</p>
+                <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
               )}
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="origin">Origen/Tienda *</Label>
               <Select
                 value={formData.origin}
                 onValueChange={(value) => {
                   onFormDataChange((prev) => ({ ...prev, origin: value }));
                   if (formErrors.origin) {
-                    setFormErrors({ ...formErrors, origin: undefined });
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.origin;
+                      return newErrors;
+                    });
                   }
                 }}
               >
@@ -207,11 +227,11 @@ export function DiscountForm({
                 </SelectContent>
               </Select>
               {formErrors.origin && (
-                <p className="text-red-500 text-sm">{formErrors.origin}</p>
+                <p className="text-red-500 text-sm mt-1">{formErrors.origin}</p>
               )}
             </div>
             <div className="col-span-2">
-              <Label className="text-base font-medium block ">
+              <Label className="block">
                 Tarjetas que aplican para este descuento
               </Label>
 
@@ -308,7 +328,7 @@ export function DiscountForm({
                   <Select
                     value={formData.newCredentialLevel}
                     onValueChange={(value) => {
-                      setCredentialError(""); // Limpiar error al cambiar
+                      setCredentialError("");
                       onFormDataChange((prev) => ({
                         ...prev,
                         newCredentialLevel: value,
@@ -362,7 +382,7 @@ export function DiscountForm({
                         );
 
                         if (!exists) {
-                          setCredentialError(""); // Limpiar error
+                          setCredentialError("");
                           onFormDataChange({
                             ...formData,
                             availableCredentials: [
@@ -439,10 +459,12 @@ export function DiscountForm({
                   {credentialError}
                 </div>
               )}
+            </div>
 
-              {/* Sección de Membresías */}
-              <div className="flex flex-col mt-4">
-                <Label className="text-base font-medium block mb-0.5">
+            {/* Sección de Membresías */}
+            <div className="col-span-2">
+              <div className="flex flex-col">
+                <Label className="block mb-0.5">
                   Membresías que aplican para este descuento
                 </Label>
 
@@ -466,7 +488,7 @@ export function DiscountForm({
                       <SelectContent className="max-h-64 overflow-y-auto">
                         {Object.entries(ENTITIES_BY_CATEGORY).flatMap(
                           ([, entities]) =>
-                            entities.map((entity) => (
+                            (entities as readonly string[]).map((entity) => (
                               <SelectItem
                                 key={entity}
                                 value={String(entity)}
@@ -559,40 +581,47 @@ export function DiscountForm({
                   </div>
                 )}
               </div>
-
-              {/* Campo de categoría del descuento */}
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => {
-                    onCategoryChange(value);
-                    if (formErrors.category) {
-                      setFormErrors({ ...formErrors, category: undefined });
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    className={`w-full ${
-                      formErrors.category ? "border-red-500" : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Selecciona una categoría" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64 overflow-y-auto">
-                    {CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formErrors.category && (
-                  <p className="text-red-500 text-sm">{formErrors.category}</p>
-                )}
-              </div>
             </div>
-            <div className="space-y-2">
+
+            {/* Campo de categoría del descuento */}
+            <div>
+              <Label htmlFor="category">Categoría *</Label>
+              <Select
+                value={formData.category || undefined}
+                onValueChange={(value) => {
+                  onCategoryChange(value);
+                  if (formErrors.category) {
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.category;
+                      return newErrors;
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger
+                  id="category"
+                  className={`w-full ${
+                    formErrors.category ? "border-red-500" : ""
+                  }`}
+                >
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  {CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.category && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.category}
+                </p>
+              )}
+            </div>
+            <div>
               <Label htmlFor="expirationDate">Fecha de Expiración *</Label>
               <Input
                 id="expirationDate"
@@ -604,21 +633,24 @@ export function DiscountForm({
                     expirationDate: e.target.value,
                   });
                   if (formErrors.expirationDate) {
-                    setFormErrors({ ...formErrors, expirationDate: undefined });
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.expirationDate;
+                      return newErrors;
+                    });
                   }
                 }}
-                required
                 min={new Date().toISOString().split("T")[0]}
                 className={formErrors.expirationDate ? "border-red-500" : ""}
               />
               {formErrors.expirationDate && (
-                <p className="text-red-500 text-sm">
+                <p className="text-red-500 text-sm mt-1">
                   {formErrors.expirationDate}
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="imageUrl">URL de Imagen (opcional)</Label>
+            <div>
+              <Label htmlFor="imageUrl">URL de Imagen</Label>
               <Input
                 id="imageUrl"
                 type="url"
@@ -629,8 +661,8 @@ export function DiscountForm({
                 placeholder="https://ejemplo.com/imagen.jpg"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="url">URL del Descuento (opcional)</Label>
+            <div>
+              <Label htmlFor="url">URL del Descuento</Label>
               <Input
                 id="url"
                 type="url"
@@ -642,43 +674,51 @@ export function DiscountForm({
               />
             </div>
             {/* Sección de Ubicación Simplificada */}
-            <div className="col-span-2 space-y-4">
-              <div className="border-t pt-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Ubicación del Descuento
-                </h3>
-                <AddressSearch
-                  value={formData.locationAddress}
-                  onChange={(address, coordinates) => {
-                    onFormDataChange({
-                      ...formData,
-                      locationAddress: address,
-                      locationCoordinates: coordinates,
-                    });
-                  }}
-                  placeholder="Buscar dirección del descuento..."
-                  label="Dirección del Establecimiento"
-                  required={false}
-                />
-              </div>
+            <div className="col-span-2">
+              <AddressSearch
+                value={formData.locationAddress}
+                onChange={(address, coordinates) => {
+                  onFormDataChange({
+                    ...formData,
+                    locationAddress: address,
+                    locationCoordinates: coordinates,
+                  });
+                }}
+                placeholder="Buscar dirección del descuento..."
+                label="Dirección del Establecimiento"
+                required={false}
+              />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="discountAmount">Tope de Descuento</Label>
               <Input
                 id="discountAmount"
                 type="number"
                 min="0"
                 value={formData.discountAmount}
-                onChange={(e) =>
+                onChange={(e) => {
                   onFormDataChange({
                     ...formData,
                     discountAmount: e.target.value,
-                  })
-                }
+                  });
+                  if (formErrors.discountAmount) {
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.discountAmount;
+                      return newErrors;
+                    });
+                  }
+                }}
                 placeholder="Ej: 1000"
+                className={formErrors.discountAmount ? "border-red-500" : ""}
               />
+              {formErrors.discountAmount && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.discountAmount}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="discountPercentage">
                 Porcentaje de Descuento
               </Label>
@@ -688,18 +728,33 @@ export function DiscountForm({
                 min="0"
                 max="100"
                 value={formData.discountPercentage}
-                onChange={(e) =>
+                onChange={(e) => {
                   onFormDataChange({
                     ...formData,
                     discountPercentage: e.target.value,
-                  })
-                }
+                  });
+                  if (formErrors.discountPercentage) {
+                    setFormErrors((prev) => {
+                      const newErrors = { ...prev };
+                      delete newErrors.discountPercentage;
+                      return newErrors;
+                    });
+                  }
+                }}
                 placeholder="Ej: 25"
+                className={
+                  formErrors.discountPercentage ? "border-red-500" : ""
+                }
               />
+              {formErrors.discountPercentage && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.discountPercentage}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="description">Descripción</Label>
             <Textarea
               id="description"
@@ -712,29 +767,10 @@ export function DiscountForm({
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isVisible"
-                checked={formData.isVisible}
-                onCheckedChange={(checked: boolean) =>
-                  onFormDataChange({ ...formData, isVisible: checked })
-                }
-              />
-              <Label htmlFor="isVisible" className="text-sm font-medium">
-                Visible para usuarios
-              </Label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Si está desactivado, el descuento no será visible para los
-              usuarios finales
-            </p>
-          </div>
-
           {/* Campo de razón de rechazo si está habilitado */}
           {showRejectionReason && (
-            <div className="space-y-2">
-              <Label htmlFor="rejectionReason" className="text-sm font-medium">
+            <div>
+              <Label htmlFor="rejectionReason">
                 Razón del rechazo (si aplica)
               </Label>
               <Textarea

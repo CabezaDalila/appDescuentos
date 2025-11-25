@@ -119,8 +119,8 @@ export function AddressSearch({
   };
 
   return (
-    <div className="space-y-2 relative">
-      <Label htmlFor="address-search" className="text-base font-medium">
+    <div className="relative">
+      <Label htmlFor="address-search">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
 

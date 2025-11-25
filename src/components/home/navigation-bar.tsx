@@ -42,7 +42,7 @@ export function NavigationBar({
       <div className="space-y-4">
         <div className="px-2 xl:px-4 pt-4">
           <button
-            className="w-full flex items-center gap-3 h-auto py-3 px-3 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
+            className="w-full flex items-center justify-center xl:justify-start gap-3 h-auto py-3 px-3 rounded-lg transition-colors text-purple-600 hover:bg-purple-50"
             onClick={adminFooter.ctaButton.onClick}
             title={adminFooter.ctaButton.label}
           >
