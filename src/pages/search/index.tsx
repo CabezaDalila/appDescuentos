@@ -6,7 +6,7 @@ import { EXPLORE_CATEGORIES } from "@/constants/categories";
 import {
   getDiscountsBySearch,
   getHomePageDiscounts,
-  getNearbyDiscounts,
+  getNearbyDiscountsProgressive,
   getPersonalizedDiscounts,
   MAX_DISTANCE_KM,
 } from "@/lib/discounts";
@@ -19,7 +19,6 @@ import { Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// Tipo para descuentos de la página de inicio
 type HomePageDiscount = {
   id: string;
   title: string;
@@ -47,6 +46,7 @@ export default function Search() {
   );
   const [allDiscounts, setAllDiscounts] = useState<SearchDiscount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const hasInitialLoad = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -66,7 +66,7 @@ export default function Search() {
   const [maxCategoryChips, setMaxCategoryChips] = useState(2);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const mediaQueryList = window.matchMedia("(min-width: 1024px)"); // lg breakpoint
+    const mediaQueryList = window.matchMedia("(min-width: 1024px)");
     const applyBreakpoint = (matches: boolean) =>
       setMaxCategoryChips(matches ? 4 : 2);
     applyBreakpoint(mediaQueryList.matches);
@@ -88,13 +88,11 @@ export default function Search() {
     const handler = setTimeout(async () => {
       const next = searchTerm.trim();
 
-      // Buscar sugerencias con debounce (evita tildeos)
       if (next.length >= 2) {
         try {
           setIsSearching(true);
           const results = await getDiscountsBySearch(next);
           setSearchResults(results);
-          // El SearchSection maneja el estado de showSearchResults a través de onSearchFocus
         } catch {
           setSearchResults([]);
           setShowSearchResults(false);
@@ -106,7 +104,6 @@ export default function Search() {
         setShowSearchResults(false);
       }
 
-      // Mantener la URL sincronizada con 'search'
       if (next === currentUrlTerm) return;
       if (next.length === 0) {
         const baseQuery: Record<string, string> = {};
@@ -127,7 +124,6 @@ export default function Search() {
     return () => clearTimeout(handler);
   }, [searchTerm, search, q, category, router]);
 
-  // Helper geolocation
   const getCurrentPosition = () =>
     new Promise<{ lat: number; lng: number }>((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -145,7 +141,6 @@ export default function Search() {
       );
     });
 
-  // Función para aplicar filtros localmente (sin recargar desde servidor)
   const applyFiltersLocal = (
     discounts: SearchDiscount[],
     categoryIds: string[]
@@ -207,14 +202,11 @@ export default function Search() {
     setFilteredDiscounts(filtered);
   };
 
-  // Función para aplicar filtros en tiempo real (sin cerrar el popup) - solo filtra localmente
   const applyFiltersRealtime = useCallback(async () => {
     setSelectedCategories(draftCategories);
     setIsLocationFilter(draftNearby);
 
-    // Aplicar filtros localmente sin recargar desde el servidor
     if (draftNearby) {
-      // Si se activa el filtro de ubicación, necesitamos recargar
       try {
         const pos = await getCurrentPosition();
         const queryObj: Record<string, string> = {};
@@ -228,16 +220,13 @@ export default function Search() {
           shallow: true,
         });
       } catch {
-        // Si falla geolocalización, solo aplicar filtros de categorías localmente
         applyFiltersLocal(allDiscounts, draftCategories);
       }
     } else {
-      // Solo aplicar filtros de categorías localmente
       applyFiltersLocal(allDiscounts, draftCategories);
     }
   }, [draftCategories, draftNearby, allDiscounts, searchTerm, router]);
 
-  // Sincronizar drafts con los valores actuales cuando se abre el popup
   useEffect(() => {
     if (showFilters) {
       setDraftCategories(selectedCategories);
@@ -245,10 +234,8 @@ export default function Search() {
     }
   }, [showFilters, selectedCategories, isLocationFilter]);
 
-  // Aplicar filtros en tiempo real cuando cambian los drafts (solo si el popup está abierto)
   useEffect(() => {
     if (showFilters) {
-      // Usar un pequeño delay para evitar múltiples llamadas rápidas
       const timeoutId = setTimeout(() => {
         applyFiltersRealtime();
       }, 300);
@@ -263,7 +250,6 @@ export default function Search() {
     let filtered = allDiscounts;
 
     if (selectedCategoryIds && selectedCategoryIds.length > 0) {
-      // Preparar unión entre 'favoritos' y categorías
       const includeFavorites = selectedCategoryIds.includes("favoritos");
       const categoryIdsOnly = selectedCategoryIds.filter(
         (categoryId) => categoryId !== "favoritos"
@@ -276,7 +262,6 @@ export default function Search() {
           : null;
 
         if ("name" in allDiscounts[0]) {
-          // Datos completos tipo Discount
           const fullDiscounts = allDiscounts as Discount[];
           filtered = fullDiscounts.filter((discountItem) => {
             const isFavorite = includeFavorites
@@ -295,7 +280,6 @@ export default function Search() {
             );
           }) as SearchDiscount[];
         } else {
-          // Datos resumidos tipo HomePageDiscount
           filtered = (allDiscounts as HomePageDiscount[]).filter(
             (discountItem) => {
               const isFavorite = includeFavorites
@@ -323,12 +307,9 @@ export default function Search() {
     setFilteredDiscounts(filtered);
   };
 
-  // Cargar descuentos y aplicar filtros
   useEffect(() => {
-    // Si viene una orden de abrir un detalle, redirigir a la vista de detalle y limpiar la query
     if (typeof openId === "string" && openId.length > 0) {
       const id = openId;
-      // Limpiar openId de la URL sin recargar toda la página
       const cleanQuery: Record<string, string> = {};
       Object.entries(router.query).forEach(([k, v]) => {
         if (k === "openId") return;
@@ -341,7 +322,6 @@ export default function Search() {
       return;
     }
 
-    // Si solo cambian las categorías y ya tenemos datos cargados, solo aplicar filtros localmente
     const categoriesRaw = router.query.categories as unknown;
     const urlCategories: string[] = [];
     if (typeof categoriesRaw === "string") {
@@ -355,10 +335,11 @@ export default function Search() {
       urlCategories.push(category as string);
     }
 
-    // Si solo cambió categories y ya tenemos datos, solo filtrar localmente
+    const hasLocationFilter = location === "true" && lat && lng;
     const hasOnlyCategoryChange =
       hasInitialLoad.current &&
       allDiscounts.length > 0 &&
+      !hasLocationFilter &&
       !location &&
       !lat &&
       !lng &&
@@ -374,15 +355,14 @@ export default function Search() {
 
     const loadDiscounts = async () => {
       try {
-        setLoading(true);
+        setFilteredDiscounts([]);
+        setAllDiscounts([]);
 
-        // Verificar si hay filtro de ubicación
         const hasLocationFilter = location === "true" && lat && lng;
         setIsLocationFilter(!!hasLocationFilter);
         setDraftNearby(!!hasLocationFilter);
-        if (hasLocationFilter) {
-          setFilteredDiscounts([]);
-        }
+
+        setLoading(true);
 
         let data: SearchDiscount[] = [];
 
@@ -390,9 +370,89 @@ export default function Search() {
           const latitude = parseFloat(lat as string);
           const longitude = parseFloat(lng as string);
 
-          data = await getNearbyDiscounts(latitude, longitude, MAX_DISTANCE_KM);
+          setLoadingMore(true);
+          setLoading(true);
+
+          let urlCategories: string[] = [];
+          const categoriesRaw = router.query.categories as unknown;
+          if (typeof categoriesRaw === "string") {
+            urlCategories = (categoriesRaw as string)
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean);
+          } else if (typeof category === "string") {
+            urlCategories = [category as string];
+          }
+
+          const finalData = await getNearbyDiscountsProgressive(
+            latitude,
+            longitude,
+            MAX_DISTANCE_KM,
+            (batch, isComplete) => {
+              if (batch.length > 0) {
+                setAllDiscounts((prev) => {
+                  const combined = [...prev, ...batch];
+                  const unique = combined.filter(
+                    (discount, index, self) =>
+                      index === self.findIndex((d) => d.id === discount.id)
+                  );
+                  const sorted = unique.sort((a, b) => {
+                    const distanceA =
+                      "distance" in a && a.distance
+                        ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
+                        : 999;
+                    const distanceB =
+                      "distance" in b && b.distance
+                        ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
+                        : 999;
+                    return distanceA - distanceB;
+                  });
+
+                  if (urlCategories.length === 0) {
+                    setFilteredDiscounts(sorted);
+                  }
+
+                  setLoading(false);
+
+                  return sorted;
+                });
+              }
+
+              if (isComplete) {
+                setLoading(false);
+                setLoadingMore(false);
+              }
+            },
+            5
+          );
+
+          data = finalData;
+
+          setLoading(false);
+          setLoadingMore(false);
+
+          setAllDiscounts(finalData);
+          hasInitialLoad.current = true;
+
+          if (urlCategories.length > 0) {
+            applyFilters(finalData, urlCategories);
+          } else {
+            const sortedFinal = [...finalData].sort((a, b) => {
+              const distanceA =
+                "distance" in a && a.distance
+                  ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
+                  : 999;
+              const distanceB =
+                "distance" in b && b.distance
+                  ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
+                  : 999;
+              return distanceA - distanceB;
+            });
+            setFilteredDiscounts(sortedFinal);
+          }
+
+          return;
         } else if (personalized === "true") {
-          // Construir memberships y credenciales del usuario y traer personalizadas
           const memberships = await getActiveMemberships();
           const membershipNames: string[] = [];
           const credentials: UserCredential[] = [];
@@ -415,15 +475,12 @@ export default function Search() {
             ) {
               const bank = name as string;
               const { type, brand, level } = item.card || {};
-              // Tipar estrictamente usando los mismos valores del selector
               if (
                 bank &&
                 typeof type === "string" &&
                 typeof brand === "string" &&
                 typeof level === "string"
               ) {
-                // Los valores provienen del selector y son válidos;
-                // forzamos el tipo específico de forma segura
                 credentials.push({
                   bank,
                   type: type as UserCredential["type"],
@@ -445,11 +502,9 @@ export default function Search() {
           data = await getHomePageDiscounts();
         }
 
-        // Guardar todos los descuentos sin filtrar
         setAllDiscounts(data);
         hasInitialLoad.current = true;
 
-        // Obtener categorías desde la URL (nuevo 'categories', compat 'category')
         let urlCategories: string[] = [];
         const categoriesRaw = router.query.categories as unknown;
         if (typeof categoriesRaw === "string") {
@@ -461,7 +516,6 @@ export default function Search() {
           urlCategories = [category as string];
         }
 
-        // Aplicar filtros inmediatamente después de cargar los datos
         applyFilters(data, urlCategories);
       } catch (error) {
         console.error("Error cargando descuentos:", error);
@@ -471,6 +525,7 @@ export default function Search() {
     };
 
     loadDiscounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, q, category, location, lat, lng, personalized, openId, router]);
 
   const updateCategoriesInUrl = (cats: string[]) => {
@@ -491,21 +546,14 @@ export default function Search() {
     }
   };
 
-  // (clear location se hace inline donde se usa)
-
-  // Función para aplicar filtros y cerrar el popup
   const applyFiltersAndClose = () => {
-    // Solo cerrar el popup - los filtros ya se aplicaron en tiempo real
     setShowFilters(false);
 
-    // Actualizar la URL sin recargar (solo para mantener sincronización con la URL)
-    // Usar replace en lugar de push para evitar que se dispare el useEffect de carga
     const queryObj: Record<string, string> = {};
     if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
     if (draftCategories.length > 0)
       queryObj.categories = draftCategories.join(",");
     if (draftNearby) {
-      // Si hay filtro de ubicación, ya se manejó en applyFiltersRealtime
       const lat = router.query.lat as string;
       const lng = router.query.lng as string;
       if (lat && lng) {
@@ -519,7 +567,6 @@ export default function Search() {
     });
   };
 
-  // Función para limpiar todos los filtros y mostrar todos los descuentos
   const handleViewAllDiscounts = () => {
     setSelectedCategories([]);
     setIsLocationFilter(false);
@@ -534,24 +581,19 @@ export default function Search() {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 with-bottom-nav-pb">
-      {/* Header y buscador unificados en sticky */}
       <div className="sticky top-0 z-40 bg-white shadow-sm">
-        {/* Header con título y botón de retroceso */}
         <PageHeader
           title="Buscar"
           onBack={() => {
-            // Resetear el estado de búsqueda
             setSearchTerm("");
             setSelectedCategories([]);
             setShowSearchResults(false);
             setSearchResults([]);
             setIsLocationFilter(false);
-            // Redirigir al home
             router.push("/home");
           }}
         />
 
-        {/* Buscador y filtros */}
         <div className="border-b border-gray-200">
           <div className="py-3">
             <SearchSection
@@ -586,25 +628,20 @@ export default function Search() {
               compact={true}
             />
 
-            {/* Panel de filtros - Popup desde abajo estilo Spotify */}
             {showFilters && (
               <>
-                {/* Overlay oscuro con backdrop blur */}
                 <div
                   className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
                   onClick={applyFiltersAndClose}
                 />
-                {/* Popup que sale desde abajo - no tapa la barra de navegación */}
                 <div
                   className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[75vh] md:max-h-[80vh] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-w-3xl lg:w-full lg:max-h-[90vh] xl:max-w-4xl"
                   onMouseDown={(e) => e.stopPropagation()}
                 >
-                  {/* Handle bar */}
                   <div className="flex justify-center pt-2 pb-1.5 sm:pt-3 sm:pb-2 md:pt-4 md:pb-3 lg:hidden">
                     <div className="w-12 h-1.5 sm:w-14 sm:h-1.5 bg-gray-300 rounded-full" />
                   </div>
 
-                  {/* Contenido con scroll en tablets si es necesario */}
                   <div className="flex-1 overflow-y-auto px-3 pb-2 sm:px-4 sm:pb-3 md:px-6 md:pb-4 lg:px-8 lg:pb-5 xl:px-10 xl:pb-6">
                     <div className="mb-3 sm:mb-4 md:mb-5 lg:mb-6">
                       <h3 className="text-base font-semibold text-gray-900 mb-3 sm:text-lg sm:mb-4 md:text-xl md:mb-5 lg:text-2xl lg:mb-6">
@@ -711,7 +748,6 @@ export default function Search() {
                     </div>
                   </div>
 
-                  {/* Botones fijos en la parte inferior */}
                   <div className="border-t border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5 xl:px-10 xl:py-6 flex justify-end gap-2 sm:gap-3 md:gap-4 lg:gap-5">
                     <button
                       className="px-5 py-2 sm:px-6 sm:py-2.5 md:px-7 md:py-3 lg:px-8 lg:py-3.5 xl:px-10 xl:py-4 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg transition-colors shadow-sm sm:shadow-md"
@@ -734,7 +770,6 @@ export default function Search() {
             )}
           </div>
 
-          {/* Chips de filtros activos */}
           {(selectedCategories.length > 0 || isLocationFilter) && (
             <div className="px-4 pb-3">
               <div className="flex items-center gap-2 flex-wrap">
@@ -797,9 +832,8 @@ export default function Search() {
         </div>
       </div>
 
-      {/* Contenido */}
       <div className="px-4 pt-4 pb-4">
-        {loading ? (
+        {loading || (isLocationFilter && loadingMore) ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-600">
@@ -808,7 +842,7 @@ export default function Search() {
                 : "Cargando descuentos..."}
             </p>
           </div>
-        ) : filteredDiscounts.length === 0 ? (
+        ) : filteredDiscounts.length === 0 && !loadingMore ? (
           <EmptyState
             type={
               isLocationFilter
@@ -836,80 +870,93 @@ export default function Search() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDiscounts.map((discount) => {
-                // Determinar si es un HomePageDiscount o Discount
-                const isHomePageDiscount = "title" in discount;
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredDiscounts.map((discount) => {
+                  const isHomePageDiscount = "title" in discount;
 
-                return (
-                  <CardDiscountCompact
-                    key={discount.id}
-                    id={discount.id}
-                    title={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).title
-                        : (discount as Discount).name || ""
-                    }
-                    image={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).image
-                        : (discount as Discount).imageUrl ||
-                          (discount as Discount).image ||
-                          getImageByCategory(discount.category)
-                    }
-                    category={discount.category || ""}
-                    points={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).points
-                        : 0
-                    }
-                    distance={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).distance
-                        : "0.5 km"
-                    }
-                    expiration={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).expiration
-                        : "30 días"
-                    }
-                    discountPercentage={
-                      isHomePageDiscount
-                        ? (discount as HomePageDiscount).discountPercentage ||
-                          "0"
-                        : (
-                            discount as Discount
-                          ).discountPercentage?.toString() || "0"
-                    }
-                    onNavigateToDetail={() => {
-                      const distance = isHomePageDiscount
-                        ? (discount as HomePageDiscount).distance
-                        : undefined;
-                      const url = distance
-                        ? `/discount/${
-                            discount.id
-                          }?distance=${encodeURIComponent(distance)}`
-                        : `/discount/${discount.id}`;
-                      router.push(url);
-                    }}
-                    onFavoriteChange={(changedId, isFav) => {
-                      // Si está aplicado el filtro de favoritos, quitar de la lista al dejar de ser favorito
-                      if (selectedCategories.includes("favoritos") && !isFav) {
-                        setFilteredDiscounts((prev) => {
-                          const updated = prev.filter(
-                            (d) => d.id !== changedId
-                          );
-                          // Si quedó vacía la lista y el filtro de favoritos está activo, redirigir a home
-                          if (updated.length === 0) {
-                            router.push("/home");
-                          }
-                          return updated;
-                        });
+                  return (
+                    <CardDiscountCompact
+                      key={discount.id}
+                      id={discount.id}
+                      title={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).title
+                          : (discount as Discount).name || ""
                       }
-                    }}
-                  />
-                );
-              })}
+                      image={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).image
+                          : (discount as Discount).imageUrl ||
+                            (discount as Discount).image ||
+                            getImageByCategory(discount.category)
+                      }
+                      category={discount.category || ""}
+                      points={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).points
+                          : 0
+                      }
+                      distance={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).distance
+                          : "0.5 km"
+                      }
+                      expiration={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).expiration
+                          : "30 días"
+                      }
+                      discountPercentage={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).discountPercentage ||
+                            "0"
+                          : (
+                              discount as Discount
+                            ).discountPercentage?.toString() || "0"
+                      }
+                      onNavigateToDetail={() => {
+                        const distance = isHomePageDiscount
+                          ? (discount as HomePageDiscount).distance
+                          : undefined;
+                        const url = distance
+                          ? `/discount/${
+                              discount.id
+                            }?distance=${encodeURIComponent(distance)}`
+                          : `/discount/${discount.id}`;
+                        router.push(url);
+                      }}
+                      onFavoriteChange={(changedId, isFav) => {
+                        if (
+                          selectedCategories.includes("favoritos") &&
+                          !isFav
+                        ) {
+                          setFilteredDiscounts((prev) => {
+                            const updated = prev.filter(
+                              (d) => d.id !== changedId
+                            );
+                            if (updated.length === 0) {
+                              router.push("/home");
+                            }
+                            return updated;
+                          });
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              {loadingMore && filteredDiscounts.length > 0 && (
+                <div className="text-center py-4">
+                  <div className="inline-flex items-center gap-2 text-gray-600">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                    <p className="text-sm">
+                      Buscando más descuentos cercanos...
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -34,36 +34,31 @@ export function useDistance({
   useEffect(() => {
     if (!enabled) return;
 
+    if (
+      initialDistance &&
+      initialDistance !== "Calculando..." &&
+      initialDistance !== "Sin ubicación"
+    ) {
+      setDistance(initialDistance);
+      setHasCalculated(true);
+      return;
+    }
+
+    if (!discountLocation) {
+      setDistance("Sin ubicación");
+      return;
+    }
+
+    if (hasCalculated) {
+      return;
+    }
+
     const calculateDistance = async () => {
-      // Si ya tenemos una distancia válida, no calcular
-      if (
-        initialDistance &&
-        initialDistance !== "Calculando..." &&
-        initialDistance !== "Sin ubicación"
-      ) {
-        setDistance(initialDistance);
-        return;
-      }
-
-      // Si no hay ubicación del descuento, no calcular
-      if (!discountLocation) {
-        setDistance("Sin ubicación");
-        return;
-      }
-
-      // Si ya calculó, no volver a calcular
-      if (hasCalculated) {
-        return;
-      }
-
       try {
         setLoading(true);
         setDistance("Calculando...");
-
-        // Obtener ubicación del usuario
         await getCurrentPosition();
-      } catch (err) {
-        console.error("Error obteniendo ubicación:", err);
+      } catch {
         setDistance("Sin ubicación");
         setLoading(false);
       }
@@ -79,7 +74,15 @@ export function useDistance({
   ]);
 
   useEffect(() => {
-    if (!enabled || !position || !discountLocation || hasCalculated) {
+    if (
+      !enabled ||
+      !position ||
+      !discountLocation ||
+      hasCalculated ||
+      (initialDistance &&
+        initialDistance !== "Calculando..." &&
+        initialDistance !== "Sin ubicación")
+    ) {
       return;
     }
 
@@ -100,7 +103,6 @@ export function useDistance({
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Error calculando distancia";
-        console.error("Error calculando distancia:", errorMessage);
         setError(errorMessage);
         setDistance("Sin ubicación");
       } finally {
@@ -110,7 +112,7 @@ export function useDistance({
     };
 
     calculateRealDistance();
-  }, [position, discountLocation, hasCalculated, enabled]);
+  }, [position, discountLocation, hasCalculated, enabled, initialDistance]);
 
   return { distance, loading, error };
 }

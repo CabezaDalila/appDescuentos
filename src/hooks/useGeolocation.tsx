@@ -16,7 +16,7 @@ export interface UseGeolocationReturn {
   position: GeolocationPosition | null;
   error: GeolocationError | null;
   loading: boolean;
-  getCurrentPosition: () => Promise<void>;
+  getCurrentPosition: () => Promise<GeolocationPosition | null>;
   watchPosition: () => number | null;
   clearWatch: (watchId: number) => void;
 }
@@ -26,13 +26,13 @@ export function useGeolocation(): UseGeolocationReturn {
   const [error, setError] = useState<GeolocationError | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const getCurrentPosition = async (): Promise<void> => {
+  const getCurrentPosition = async (): Promise<GeolocationPosition | null> => {
     if (!navigator.geolocation) {
       setError({
         code: 0,
         message: "Geolocalización no es soportada por este navegador",
       });
-      return;
+      return null;
     }
 
     setLoading(true);
@@ -64,8 +64,11 @@ export function useGeolocation(): UseGeolocationReturn {
       });
 
       setPosition(pos);
+      return pos;
     } catch (err) {
-      setError(err as GeolocationError);
+      const error = err as GeolocationError;
+      setError(error);
+      return null;
     } finally {
       setLoading(false);
     }

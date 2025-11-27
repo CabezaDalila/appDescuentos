@@ -42,10 +42,10 @@ export function QuickActionsSection({
 
   const handleCategoryClick = async (categoryId: string) => {
     if (categoryId === "cerca") {
-      await getCurrentPosition();
+      const currentPosition = await getCurrentPosition();
 
-      if (position) {
-        const url = `/search?location=true&lat=${position.latitude}&lng=${position.longitude}`;
+      if (currentPosition) {
+        const url = `/search?location=true&lat=${currentPosition.latitude}&lng=${currentPosition.longitude}`;
         window.location.href = url;
       } else if (locationError) {
         onCategoryClick(categoryId);
