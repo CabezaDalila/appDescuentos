@@ -32,6 +32,11 @@ type HomePageDiscount = {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 };
 
 type SearchDiscount = Discount | HomePageDiscount;
@@ -900,7 +905,7 @@ export default function Search() {
                       distance={
                         isHomePageDiscount
                           ? (discount as HomePageDiscount).distance
-                          : "0.5 km"
+                          : undefined
                       }
                       expiration={
                         isHomePageDiscount
@@ -914,6 +919,25 @@ export default function Search() {
                           : (
                               discount as Discount
                             ).discountPercentage?.toString() || "0"
+                      }
+                      discountLocation={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).location
+                            ? {
+                                latitude: (discount as HomePageDiscount)
+                                  .location!.latitude,
+                                longitude: (discount as HomePageDiscount)
+                                  .location!.longitude,
+                              }
+                            : undefined
+                          : (discount as Discount).location
+                          ? {
+                              latitude: (discount as Discount).location!
+                                .latitude,
+                              longitude: (discount as Discount).location!
+                                .longitude,
+                            }
+                          : undefined
                       }
                       onNavigateToDetail={() => {
                         const distance = isHomePageDiscount

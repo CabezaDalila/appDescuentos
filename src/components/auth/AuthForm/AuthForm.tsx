@@ -691,7 +691,7 @@ export default function AuthForm() {
                 </AlertDescription>
               </Alert>
             )}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               {mode === "register" && (
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
