@@ -69,6 +69,12 @@ export default function Search() {
     return map;
   }, []);
   const [maxCategoryChips, setMaxCategoryChips] = useState(2);
+  const [dragY, setDragY] = useState(0);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartScrollTop = useRef<number | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mediaQueryList = window.matchMedia("(min-width: 1024px)");
@@ -236,6 +242,7 @@ export default function Search() {
     if (showFilters) {
       setDraftCategories(selectedCategories);
       setDraftNearby(isLocationFilter);
+      setDragY(0);
     }
   }, [showFilters, selectedCategories, isLocationFilter]);
 
@@ -553,6 +560,7 @@ export default function Search() {
 
   const applyFiltersAndClose = () => {
     setShowFilters(false);
+    setDragY(0);
 
     const queryObj: Record<string, string> = {};
     if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
@@ -570,6 +578,44 @@ export default function Search() {
     router.replace({ pathname: "/search", query: queryObj }, undefined, {
       shallow: true,
     });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 1024) return;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartScrollTop.current = contentRef.current?.scrollTop || 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 1024) return;
+    if (touchStartY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const diffY = currentY - touchStartY.current;
+    const scrollTop = contentRef.current?.scrollTop || 0;
+    const isAtTop = scrollTop === 0;
+
+    if (diffY > 0 && (isAtTop || dragY > 0)) {
+      if (dragY > 10 || (isAtTop && diffY > 10)) {
+        e.preventDefault();
+        setDragY(diffY);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (window.innerWidth >= 1024) return;
+
+    const threshold = 100;
+
+    if (dragY > threshold) {
+      applyFiltersAndClose();
+    } else {
+      setDragY(0);
+    }
+
+    touchStartY.current = null;
+    touchStartScrollTop.current = null;
   };
 
   const handleViewAllDiscounts = () => {
@@ -636,29 +682,47 @@ export default function Search() {
             {showFilters && (
               <>
                 <div
-                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in transition-opacity duration-200"
+                  style={{
+                    opacity: dragY > 0 ? 0.6 - dragY / 500 : undefined,
+                  }}
                   onClick={applyFiltersAndClose}
                 />
                 <div
-                  className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[75vh] md:max-h-[80vh] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-w-3xl lg:w-full lg:max-h-[90vh] xl:max-w-4xl"
+                  ref={modalRef}
+                  className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[75vh] md:max-h-[80vh] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-w-3xl lg:w-full lg:max-h-[90vh] xl:max-w-4xl transition-transform duration-200 ease-out"
+                  style={{
+                    transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+                    opacity: dragY > 0 ? 1 - dragY / 300 : undefined,
+                  }}
                   onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
                 >
-                  <div className="flex justify-center pt-2 pb-1.5 sm:pt-3 sm:pb-2 md:pt-4 md:pb-3 lg:hidden">
+                  <div
+                    className="flex justify-center pt-2 pb-1.5 sm:pt-3 sm:pb-2 md:pt-4 md:pb-3 lg:hidden cursor-grab active:cursor-grabbing"
+                    onTouchStart={handleTouchStart}
+                  >
                     <div className="w-12 h-1.5 sm:w-14 sm:h-1.5 bg-gray-300 rounded-full" />
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-3 pb-2 sm:px-4 sm:pb-3 md:px-6 md:pb-4 lg:px-8 lg:pb-5 xl:px-10 xl:pb-6">
-                    <div className="mb-3 sm:mb-4 md:mb-5 lg:mb-6">
-                      <h3 className="text-base font-semibold text-gray-900 mb-3 sm:text-lg sm:mb-4 md:text-xl md:mb-5 lg:text-2xl lg:mb-6">
-                        Categorías
+                  <div
+                    ref={contentRef}
+                    className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-6"
+                    style={{ touchAction: dragY > 0 ? "none" : "pan-y" }}
+                  >
+                    <div className="pt-4 pb-2">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-5 lg:mb-6">
+                        Filtros
                       </h3>
-                      <div className="grid grid-cols-2 gap-2 sm:gap-2.5 sm:grid-cols-2 md:gap-3 md:grid-cols-3 lg:gap-4 lg:grid-cols-4 xl:grid-cols-4 xl:gap-5">
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                         {EXPLORE_CATEGORIES.map((categoryDef) => (
                           <label
                             key={categoryDef.id}
-                            className={`flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 p-2 sm:p-2.5 md:p-3 lg:p-3.5 xl:p-4 rounded-lg cursor-pointer transition-all ${
+                            className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
                               draftCategories.includes(categoryDef.id)
-                                ? "bg-purple-50 border-2 border-purple-300 shadow-sm sm:shadow-md"
+                                ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
                                 : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
                             }`}
                           >
@@ -677,10 +741,10 @@ export default function Search() {
                                       )
                                 );
                               }}
-                              className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
+                              className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
                             />
                             <span
-                              className={`text-xs sm:text-sm md:text-base lg:text-base xl:text-lg ${
+                              className={`text-sm sm:text-base ${
                                 draftCategories.includes(categoryDef.id)
                                   ? "text-purple-700 font-semibold"
                                   : "text-gray-700"
@@ -690,17 +754,10 @@ export default function Search() {
                             </span>
                           </label>
                         ))}
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 sm:mt-5 sm:pt-5 md:mt-6 md:pt-6 lg:mt-8 lg:pt-8 xl:mt-10 xl:pt-10 border-t border-gray-200">
-                      <h3 className="text-base font-semibold text-gray-900 mb-3 sm:text-lg sm:mb-4 md:text-xl md:mb-5 lg:text-2xl lg:mb-6">
-                        Otros filtros
-                      </h3>
-                      <div className="grid grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 xl:gap-5">
                         <label
-                          className={`flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 p-2 sm:p-2.5 md:p-3 lg:p-3.5 xl:p-4 rounded-lg cursor-pointer transition-all ${
+                          className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
                             draftCategories.includes("favoritos")
-                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm sm:shadow-md"
+                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
                               : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
                           }`}
                         >
@@ -714,10 +771,10 @@ export default function Search() {
                                   : prev.filter((x) => x !== "favoritos")
                               );
                             }}
-                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
                           />
                           <span
-                            className={`text-xs sm:text-sm md:text-base lg:text-base xl:text-lg ${
+                            className={`text-sm sm:text-base ${
                               draftCategories.includes("favoritos")
                                 ? "text-purple-700 font-semibold"
                                 : "text-gray-700"
@@ -727,9 +784,9 @@ export default function Search() {
                           </span>
                         </label>
                         <label
-                          className={`flex items-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 p-2 sm:p-2.5 md:p-3 lg:p-3.5 xl:p-4 rounded-lg cursor-pointer transition-all ${
+                          className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
                             draftNearby
-                              ? "bg-green-50 border-2 border-green-300 shadow-sm sm:shadow-md"
+                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
                               : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
                           }`}
                         >
@@ -737,12 +794,12 @@ export default function Search() {
                             type="checkbox"
                             checked={draftNearby}
                             onChange={(e) => setDraftNearby(e.target.checked)}
-                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-5 lg:h-5 xl:w-6 xl:h-6 text-green-600 border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:ring-offset-0 flex-shrink-0"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
                           />
                           <span
-                            className={`text-xs sm:text-sm md:text-base lg:text-base xl:text-lg ${
+                            className={`text-sm sm:text-base ${
                               draftNearby
-                                ? "text-green-700 font-semibold"
+                                ? "text-purple-700 font-semibold"
                                 : "text-gray-700"
                             }`}
                           >
@@ -753,9 +810,9 @@ export default function Search() {
                     </div>
                   </div>
 
-                  <div className="border-t border-gray-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3 md:px-6 md:py-4 lg:px-8 lg:py-5 xl:px-10 xl:py-6 flex justify-end gap-2 sm:gap-3 md:gap-4 lg:gap-5">
+                  <div className="bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-4 flex justify-end gap-3">
                     <button
-                      className="px-5 py-2 sm:px-6 sm:py-2.5 md:px-7 md:py-3 lg:px-8 lg:py-3.5 xl:px-10 xl:py-4 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg transition-colors shadow-sm sm:shadow-md"
+                      className="px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg transition-colors"
                       onClick={() => {
                         setDraftCategories([]);
                         setDraftNearby(false);
@@ -764,7 +821,7 @@ export default function Search() {
                       Limpiar
                     </button>
                     <button
-                      className="px-5 py-2 sm:px-6 sm:py-2.5 md:px-7 md:py-3 lg:px-8 lg:py-3.5 xl:px-10 xl:py-4 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl font-medium text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-lg transition-colors shadow-md sm:shadow-lg"
+                      className="px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base font-medium text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-lg transition-colors"
                       onClick={applyFiltersAndClose}
                     >
                       Aplicar

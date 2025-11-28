@@ -73,8 +73,8 @@ export function SearchSection({
             onClick={onFilterClick}
             className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-colors z-10 ${
               hasActiveFilters
-                ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                ? "text-purple-700 hover:text-purple-800"
+                : "text-gray-400 hover:text-gray-600"
             }`}
             aria-label="Filtros"
           >
