@@ -44,8 +44,17 @@ type SearchDiscount = Discount | HomePageDiscount;
 
 export default function Search() {
   const router = useRouter();
-  const { category, search, q, location, lat, lng, personalized, openId } =
-    router.query as Record<string, unknown>;
+  const {
+    category,
+    search,
+    q,
+    location,
+    lat,
+    lng,
+    personalized,
+    openId,
+    filters,
+  } = router.query as Record<string, unknown>;
 
   const [filteredDiscounts, setFilteredDiscounts] = useState<SearchDiscount[]>(
     []
@@ -154,6 +163,13 @@ export default function Search() {
     },
     [favoriteIdSet]
   );
+
+  // Abrir el modal de filtros si viene indicado por query (?filters=true)
+  useEffect(() => {
+    if (typeof filters === "string" && filters === "true") {
+      setShowFilters(true);
+    }
+  }, [filters]);
 
   // Reaplicar filtros cuando cambian los favoritos
   useEffect(() => {

@@ -255,6 +255,14 @@ export default function Home() {
           }
           onClearSearch={clearSearch}
           onSelectResult={handleSelectSearchResult}
+          showFilterButton={true}
+          onFilterClick={() => {
+            const term = searchTerm.trim();
+            const query: Record<string, string> = {};
+            if (term.length >= 2) query.search = term;
+            query.filters = "true";
+            router.push({ pathname: "/search", query });
+          }}
         />
       </div>
 
