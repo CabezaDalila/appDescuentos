@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/home/empty-state";
 import { SearchSection } from "@/components/home/search-section";
 import { PageHeader } from "@/components/Share/page-header";
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getDiscountsBySearch,
   getHomePageDiscounts,
@@ -10,11 +11,11 @@ import {
   getPersonalizedDiscounts,
   MAX_DISTANCE_KM,
 } from "@/lib/discounts";
+import { getFavoriteDiscountIdsForUser } from "@/lib/firebase/interactions";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
-import { getFavoriteIds } from "@/utils/favorites";
 import { Filter, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -74,6 +75,101 @@ export default function Search() {
   const touchStartScrollTop = useRef<number | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [favoriteIdSet, setFavoriteIdSet] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!user) {
+        setFavoriteIdSet(new Set());
+        return;
+      }
+      try {
+        const ids = await getFavoriteDiscountIdsForUser(user.uid);
+        setFavoriteIdSet(new Set(ids));
+      } catch (error) {
+        console.error("Error cargando favoritos del usuario:", error);
+        setFavoriteIdSet(new Set());
+      }
+    };
+
+    loadFavorites();
+  }, [user]);
+
+  const applyFiltersLocal = useCallback(
+    (discounts: SearchDiscount[], categoryIds: string[]) => {
+      let filtered = discounts;
+
+      if (categoryIds && categoryIds.length > 0) {
+        const includeFavorites = categoryIds.includes("favoritos");
+        const categoryIdsOnly = categoryIds.filter(
+          (categoryId) => categoryId !== "favoritos"
+        );
+
+        if (discounts.length > 0) {
+          const favSet = includeFavorites ? favoriteIdSet : null;
+
+          if ("name" in discounts[0]) {
+            const fullDiscounts = discounts as Discount[];
+            filtered = fullDiscounts.filter((discountItem) => {
+              const isFavorite = includeFavorites
+                ? favSet!.has(discountItem.id)
+                : false;
+              const matchesCat =
+                categoryIdsOnly.length === 0
+                  ? false
+                  : categoryIdsOnly.some((categoryId) =>
+                      matchesCategory(discountItem.category, categoryId)
+                    );
+              return (
+                isFavorite ||
+                matchesCat ||
+                (!includeFavorites && categoryIdsOnly.length === 0)
+              );
+            }) as SearchDiscount[];
+          } else {
+            filtered = (discounts as HomePageDiscount[]).filter(
+              (discountItem) => {
+                const isFavorite = includeFavorites
+                  ? favSet!.has(discountItem.id)
+                  : false;
+                const matchesCat =
+                  categoryIdsOnly.length === 0
+                    ? false
+                    : categoryIdsOnly.some((categoryId) =>
+                        matchesCategory(discountItem.category || "", categoryId)
+                      );
+                return (
+                  isFavorite ||
+                  matchesCat ||
+                  (!includeFavorites && categoryIdsOnly.length === 0)
+                );
+              }
+            ) as SearchDiscount[];
+          }
+        }
+      }
+
+      setFilteredDiscounts(filtered);
+    },
+    [favoriteIdSet]
+  );
+
+  // Reaplicar filtros cuando cambian los favoritos
+  useEffect(() => {
+    if (allDiscounts.length > 0 && selectedCategories.includes("favoritos")) {
+      applyFiltersLocal(allDiscounts, selectedCategories);
+    }
+  }, [favoriteIdSet, allDiscounts, selectedCategories, applyFiltersLocal]);
+
+  // Reaplicar filtros cuando cambian los favoritos en Firestore
+  useEffect(() => {
+    if (allDiscounts.length > 0 && selectedCategories.includes("favoritos")) {
+      // Reaplicar los filtros locales cuando cambian los favoritos
+      const urlCategories = selectedCategories;
+      applyFiltersLocal(allDiscounts, urlCategories);
+    }
+  }, [favoriteIdSet, allDiscounts, selectedCategories, applyFiltersLocal]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -152,67 +248,6 @@ export default function Search() {
       );
     });
 
-  const applyFiltersLocal = (
-    discounts: SearchDiscount[],
-    categoryIds: string[]
-  ) => {
-    let filtered = discounts;
-
-    if (categoryIds && categoryIds.length > 0) {
-      const includeFavorites = categoryIds.includes("favoritos");
-      const categoryIdsOnly = categoryIds.filter(
-        (categoryId) => categoryId !== "favoritos"
-      );
-
-      if (discounts.length > 0) {
-        const favoriteIdSet = includeFavorites
-          ? new Set(getFavoriteIds())
-          : null;
-
-        if ("name" in discounts[0]) {
-          const fullDiscounts = discounts as Discount[];
-          filtered = fullDiscounts.filter((discountItem) => {
-            const isFavorite = includeFavorites
-              ? favoriteIdSet!.has(discountItem.id)
-              : false;
-            const matchesCat =
-              categoryIdsOnly.length === 0
-                ? false
-                : categoryIdsOnly.some((categoryId) =>
-                    matchesCategory(discountItem.category, categoryId)
-                  );
-            return (
-              isFavorite ||
-              matchesCat ||
-              (!includeFavorites && categoryIdsOnly.length === 0)
-            );
-          }) as SearchDiscount[];
-        } else {
-          filtered = (discounts as HomePageDiscount[]).filter(
-            (discountItem) => {
-              const isFavorite = includeFavorites
-                ? favoriteIdSet!.has(discountItem.id)
-                : false;
-              const matchesCat =
-                categoryIdsOnly.length === 0
-                  ? false
-                  : categoryIdsOnly.some((categoryId) =>
-                      matchesCategory(discountItem.category || "", categoryId)
-                    );
-              return (
-                isFavorite ||
-                matchesCat ||
-                (!includeFavorites && categoryIdsOnly.length === 0)
-              );
-            }
-          ) as SearchDiscount[];
-        }
-      }
-    }
-
-    setFilteredDiscounts(filtered);
-  };
-
   const applyFiltersRealtime = useCallback(async () => {
     setSelectedCategories(draftCategories);
     setIsLocationFilter(draftNearby);
@@ -236,7 +271,14 @@ export default function Search() {
     } else {
       applyFiltersLocal(allDiscounts, draftCategories);
     }
-  }, [draftCategories, draftNearby, allDiscounts, searchTerm, router]);
+  }, [
+    draftCategories,
+    draftNearby,
+    allDiscounts,
+    searchTerm,
+    router,
+    applyFiltersLocal,
+  ]);
 
   useEffect(() => {
     if (showFilters) {
@@ -269,15 +311,13 @@ export default function Search() {
       setSelectedCategories(selectedCategoryIds);
 
       if (allDiscounts.length > 0) {
-        const favoriteIdSet = includeFavorites
-          ? new Set(getFavoriteIds())
-          : null;
+        const favSet = includeFavorites ? favoriteIdSet : null;
 
         if ("name" in allDiscounts[0]) {
           const fullDiscounts = allDiscounts as Discount[];
           filtered = fullDiscounts.filter((discountItem) => {
             const isFavorite = includeFavorites
-              ? favoriteIdSet!.has(discountItem.id)
+              ? favSet!.has(discountItem.id)
               : false;
             const matchesCat =
               categoryIdsOnly.length === 0
@@ -295,7 +335,7 @@ export default function Search() {
           filtered = (allDiscounts as HomePageDiscount[]).filter(
             (discountItem) => {
               const isFavorite = includeFavorites
-                ? favoriteIdSet!.has(discountItem.id)
+                ? favSet!.has(discountItem.id)
                 : false;
               const matchesCat =
                 categoryIdsOnly.length === 0
@@ -709,7 +749,7 @@ export default function Search() {
 
                   <div
                     ref={contentRef}
-                    className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-6"
+                    className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-6"
                     style={{ touchAction: dragY > 0 ? "none" : "pan-y" }}
                   >
                     <div className="pt-4 pb-2">
@@ -810,7 +850,7 @@ export default function Search() {
                     </div>
                   </div>
 
-                  <div className="bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-4 flex justify-end gap-3">
+                  <div className="bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-4 hidden lg:flex justify-end gap-3">
                     <button
                       className="px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg transition-colors"
                       onClick={() => {

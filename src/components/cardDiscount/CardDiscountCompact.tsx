@@ -1,10 +1,15 @@
 import { useDistance } from "@/hooks/useDistance";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  getUserInteraction,
+  toggleFavorite as toggleFavoriteInteraction,
+} from "@/lib/firebase/interactions";
 import { getImageByCategory } from "@/utils/category-mapping";
-import { isFavorite, toggleFavorite } from "@/utils/favorites";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
+import toast from "react-hot-toast";
 
 interface CardDiscountCompactProps {
   id?: string;
@@ -39,6 +44,7 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
   onFavoriteChange,
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const { user } = useAuth();
 
   const { distance: calculatedDistance, loading: distanceLoading } =
     useDistance({
@@ -47,21 +53,44 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
     });
 
   useEffect(() => {
-    if (id) {
-      setIsLiked(isFavorite(id));
-    }
-  }, [id]);
+    const loadFavorite = async () => {
+      if (!user || !id) {
+        setIsLiked(false);
+        return;
+      }
 
-  const handleLike = (e: React.MouseEvent) => {
+      try {
+        const interaction = await getUserInteraction(user.uid, id);
+        setIsLiked(!!interaction?.favorite);
+      } catch (error) {
+        console.error("Error cargando favorito del descuento:", error);
+        setIsLiked(false);
+      }
+    };
+
+    loadFavorite();
+  }, [user, id]);
+
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!id) {
-      setIsLiked((prev) => !prev);
       return;
     }
-    const nowLiked = toggleFavorite(id);
-    setIsLiked(nowLiked);
-    if (onFavoriteChange) {
-      onFavoriteChange(id, nowLiked);
+
+    if (!user) {
+      toast.error("Debes iniciar sesión para guardar favoritos");
+      return;
+    }
+
+    try {
+      const nowLiked = await toggleFavoriteInteraction(user.uid, id);
+      setIsLiked(nowLiked);
+      if (onFavoriteChange) {
+        onFavoriteChange(id, nowLiked);
+      }
+    } catch (error) {
+      console.error("Error al actualizar favorito:", error);
+      toast.error("No se pudo guardar tu favorito. Intenta nuevamente.");
     }
   };
 

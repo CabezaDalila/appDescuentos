@@ -7,6 +7,7 @@ import {
   voteDiscount,
   type VoteType,
 } from "@/lib/firebase/discount-votes";
+import { setFeedback } from "@/lib/firebase/interactions";
 import { db } from "@/lib/firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
@@ -69,6 +70,7 @@ export function DiscountVote({
       // Si el usuario ya votó lo mismo, eliminar el voto
       if (userVote === voteType) {
         await removeVote(user.uid, discountId);
+        await setFeedback(user.uid, discountId, 0);
         setUserVote(null);
 
         // Obtener los puntos actualizados desde Firestore (ya calculados por removeVote)
@@ -85,6 +87,11 @@ export function DiscountVote({
         // Si había un voto diferente, actualizar
         // Si no había voto, crear uno nuevo
         await voteDiscount(user.uid, discountId, voteType);
+        await setFeedback(
+          user.uid,
+          discountId,
+          voteType === "up" ? 1 : -1
+        );
 
         // Obtener los puntos actualizados desde Firestore (ya calculados por voteDiscount)
         const discountRef = doc(db, "discounts", discountId);

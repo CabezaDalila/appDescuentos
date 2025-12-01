@@ -1,10 +1,15 @@
-import { isFavorite, toggleFavorite } from "@/utils/favorites";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  getUserInteraction,
+  toggleFavorite as toggleFavoriteInteraction,
+} from "@/lib/firebase/interactions";
 import { CreditCard, Users } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import { Separator } from "../Share/separator";
+import toast from "react-hot-toast";
 
 interface CardDiscountProps {
   id?: string;
@@ -44,20 +49,44 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (id) {
-      setIsLiked(isFavorite(id));
-    }
-  }, [id]);
+    const loadFavorite = async () => {
+      if (!user || !id) {
+        setIsLiked(false);
+        return;
+      }
 
-  const handleLike = () => {
+      try {
+        const interaction = await getUserInteraction(user.uid, id);
+        setIsLiked(!!interaction?.favorite);
+      } catch (error) {
+        console.error("Error cargando favorito del descuento:", error);
+        setIsLiked(false);
+      }
+    };
+
+    loadFavorite();
+  }, [user, id]);
+
+  const handleLike = async () => {
     if (!id) {
-      setIsLiked((prev) => !prev);
       return;
     }
-    const nowLiked = toggleFavorite(id);
-    setIsLiked(nowLiked);
+
+    if (!user) {
+      toast.error("Debes iniciar sesión para guardar favoritos");
+      return;
+    }
+
+    try {
+      const nowLiked = await toggleFavoriteInteraction(user.uid, id);
+      setIsLiked(nowLiked);
+    } catch (error) {
+      console.error("Error al actualizar favorito:", error);
+      toast.error("No se pudo guardar tu favorito. Intenta nuevamente.");
+    }
   };
 
   const handleShare = async () => {
