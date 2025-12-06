@@ -1,98 +1,130 @@
 import {
-  Clapperboard,
+  Bike,
+  Bus,
+  Car,
+  Compass,
+  Fuel,
   Gift,
-  HeartPulse,
+  GraduationCap,
+  Heart,
+  Home,
   Laptop,
-  Pizza,
-  Plane,
+  Music,
+  PiggyBank,
+  ShoppingBag,
+  ShoppingCart,
+  Sparkles,
+  Target,
+  UtensilsCrossed,
+  Wallet
 } from "lucide-react";
-import type { ComponentType, SVGProps } from "react";
-import { EXPLORE_CATEGORIES } from "./categories";
 
-export interface OnboardingOption {
-  id: string;
-  label: string;
-  color: string;
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
-}
+export const ONBOARDING_TOTAL_STEPS = 6;
 
-// Mapear categorías de la app a opciones de onboarding
-export const INTEREST_OPTIONS: OnboardingOption[] = EXPLORE_CATEGORIES.map(
-  (category) => {
-    // Convertir los colores de Tailwind para que funcionen con gradientes
-    const colorMapping: Record<string, string> = {
-      "bg-gradient-to-br from-green-400 to-green-600":
-        "from-green-500 to-emerald-500",
-      "bg-gradient-to-br from-pink-400 to-pink-600":
-        "from-pink-500 to-rose-500",
-      "bg-gradient-to-br from-blue-400 to-blue-600":
-        "from-blue-500 to-indigo-500",
-      "bg-gradient-to-br from-orange-400 to-orange-600":
-        "from-orange-400 to-amber-500",
-      "bg-gradient-to-br from-purple-400 to-purple-600":
-        "from-purple-500 to-fuchsia-500",
-      "bg-gradient-to-br from-red-400 to-red-600": "from-red-500 to-rose-500",
-      "bg-gradient-to-br from-gray-400 to-gray-600":
-        "from-gray-500 to-gray-700",
-      "bg-gradient-to-br from-yellow-400 to-yellow-600":
-        "from-yellow-400 to-orange-500",
-      "bg-gradient-to-br from-teal-400 to-teal-600":
-        "from-emerald-500 to-teal-500",
-      "bg-gradient-to-br from-indigo-400 to-indigo-600":
-        "from-indigo-500 to-purple-500",
-    };
-
-    return {
-      id: category.id,
-      label: category.label,
-      color: colorMapping[category.color] || "from-gray-500 to-gray-700",
-      icon: category.icon,
-    };
-  }
-);
-
-export const GOAL_OPTIONS: OnboardingOption[] = [
-  {
-    id: "comer",
-    label: "Comer afuera o pedir delivery",
-    color: "from-orange-500 to-red-500",
-    icon: Pizza,
+// Paso 2: Categorías de gasto
+export const SPENDING_CATEGORIES = [
+  { 
+    id: "supermercado", 
+    label: "Supermercado y almacén", 
+    icon: ShoppingCart,
+    color: "from-green-500 to-emerald-500"
   },
-  {
-    id: "compras",
-    label: "Compras online",
-    color: "from-blue-500 to-indigo-500",
+  { 
+    id: "combustible", 
+    label: "Combustible y transporte", 
+    icon: Fuel,
+    color: "from-orange-500 to-red-500"
+  },
+  { 
+    id: "restaurantes", 
+    label: "Restaurantes y delivery", 
+    icon: UtensilsCrossed,
+    color: "from-pink-500 to-rose-500"
+  },
+  { 
+    id: "hogar", 
+    label: "Hogar y servicios", 
+    icon: Home,
+    color: "from-blue-500 to-indigo-500"
+  },
+  { 
+    id: "ropa", 
+    label: "Ropa y accesorios", 
+    icon: ShoppingBag,
+    color: "from-purple-500 to-fuchsia-500"
+  },
+  { 
+    id: "salud", 
+    label: "Salud y farmacia", 
+    icon: Heart,
+    color: "from-red-500 to-pink-500"
+  },
+  { 
+    id: "tecnologia", 
+    label: "Tecnología y electrónica", 
     icon: Laptop,
+    color: "from-blue-500 to-cyan-500"
   },
-  {
-    id: "cine",
-    label: "Ir al cine o espectáculos",
-    color: "from-pink-500 to-rose-500",
-    icon: Clapperboard,
+  { 
+    id: "entretenimiento", 
+    label: "Entretenimiento", 
+    icon: Music,
+    color: "from-indigo-500 to-purple-500"
   },
-  {
-    id: "regalar",
-    label: "Regalar a otras personas",
-    color: "from-purple-500 to-fuchsia-500",
+  { 
+    id: "educacion", 
+    label: "Educación", 
+    icon: GraduationCap,
+    color: "from-yellow-500 to-orange-500"
+  },
+  { 
+    id: "regalos", 
+    label: "Regalos y ocasiones especiales", 
     icon: Gift,
-  },
-  {
-    id: "cuidar-salud",
-    label: "Cuidar mi salud y bienestar",
-    color: "from-green-500 to-emerald-500",
-    icon: HeartPulse,
-  },
-  {
-    id: "viajar",
-    label: "Viajar",
-    color: "from-sky-500 to-cyan-500",
-    icon: Plane,
+    color: "from-pink-500 to-purple-500"
   },
 ];
 
-export const ONBOARDING_TOTAL_STEPS = 4;
+// Paso 3: Objetivo principal
+export const MAIN_GOALS = [
+  {
+    id: "reducir-gastos",
+    label: "Reducir mis gastos mensuales fijos",
+    icon: Wallet,
+    color: "from-green-500 to-emerald-500",
+    description: "Quiero ahorrar en mis compras habituales",
+  },
+  {
+    id: "compras-planificadas",
+    label: "Aprovechar ofertas en compras planificadas",
+    icon: Target,
+    color: "from-blue-500 to-indigo-500",
+    description: "Busco descuentos cuando necesito comprar algo específico",
+  },
+  {
+    id: "experiencias",
+    label: "Disfrutar más experiencias por menos dinero",
+    icon: Sparkles,
+    color: "from-purple-500 to-fuchsia-500",
+    description: "Quiero salir más, ir a restaurantes y eventos",
+  },
+  {
+    id: "ahorrar-objetivo",
+    label: "Ahorrar para un objetivo específico",
+    icon: PiggyBank,
+    color: "from-orange-500 to-amber-500",
+    description: "Estoy juntando dinero para algo importante",
+  },
+  {
+    id: "descubrir",
+    label: "Descubrir nuevas ofertas y lugares",
+    icon: Compass,
+    color: "from-cyan-500 to-blue-500",
+    description: "Me gusta explorar y probar cosas nuevas",
+  },
+];
 
-// Lista de bancos disponibles para el onboarding
+// Paso 4: Bancos disponibles
 export const BANK_OPTIONS: string[] = [
   "Galicia",
   "Santander",
@@ -104,4 +136,18 @@ export const BANK_OPTIONS: string[] = [
   "HSBC",
   "BBVA",
   "Supervielle",
+  "Brubank",
+  "Mercado Pago",
+  "Ualá",
+  "Naranja X",
+];
+
+// Paso 5: Tipo de transporte
+export const TRANSPORT_TYPES = [
+  { id: "auto-nafta", label: "Auto a nafta", icon: Car },
+  { id: "auto-diesel", label: "Auto a diesel", icon: Car },
+  { id: "moto", label: "Moto", icon: Bike },
+  { id: "transporte-publico", label: "Transporte público", icon: Bus },
+  { id: "bicicleta", label: "Bicicleta / A pie", icon: Bike },
+  { id: "taxi-uber", label: "Taxi / Uber / Cabify", icon: Car },
 ];

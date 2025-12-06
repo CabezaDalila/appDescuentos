@@ -4,11 +4,14 @@ import { ProgressHeader } from "@/components/onboarding/progress-header";
 import { StepNavigation } from "@/components/onboarding/step-navigation";
 import {
   BANK_OPTIONS,
-  GOAL_OPTIONS,
-  INTEREST_OPTIONS,
-  ONBOARDING_TOTAL_STEPS,
+  MAIN_GOALS,
+  SPENDING_CATEGORIES,
+  TRANSPORT_TYPES,
 } from "@/constants/onboarding";
 import { useAuth } from "@/hooks/useAuth";
+import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
+import { useFuelRecommendations } from "@/hooks/useFuelRecommendations";
+import { useLocation } from "@/hooks/useLocation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import {
   OnboardingAnswers,
@@ -18,17 +21,25 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 
-type Step = 0 | 1 | 2 | 3;
+const ONBOARDING_TOTAL_STEPS = 6; 
+
+type Step = 0 | 1 | 2 | 3 | 4 | 5;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
   const [step, setStep] = useState<Step>(0);
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedGoal, setSelectedGoal] = useState<string>("");
   const [selectedBanks, setSelectedBanks] = useState<string[]>([]);
+  const [selectedTransport, setSelectedTransport] = useState<string | null>(null);
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  const { requestPermissions, checkPermissions } = useLocation();
+  const { generateRecommendation } = useFuelRecommendations();
+  const { discounts } = useCachedDiscounts();
 
   const totalSteps = ONBOARDING_TOTAL_STEPS;
 
@@ -52,40 +63,47 @@ export default function OnboardingPage() {
     if (profile?.onboarding) {
       const onboardingData = profile.onboarding;
       
-      // Priorizar datos directos, luego datos en answers (para migración)
-      const interests =
-        onboardingData.interests ??
-        onboardingData.answers?.interests ??
+      // Migración de datos antiguos a nuevos campos
+      const categories =
+        onboardingData.spendingCategories ??
+        onboardingData.interests ?? // Backward compatibility
         [];
-      const goals =
-        onboardingData.goals ?? onboardingData.answers?.goals ?? [];
+      const goal =
+        onboardingData.mainGoal ??
+        (onboardingData.goals && onboardingData.goals[0]) ?? // Tomar el primero si existe
+        "";
       const banks =
-        onboardingData.banks ?? onboardingData.answers?.banks ?? [];
+        onboardingData.banks ?? [];
+      const transport =
+        onboardingData.transportType ??
+        onboardingData.vehicleType ?? // Backward compatibility
+        null;
 
       // Solo actualizar si hay datos válidos
-      if (Array.isArray(interests) && interests.length > 0) {
-        setSelectedInterests(interests);
+      if (Array.isArray(categories) && categories.length > 0) {
+        setSelectedCategories(categories);
       }
-      if (Array.isArray(goals) && goals.length > 0) {
-        setSelectedGoals(goals);
+      if (goal && typeof goal === "string") {
+        setSelectedGoal(goal);
       }
       if (Array.isArray(banks) && banks.length > 0) {
         setSelectedBanks(banks);
+      }
+      if (transport) {
+        setSelectedTransport(transport);
       }
     }
   }, [profileLoading, profile, router]);
 
   // Memoizar las funciones toggle para evitar re-renders innecesarios
-  const toggleInterest = useCallback((id: string) => {
-    setSelectedInterests((prev) =>
+  const toggleCategory = useCallback((id: string) => {
+    setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   }, []);
 
-  const toggleGoal = useCallback((id: string) => {
-    setSelectedGoals((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const selectGoal = useCallback((id: string) => {
+    setSelectedGoal(id);
   }, []);
 
   const toggleBank = useCallback((bank: string) => {
@@ -95,6 +113,21 @@ export default function OnboardingPage() {
         : [...prev, bank]
     );
   }, []);
+  
+  const handleRequestLocation = useCallback(async () => {
+    const granted = await requestPermissions();
+    if (granted) {
+      setLocationPermissionGranted(true);
+      toast.success("¡Perfecto! Ahora podremos darte recomendaciones personalizadas");
+    } else {
+      toast.error("Necesitamos acceso a tu ubicación para darte mejores recomendaciones");
+    }
+  }, [requestPermissions]);
+  
+  // Verificar permisos al cargar
+  useEffect(() => {
+    checkPermissions().then(setLocationPermissionGranted);
+  }, [checkPermissions]);
 
   const handleFinish = useCallback(async () => {
     if (!user?.uid) {
@@ -102,29 +135,97 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Validar que haya al menos una selección en cada paso requerido
-    if (selectedInterests.length === 0) {
-      toast.error("Por favor, selecciona al menos un interés");
+    // Validar que haya al menos una selección    // Validaciones por paso
+    if (step === 1 && selectedCategories.length === 0) {
+      toast.error("Seleccioná al menos una categoría de gasto");
       return;
     }
-    if (selectedGoals.length === 0) {
-      toast.error("Por favor, selecciona al menos un objetivo");
+    if (step === 1 && selectedCategories.length > 5) {
+      toast.error("Podés seleccionar hasta 5 categorías");
       return;
     }
-    if (selectedBanks.length === 0) {
+    if (step === 2 && !selectedGoal) {
+      toast.error("Seleccioná tu objetivo principal");
+      return;
+    }
+    if (step === 3 && selectedBanks.length === 0) {
       toast.error("Por favor, selecciona al menos un banco");
       return;
     }
 
     const answers: OnboardingAnswers = {
-      interests: selectedInterests,
-      goals: selectedGoals,
+      spendingCategories: selectedCategories,
+      mainGoal: selectedGoal,
       banks: selectedBanks,
+      transportType: selectedTransport || undefined,
+      allowLocationTracking: locationPermissionGranted,
     };
 
     try {
       setIsSaving(true);
+      
+      // 1. Guardar respuestas del onboarding
       await saveOnboardingAnswers(user.uid, answers);
+      
+      // 2. Generar primera recomendación en segundo plano
+      try {
+        console.log("🤖 [IA] Iniciando generación de recomendación...");
+        console.log("📊 [IA] Categorías seleccionadas:", selectedCategories);
+        console.log("🏦 [IA] Bancos seleccionados:", selectedBanks);
+        console.log("🚗 [IA] Transporte:", selectedTransport);
+        
+        // Filtrar descuentos relevantes según las categorías del usuario
+        let relevantDiscounts = discounts.filter(d => 
+          selectedCategories.includes(d.category || "")
+        );
+
+        console.log(`🔍 [IA] Descuentos filtrados por categoría: ${relevantDiscounts.length} de ${discounts.length} totales`);
+
+        // Si no hay descuentos de esas categorías, usar todos
+        if (relevantDiscounts.length === 0) {
+          console.warn("⚠️ [IA] No hay descuentos de las categorías seleccionadas, usando todos");
+          relevantDiscounts = discounts;
+        }
+
+        // Limitar a 10 descuentos para no sobrecargar Gemini
+        const selectedDiscounts = relevantDiscounts.slice(0, 10);
+        
+        console.log("📦 [IA] Descuentos que se enviarán a Gemini:", selectedDiscounts.map(d => ({
+          id: d.id,
+          title: d.title,
+          category: d.category,
+          percentage: d.discountPercentage
+        })));
+
+        if (selectedDiscounts.length > 0) {
+          const request = {
+            userId: user.uid,
+            userPreferences: {
+              interests: selectedCategories,
+              vehicleType: selectedTransport || undefined,
+            },
+            userBanks: selectedBanks,
+            availableDiscounts: selectedDiscounts as any,
+          };
+          
+          console.log("📤 [IA] Request completo enviado a Gemini:", request);
+          
+          // Generar recomendación (no bloqueante)
+          generateRecommendation(request)
+            .then(result => {
+              console.log("✅ [IA] Recomendación generada exitosamente:", result);
+            })
+            .catch(err => {
+              console.error("❌ [IA] Error generando recomendación:", err);
+            });
+        } else {
+          console.warn("⚠️ [IA] No hay descuentos disponibles para generar recomendación");
+        }
+      } catch (recError) {
+        // Error en recomendación no debe bloquear el flujo
+        console.error("❌ [IA] Error en proceso de recomendación:", recError);
+      }
+
       toast.success("¡Gracias! Personalizaremos tus ofertas desde ahora.");
       router.push("/home");
     } catch (error) {
@@ -137,15 +238,15 @@ export default function OnboardingPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [user?.uid, selectedInterests, selectedGoals, selectedBanks, router]);
+  }, [user?.uid, selectedCategories, selectedGoal, selectedBanks, selectedTransport, router, discounts, generateRecommendation]);
 
   const handleNextStep = useCallback(async () => {
-    if (step === 3) {
+    if (step === 5) {
       await handleFinish();
       return;
     }
 
-    setStep((prev) => Math.min(prev + 1, 3) as Step);
+    setStep((prev) => Math.min(prev + 1, 5) as Step);
   }, [step, handleFinish]);
 
   const handlePreviousStep = useCallback(() => {
@@ -154,7 +255,7 @@ export default function OnboardingPage() {
 
   // Memoizar valores calculados para evitar recálculos innecesarios
   const primaryButtonLabel = useMemo(
-    () => (step === 3 ? "Finalizar" : "Continuar"),
+    () => (step === 5 ? "Finalizar" : "Continuar"),
     [step]
   );
 
@@ -163,15 +264,21 @@ export default function OnboardingPage() {
       case 0:
         return true;
       case 1:
-        return selectedInterests.length > 0;
+        return selectedCategories.length > 0;
       case 2:
-        return selectedGoals.length > 0;
+        return selectedGoal !== "";
       case 3:
         return selectedBanks.length > 0;
+      case 4:
+        // Permitir continuar sin vehículo (opcional)
+        return true;
+      case 5:
+        // Permitir continuar sin permisos (opcional)
+        return true;
       default:
         return false;
     }
-  }, [step, selectedInterests.length, selectedGoals.length, selectedBanks.length]);
+  }, [step, selectedCategories.length, selectedGoal, selectedBanks.length]);
 
   if (loading || profileLoading) {
     return (
@@ -215,20 +322,20 @@ export default function OnboardingPage() {
             <div className="flex flex-1 flex-col min-h-0">
               <div className="mb-4 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  ¿Qué tipo de productos te interesan más?
+                  ¿En qué gastás más cada mes?
                 </h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Selecciona todas las opciones que quieras
+                  Seleccioná las categorías donde más dinero invertís (máximo 5)
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {INTEREST_OPTIONS.map((option) => (
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2 auto-rows-fr">
+                  {SPENDING_CATEGORIES.map((option) => (
                     <OptionCard
                       key={option.id}
                       option={option}
-                      selected={selectedInterests.includes(option.id)}
-                      onToggle={toggleInterest}
+                      selected={selectedCategories.includes(option.id)}
+                      onToggle={toggleCategory}
                     />
                   ))}
                 </div>
@@ -240,20 +347,20 @@ export default function OnboardingPage() {
             <div className="flex flex-1 flex-col min-h-0">
               <div className="mb-4 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  ¿Qué te gustaría aprovechar más con los descuentos?
+                  ¿Cuál es tu objetivo principal?
                 </h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Selecciona todas las opciones que quieras
+                  Seleccioná tu objetivo principal con los descuentos
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="flex flex-col gap-3">
-                  {GOAL_OPTIONS.map((option) => (
+                  {MAIN_GOALS.map((option) => (
                     <OptionCard
                       key={option.id}
                       option={option}
-                      selected={selectedGoals.includes(option.id)}
-                      onToggle={toggleGoal}
+                      selected={selectedGoal === option.id}
+                      onToggle={selectGoal}
                     />
                   ))}
                 </div>
@@ -297,6 +404,151 @@ export default function OnboardingPage() {
                       </div>
                     </button>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="flex flex-1 flex-col min-h-0">
+              <div className="mb-4 flex-shrink-0">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  ¿Cómo te movés habitualmente?
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Esto nos ayuda a recomendarte descuentos en combustible y transporte
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {TRANSPORT_TYPES.map((transport) => (
+                      <button
+                        key={transport.id}
+                        type="button"
+                        onClick={() => setSelectedTransport(transport.id)}
+                        className={`p-4 rounded-lg border-2 transition-all flex items-center gap-3 ${
+                          selectedTransport === transport.id
+                            ? "border-purple-500 bg-purple-50 shadow-md"
+                            : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                      >
+                        <transport.icon
+                          className={`h-6 w-6 ${
+                            selectedTransport === transport.id
+                              ? "text-purple-600"
+                              : "text-gray-600"
+                          }`}
+                        />
+                        <span
+                          className={`text-lg font-semibold ${
+                            selectedTransport === transport.id
+                              ? "text-purple-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {transport.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="flex flex-1 flex-col min-h-0">
+              <div className="mb-4 flex-shrink-0">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  📍 Activá recomendaciones inteligentes
+                </h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Permitinos acceder a tu ubicación para darte las mejores recomendaciones
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="space-y-6">
+                  {/* Beneficios */}
+                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-purple-900 mb-4">
+                      ✨ Con tu ubicación podemos:
+                    </h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-purple-900">Detectar tus rutas habituales</p>
+                          <p className="text-sm text-purple-700">Identificamos dónde vas frecuentemente</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-purple-900">Recomendarte descuentos en el momento justo</p>
+                          <p className="text-sm text-purple-700">Te avisamos cuando estés cerca de una oferta</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
+                          <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-medium text-purple-900">Calcular tu ahorro potencial</p>
+                          <p className="text-sm text-purple-700">Estimamos cuánto podés ahorrar por mes</p>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Estado de permisos */}
+                  {locationPermissionGranted ? (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
+                        <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-green-900 mb-2">
+                        ¡Permisos otorgados!
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        Ya podés recibir recomendaciones personalizadas
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRequestLocation}
+                      className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-center justify-center gap-3">
+                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Permitir Acceso a Ubicación</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Privacidad */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                    <p className="text-xs text-gray-600 text-center">
+                      🔒 Tu privacidad es importante. Podés desactivar el tracking en cualquier momento desde tu perfil.
+                      No compartimos tu ubicación con terceros.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

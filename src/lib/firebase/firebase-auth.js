@@ -1,20 +1,20 @@
 import {
-  applyActionCode,
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
+    applyActionCode,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    signInWithCredential,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signOut,
 } from "firebase/auth";
 import {
-  doc,
-  getDoc,
-  increment,
-  serverTimestamp,
-  setDoc,
+    doc,
+    getDoc,
+    increment,
+    serverTimestamp,
+    setDoc,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -67,9 +67,7 @@ export const resetPassword = async (email) => {
     // URL a la que se redirigirá después de hacer clic en el enlace
     url: typeof window !== "undefined" 
       ? `${window.location.origin}/reset-password`
-      : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/reset-password",
-    // Configuración adicional
-    handleCodeInApp: true,
+      : "https://app-descuentos-one.vercel.app/reset-password",
   };
 
   return sendPasswordResetEmail(auth, email, actionCodeSettings);
@@ -214,9 +212,7 @@ export const resendEmailVerification = async (user) => {
     url:
       typeof window !== "undefined"
         ? `${window.location.origin}/login`
-        : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/login",
-    // Configuración adicional
-    handleCodeInApp: true,
+        : "https://app-descuentos-one.vercel.app/login",
   };
 
   return sendEmailVerification(user, actionCodeSettings);

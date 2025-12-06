@@ -21,6 +21,7 @@ import { ExploreCategoriesSection } from "@/components/home/explore-categories-s
 import { Header } from "@/components/home/header";
 import { PersonalizedOffersSection } from "@/components/home/personalized-offers-section";
 import { SearchSection } from "@/components/home/search-section";
+import { SmartRecommendation } from "@/components/home/SmartRecommendation";
 import { TrendingSection } from "@/components/home/trending-section";
 
 export default function Home() {
@@ -284,6 +285,11 @@ export default function Home() {
 
         {/* Columna derecha - Ofertas y descuentos */}
         <div className="lg:w-3/4 xl:w-4/5 2xl:w-5/6 lg:flex-1">
+          {/* Recomendación Inteligente - Destacada arriba */}
+          <div className="px-3 sm:px-4 lg:px-0">
+            <SmartRecommendation />
+          </div>
+
           <PersonalizedOffersSection
             onOfferClick={handleOfferClick}
             userMemberships={userMemberships}
