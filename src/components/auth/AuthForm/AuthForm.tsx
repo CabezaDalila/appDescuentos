@@ -1,11 +1,11 @@
 import { Alert, AlertDescription } from "@/components/Share/alert";
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { Checkbox } from "@/components/Share/checkbox";
 import { Input } from "@/components/Share/input";
@@ -13,13 +13,13 @@ import { Label } from "@/components/Share/label";
 import { Separator } from "@/components/Share/separator";
 import { auth, db } from "@/lib/firebase/firebase";
 import {
-  login,
-  loginWithGoogle,
-  loginWithGoogleNative,
-  register,
-  resendEmailVerification,
-  resetPassword,
-  verifyEmail,
+    login,
+    loginWithGoogle,
+    loginWithGoogleNative,
+    register,
+    resendEmailVerification,
+    resetPassword,
+    verifyEmail,
 } from "@/lib/firebase/firebase-auth";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -464,7 +464,9 @@ export default function AuthForm() {
             throw loginError; // Re-lanzar otros errores para que se manejen en el catch general
           }
         } else {
-          const result = await register(formData.email, formData.password);
+          // Crear displayName completo
+          const displayName = `${formData.firstName} ${formData.lastName}`.trim();
+          const result = await register(formData.email, formData.password, displayName);
 
           // Guardar solo el perfil, NO el onboarding hasta que el email esté verificado
           // El onboarding se guardará cuando el usuario inicie sesión después de verificar
@@ -477,6 +479,7 @@ export default function AuthForm() {
                   lastName: formData.lastName,
                   phone: getFullPhoneNumber(),
                 },
+                displayName: displayName, // Guardar también en Firestore
                 // NO guardar onboarding aquí - se guardará después de verificar el email
               },
               { merge: true }

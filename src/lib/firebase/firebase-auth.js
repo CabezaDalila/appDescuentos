@@ -8,6 +8,7 @@ import {
     signInWithEmailAndPassword,
     signInWithPopup,
     signOut,
+    updateProfile,
 } from "firebase/auth";
 import {
     doc,
@@ -19,8 +20,13 @@ import {
 import { auth, db } from "./firebase";
 
 // Registro
-export const register = async (email, password) => {
+export const register = async (email, password, displayName = null) => {
   const result = await createUserWithEmailAndPassword(auth, email, password);
+
+  // Actualizar displayName si se proporciona
+  if (displayName) {
+    await updateProfile(result.user, { displayName });
+  }
 
   // Guardar datos del usuario antes de cerrar sesión
   await saveUserToFirestore(result.user);
@@ -153,8 +159,8 @@ const saveUserToFirestore = async (user) => {
         // Esto ocurre cuando el usuario inicia sesión por primera vez después de verificar
         userData.onboarding = {
           completed: false,
-          interests: [],
-          goals: [],
+          spendingCategories: [],
+          mainGoal: "",
           banks: [],
         };
       }
