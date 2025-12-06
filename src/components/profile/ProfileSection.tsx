@@ -1,12 +1,12 @@
 import {
-  Bell,
-  ChevronRight,
-  CreditCard,
-  HelpCircle,
-  LogOut,
-  MapPin,
-  Pencil,
-  Shield,
+    Bell,
+    ChevronRight,
+    CreditCard,
+    HelpCircle,
+    LogOut,
+    MapPin,
+    Pencil,
+    Shield,
 } from "lucide-react";
 
 interface ProfileSectionProps {
@@ -97,7 +97,7 @@ export function createProfileSections(
       icon: <Pencil className="h-5 w-5" />,
       title: "Editar perfil",
       description: "Actualiza tu información personal",
-      onClick: () => router.push("/profile/ProfileForm"),
+      onClick: () => router.push("/profile/edit"),
     },
     {
       icon: <CreditCard className="h-5 w-5" />,
