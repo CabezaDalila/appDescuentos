@@ -1,9 +1,9 @@
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
 import {
-    Card,
-    CARD_BRANDS,
-    CARD_LEVELS,
-    CARD_TYPES,
+  Card,
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
@@ -38,6 +38,7 @@ export default function Home() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
   const [userCredentials, setUserCredentials] = useState<UserCredential[]>([]);
+  const [membershipsLoading, setMembershipsLoading] = useState(true);
 
   // Determinar saludo según la hora del día
   useEffect(() => {
@@ -151,10 +152,12 @@ export default function Home() {
 
         setUserMemberships(cleanedMemberships);
         setUserCredentials(cleanedCredentials);
+        setMembershipsLoading(false);
       } catch (error) {
         console.error("Error cargando membresías del usuario:", error);
         setUserMemberships([]);
         setUserCredentials([]);
+        setMembershipsLoading(false);
       }
     };
 
@@ -266,7 +269,7 @@ export default function Home() {
         />
       </div>
 
-      {/* Acciones rápidas justo debajo del buscador */}
+      {/* Acciones rápidas */}
       <div className="px-3 sm:px-4 lg:px-4 xl:px-6 2xl:px-8 mt-2">
         <QuickActionsSection onCategoryClick={handleCategoryClick} />
       </div>
@@ -282,12 +285,13 @@ export default function Home() {
           />
         </div>
 
-        {/* Columna derecha - Ofertas y descuentos */}
+        {/* Ofertas y descuentos */}
         <div className="lg:w-3/4 xl:w-4/5 2xl:w-5/6 lg:flex-1">
           <PersonalizedOffersSection
             onOfferClick={handleOfferClick}
             userMemberships={userMemberships}
             userCredentials={userCredentials}
+            membershipsLoading={membershipsLoading}
           />
 
           <TrendingSection

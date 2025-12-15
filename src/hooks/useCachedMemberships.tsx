@@ -62,7 +62,6 @@ export function useCachedMemberships() {
               setInactiveMemberships(inactive);
             })
             .catch((error) => {
-              console.error("[Cache] Error actualizando membresías:", error);
             });
 
           return;

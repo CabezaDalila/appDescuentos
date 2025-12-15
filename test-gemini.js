@@ -18,13 +18,30 @@ async function testGemini() {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   
+  console.log("\n📋 Listando modelos disponibles...\n");
+  
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`);
+    const data = await response.json();
+    
+    if (data.models) {
+      console.log("✅ Modelos disponibles:");
+      data.models
+        .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+        .forEach(model => {
+          console.log(`  - ${model.name.replace('models/', '')}`);
+        });
+    }
+  } catch (error) {
+    console.error("❌ Error listando modelos:", error.message);
+  }
+  
   console.log("\n📋 Probando diferentes modelos...\n");
   
   // Modelos a probar según la documentación
   const modelsToTest = [
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-pro-latest", 
     "gemini-pro",
   ];
   

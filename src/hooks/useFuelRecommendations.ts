@@ -47,25 +47,12 @@ export function useFuelRecommendations() {
       setLoading(true);
       setError(null);
 
-      console.log("🚀 [Hook] Iniciando generateRecommendation...");
-      console.log("📥 [Hook] Request recibido:", {
-        userId: request.userId,
-        interests: request.userPreferences.interests,
-        vehicleType: request.userPreferences.vehicleType,
-        banks: request.userBanks,
-        discountsCount: request.availableDiscounts.length
-      });
-
       try {
         // Llamar a Gemini para generar recomendación
-        console.log("🤖 [Hook] Llamando a Gemini API...");
         const newRecommendation = await getSmartRecommendations(request);
-        console.log("✅ [Hook] Respuesta de Gemini recibida:", newRecommendation);
 
         // Guardar en Firestore
-        console.log("💾 [Hook] Guardando en Firestore...");
         await saveFuelRecommendation(user.uid, newRecommendation);
-        console.log("✅ [Hook] Guardado en Firestore exitoso");
 
         // Enviar notificación automática
         if (newRecommendation.recommendedDiscounts.length > 0) {
@@ -74,7 +61,6 @@ export function useFuelRecommendations() {
           );
 
           if (topDiscount) {
-            console.log("🔔 [Hook] Enviando notificación...");
             await sendRecommendationNotification(
               user.uid,
               newRecommendation,
@@ -84,15 +70,12 @@ export function useFuelRecommendations() {
                 card: topDiscount.membershipRequired?.[0] || topDiscount.bancos?.[0] || "Tarjeta",
               }
             );
-            console.log("✅ [Hook] Notificación enviada");
           }
         }
 
         setRecommendation(newRecommendation);
-        console.log("🎉 [Hook] Proceso completado exitosamente");
         return newRecommendation;
       } catch (err) {
-        console.error("❌ [Hook] Error en generateRecommendation:", err);
         const errorObj = err instanceof Error ? err : new Error("Error generando recomendación");
         setError(errorObj);
         return null;
@@ -114,5 +97,4 @@ export function useFuelRecommendations() {
     generateRecommendation,
     refreshRecommendation,
   };
-        // Enviar notificación automática
 }

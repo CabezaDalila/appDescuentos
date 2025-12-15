@@ -1,25 +1,33 @@
 import {
-  Bike,
-  Bus,
-  Car,
-  Compass,
-  Fuel,
-  Gift,
-  GraduationCap,
-  Heart,
-  Home,
-  Laptop,
-  Music,
-  PiggyBank,
-  ShoppingBag,
-  ShoppingCart,
-  Sparkles,
-  Target,
-  UtensilsCrossed,
-  Wallet
+    Bike,
+    Bus,
+    Car,
+    Compass,
+    Fuel,
+    Gift,
+    GraduationCap,
+    Heart,
+    Home,
+    Laptop,
+    Music,
+    PiggyBank,
+    ShoppingBag,
+    ShoppingCart,
+    Sparkles,
+    Target,
+    UtensilsCrossed,
+    Wallet
 } from "lucide-react";
 
 export const ONBOARDING_TOTAL_STEPS = 6;
+
+export interface OnboardingOption {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  description?: string;
+}
 
 // Paso 2: Categorías de gasto
 export const SPENDING_CATEGORIES = [

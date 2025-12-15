@@ -20,7 +20,7 @@ import {
 import { auth, db } from "./firebase";
 
 // Registro
-export const register = async (email, password, displayName = null) => {
+export const register = async (email, password, displayName) => {
   const result = await createUserWithEmailAndPassword(auth, email, password);
 
   // Actualizar displayName si se proporciona

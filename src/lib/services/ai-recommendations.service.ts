@@ -1,6 +1,11 @@
 /**
  * Servicio genérico de IA para recomendaciones inteligentes
  * Adaptador que usa Gemini internamente pero expone una interfaz genérica
+ * 
+ * CONTROLES DE COSTO:
+ * - Caché de 24 horas para evitar llamadas duplicadas
+ * - Rate limiting: 10/min, 50/hora, 200/día
+ * - Validación de datos antes de llamar a la API
  */
 
 import type {
@@ -8,6 +13,8 @@ import type {
   RecommendationRequest,
 } from "@/types/recommendations";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getCachedRecommendation, setCachedRecommendation } from "./ai-cache.service";
+import { canMakeRequest, recordRequest } from "./ai-rate-limiter.service";
 
 // Inicializar Gemini
 const getGeminiClient = () => {
@@ -26,14 +33,40 @@ const getGeminiClient = () => {
  * Construir prompt genérico para Gemini
  */
 function buildPrompt(request: RecommendationRequest): string {
+  // Crear lista de descuentos con ID, nombre y detalles completos
   const discountsText = request.availableDiscounts
-    .map((d) => {
+    .map((d, index) => {
       const merchant = d.name || d.title || "Comercio";
       const percentage = d.discountPercentage || 0;
-      const cards = d.membershipRequired?.join(", ") || d.bancos?.join(", ") || "cualquier tarjeta";
-      return `- ${merchant}: ${percentage}% con ${cards}`;
+      
+      // Obtener tarjetas específicas (priorizar membershipRequired, luego bancos)
+      let cards = "Sin restricción de tarjeta";
+      if (d.membershipRequired && d.membershipRequired.length > 0) {
+        cards = d.membershipRequired.join(", ");
+      } else if (d.bancos && d.bancos.length > 0) {
+        cards = d.bancos.join(", ");
+      }
+      
+      // Categoría
+      const category = d.category || "general";
+      
+      // Descripción (si existe)
+      const description = d.description || d.descripcion || "";
+      
+      // Construir línea de descuento con toda la info
+      let discountLine = `${index + 1}. ID: "${d.id}"\n`;
+      discountLine += `   Comercio: ${merchant}\n`;
+      discountLine += `   Categoría: ${category}\n`;
+      discountLine += `   Descuento: ${percentage}%\n`;
+      discountLine += `   Tarjetas: ${cards}`;
+      
+      if (description) {
+        discountLine += `\n   Descripción: ${description.substring(0, 100)}`;
+      }
+      
+      return discountLine;
     })
-    .join("\n");
+    .join("\n\n");
 
   // Detectar categoría principal
   const mainCategory = request.availableDiscounts[0]?.category || "general";
@@ -56,7 +89,7 @@ function buildPrompt(request: RecommendationRequest): string {
 
 Analiza los siguientes datos del usuario:
 ${userContext}
-- Tarjetas/Bancos disponibles: ${request.userBanks.join(", ")}
+- Tarjetas/Bancos disponibles: ${request.userBanks.join(", ") || "ninguna especificada"}
 
 Descuentos disponibles:
 ${discountsText}
@@ -65,24 +98,35 @@ Genera recomendaciones personalizadas en formato JSON con esta estructura:
 {
   "recommendedDiscounts": [
     {
-      "discountId": "id del descuento",
-      "relevanceScore": número del 0-100,
-      "reasoning": "explicación clara y motivadora en español argentino, sin mencionar categorías específicas",
-      "suggestedDay": "día de la semana recomendado",
-      "estimatedSavings": número en pesos estimado de ahorro mensual
+      "discountId": "ID EXACTO del descuento",
+      "relevanceScore": número del 0-100
     }
-  ],
-  "insights": "análisis breve del comportamiento del usuario",
-  "tips": ["tip 1", "tip 2", "tip 3"]
+  ]
 }
 
-IMPORTANTE:
-- Solo recomienda descuentos que coincidan con las tarjetas del usuario
-- Sé específico con los ahorros estimados
-- Usa lenguaje cercano y motivador
-- NO menciones la categoría específica (nafta, supermercado, etc.) en el reasoning
-- Enfócate en el ahorro y beneficio para el usuario
-- Responde SOLO con el JSON, sin texto adicional`;
+INSTRUCCIONES IMPORTANTES:
+
+1. MATCHING DE TARJETAS:
+   - Si el usuario tiene bancos/tarjetas específicos, PRIORIZA descuentos que los acepten
+   - Si un descuento dice "Sin restricción de tarjeta", es válido para todos
+   - Si el usuario NO tiene tarjetas, solo recomienda descuentos sin restricción
+
+2. MATCHING DE CATEGORÍAS:
+   - PRIORIZA descuentos cuya categoría coincida con los intereses del usuario
+   - Ejemplo: Si le interesa "automotive", prioriza descuentos de esa categoría
+   - Dale mayor relevanceScore a las coincidencias de categoría
+
+3. RELEVANCE SCORE:
+   - 90-100: Coincide categoría Y tarjeta del usuario
+   - 70-89: Coincide categoría O tarjeta del usuario
+   - 50-69: Descuento sin restricción pero no coincide categoría
+   - 0-49: No recomendable
+
+4. FORMATO:
+   - El "discountId" DEBE ser el ID exacto (ej: "NnTEpUs4d9xUfZXKfwXB")
+   - Ordena por relevanceScore (más alto primero)
+   - Máximo 5 descuentos recomendados
+   - Responde SOLO con el JSON, sin texto adicional`;
 }
 
 /**
@@ -115,65 +159,83 @@ async function analyzeWithGemini(
   request: RecommendationRequest
 ): Promise<AIRecommendation> {
   const genAI = getGeminiClient();
-  // Modelo experimental disponible en plan gratuito (con límites de cuota)
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  // Modelo disponible en la API v1
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = buildPrompt(request);
   
-  console.log("📝 [Gemini] Prompt generado:");
-  console.log("─".repeat(80));
-  console.log(prompt);
-  console.log("─".repeat(80));
-
   try {
-    console.log("⏳ [Gemini] Enviando request a Gemini API...");
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
     
-    console.log("📨 [Gemini] Respuesta raw de Gemini:");
-    console.log("─".repeat(80));
-    console.log(text);
-    console.log("─".repeat(80));
-
     const parsed = parseGeminiResponse(text);
-    console.log("✅ [Gemini] JSON parseado exitosamente:", parsed);
     
     return parsed;
   } catch (error) {
-    console.error("❌ [Gemini] Error detallado:", error);
     throw error;
   }
 }
 
 /**
  * Función principal: obtener recomendaciones inteligentes
+ * CON CONTROLES DE COSTO
  */
 export async function getSmartRecommendations(
   request: RecommendationRequest
 ): Promise<AIRecommendation> {
-  console.log("🎯 [Service] getSmartRecommendations iniciado");
-  console.log("📊 [Service] Request:", {
-    userId: request.userId,
-    interests: request.userPreferences.interests,
-    vehicleType: request.userPreferences.vehicleType,
-    banks: request.userBanks,
-    discountsCount: request.availableDiscounts.length
-  });
   
+  // 1. VALIDAR DATOS ANTES DE LLAMAR A LA API
+  if (!request.userId) {
+    throw new Error("Usuario no identificado");
+  }
+
+  if (!request.availableDiscounts || request.availableDiscounts.length === 0) {
+    throw new Error("No hay descuentos disponibles para recomendar");
+  }
+
+  // Nota: No validamos bancos porque muchos descuentos funcionan con "cualquier tarjeta"
+  if (!request.userBanks) {
+    request.userBanks = []; // Array vacío si no tiene bancos
+  }
+
+  // 2. VERIFICAR CACHÉ (evita llamadas innecesarias)
+  const cached = getCachedRecommendation(
+    request.userId,
+    request.userPreferences.interests || [],
+    request.userBanks
+  );
+
+  if (cached) {
+    return cached;
+  }
+
+  // 3. VERIFICAR RATE LIMIT (previene abuso)
+  const rateLimitCheck = canMakeRequest(request.userId);
+  if (!rateLimitCheck.allowed) {
+    throw new Error(`Rate limit excedido: ${rateLimitCheck.reason}`);
+  }
+
+  // 4. LLAMAR A GEMINI (con costo)
   try {
     const recommendation = await analyzeWithGemini(request);
 
     // Validar que haya al menos una recomendación
     if (!recommendation.recommendedDiscounts || recommendation.recommendedDiscounts.length === 0) {
-      console.error("❌ [Service] No se generaron recomendaciones");
       throw new Error("No se generaron recomendaciones");
     }
 
-    console.log("✅ [Service] Recomendación válida generada");
+    // 5. REGISTRAR REQUEST Y GUARDAR EN CACHÉ
+    recordRequest(request.userId);
+    setCachedRecommendation(
+      request.userId,
+      request.userPreferences.interests || [],
+      request.userBanks,
+      recommendation
+    );
+
     return recommendation;
   } catch (error) {
-    console.error("❌ [Service] Error obteniendo recomendaciones:", error);
     throw error;
   }
 }

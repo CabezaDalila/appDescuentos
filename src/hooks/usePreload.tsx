@@ -34,7 +34,6 @@ export function usePreload() {
       cache.set(CACHE_KEYS.DISCOUNTS_HOME, discounts, CACHE_TTL.DISCOUNTS);
       return true;
     } catch (error) {
-      console.error("[Preload] Error cargando descuentos:", error);
       return false;
     }
   };
@@ -58,7 +57,6 @@ export function usePreload() {
       cache.set(CACHE_KEYS.MEMBERSHIPS_INACTIVE, inactive, CACHE_TTL.MEMBERSHIPS);
       return true;
     } catch (error) {
-      console.error("[Preload] Error cargando membresías:", error);
       return false;
     }
   };

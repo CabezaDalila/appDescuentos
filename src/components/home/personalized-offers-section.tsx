@@ -33,30 +33,28 @@ interface HomePageDiscount {
   };
 }
 
-interface AIRecommendedDiscount extends HomePageDiscount {
-  aiReasoning?: string;
-  aiScore?: number;
-}
+
 
 interface PersonalizedOffersSectionProps {
   onOfferClick: (offerId: string, url?: string) => void;
   userMemberships?: string[];
   userCredentials?: UserCredential[];
+  membershipsLoading?: boolean;
 }
 
 export function PersonalizedOffersSection({
   onOfferClick,
   userMemberships,
   userCredentials,
+  membershipsLoading = false,
 }: PersonalizedOffersSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { discounts: allDiscounts, loading: discountsLoading } = useCachedDiscounts();
   
-  const [personalizedOffers, setPersonalizedOffers] = useState<AIRecommendedDiscount[]>([]);
+  const [personalizedOffers, setPersonalizedOffers] = useState<HomePageDiscount[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAIRecommendation, setIsAIRecommendation] = useState(false);
-  const [aiInsight, setAiInsight] = useState<string | null>(null);
   
   // Ref para evitar llamadas duplicadas a Gemini
   const aiGeneratedRef = useRef(false);
@@ -72,44 +70,42 @@ export function PersonalizedOffersSection({
   ) => {
     // Evitar llamadas duplicadas
     if (aiGeneratedRef.current) {
-      console.log("🔄 [IA] Ya se generaron recomendaciones, saltando...");
       return;
     }
     
-    console.log("🤖 [IA] Generando recomendaciones con Gemini...");
-    console.log("📊 [IA] Categorías del usuario:", onboarding.spendingCategories);
-    console.log("📦 [IA] Descuentos disponibles:", discounts.length);
-
     try {
       // Filtrar descuentos por categorías del usuario
       let relevantDiscounts = discounts.filter(d => 
         onboarding.spendingCategories.includes(d.category || "")
       );
 
-      console.log("🎯 [IA] Descuentos relevantes encontrados:", relevantDiscounts.length);
-
       // Si no hay suficientes, usar todos
       if (relevantDiscounts.length < 3) {
-        console.log("⚠️ [IA] Pocos descuentos relevantes, usando todos");
         relevantDiscounts = discounts.slice(0, 10);
       }
 
       // Si no hay descuentos disponibles, mostrar fallback
       if (relevantDiscounts.length === 0) {
-        console.log("❌ [IA] No hay descuentos disponibles");
         setPersonalizedOffers([]);
         setLoading(false);
         return;
       }
 
       // Preparar request para Gemini
+      // Combinar bancos del onboarding + membresías del perfil
+      const banksFromOnboarding = onboarding.banks || [];
+      const banksFromMemberships = userMemberships || [];
+      
+      // Unir ambas listas y eliminar duplicados
+      const allUserBanks = [...new Set([...banksFromOnboarding, ...banksFromMemberships])];
+      
       const request = {
         userId: user!.uid,
         userPreferences: {
           interests: onboarding.spendingCategories,
           vehicleType: onboarding.transportType,
         },
-        userBanks: onboarding.banks || [],
+        userBanks: allUserBanks,
         availableDiscounts: relevantDiscounts.slice(0, 10).map(d => ({
           id: d.id,
           name: d.title || d.name || "Descuento",
@@ -120,51 +116,40 @@ export function PersonalizedOffersSection({
             : d.discountPercentage || 0,
           membershipRequired: d.membershipRequired,
           bancos: d.bancos,
+          description: d.description,
         })),
       };
 
-      console.log("📤 [IA] Enviando request a Gemini...");
       const aiResult = await getSmartRecommendations(request);
-      console.log("✅ [IA] Respuesta de Gemini recibida:", aiResult);
       
       // Mapear recomendaciones de IA a descuentos
-      const aiOffers: AIRecommendedDiscount[] = [];
+      const aiOffers: HomePageDiscount[] = [];
       
-      for (const rec of aiResult.recommendedDiscounts.slice(0, 3)) {
+      for (const rec of aiResult.recommendedDiscounts.slice(0, 5)) {
         const discount = discounts.find(d => d.id === rec.discountId);
         if (discount) {
-          aiOffers.push({
-            ...discount,
-            aiReasoning: rec.reasoning,
-            aiScore: rec.relevanceScore,
-          } as AIRecommendedDiscount);
+          aiOffers.push(discount);
         }
       }
-
-      console.log("🎉 [IA] Ofertas finales:", aiOffers.length);
 
       if (aiOffers.length > 0) {
         setPersonalizedOffers(aiOffers);
         setIsAIRecommendation(true);
-        setAiInsight(aiResult.insights || null);
         aiGeneratedRef.current = true;
       } else {
-        // Fallback si Gemini no devolvió IDs válidos
-        console.log("⚠️ [IA] Gemini no devolvió descuentos válidos, usando fallback");
-        const fallbackDiscounts = relevantDiscounts.slice(0, 3) as AIRecommendedDiscount[];
+        const fallbackDiscounts = relevantDiscounts.slice(0, 3);
         setPersonalizedOffers(fallbackDiscounts);
         setIsAIRecommendation(false);
       }
     } catch (error) {
-      console.error("❌ [IA] Error generando recomendaciones:", error);
       // Fallback: mostrar descuentos aleatorios de las categorías
       const fallbackDiscounts = discounts
         .filter(d => onboarding.spendingCategories.includes(d.category || ""))
-        .slice(0, 3) as AIRecommendedDiscount[];
+        .slice(0, 3);
       
       if (fallbackDiscounts.length === 0) {
         // Si no hay de las categorías, mostrar los primeros disponibles
-        setPersonalizedOffers(discounts.slice(0, 3) as AIRecommendedDiscount[]);
+        setPersonalizedOffers(discounts.slice(0, 3));
       } else {
         setPersonalizedOffers(fallbackDiscounts);
       }
@@ -175,75 +160,78 @@ export function PersonalizedOffersSection({
   }, [user]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const loadOffers = async () => {
-      if (!user?.uid) {
+      if (!user?.uid || !isMounted) {
         setLoading(false);
         return;
       }
 
       // Esperar a que los descuentos estén cargados
       if (discountsLoading) {
-        console.log("⏳ [Personalized] Esperando que carguen los descuentos...");
         return;
       }
 
-      console.log("🔄 [Personalized] Cargando ofertas personalizadas...");
-      console.log("📦 [Personalized] Total descuentos disponibles:", allDiscounts.length);
+      if (membershipsLoading) {
+        return;
+      }
 
       try {
-        // Si tiene credenciales, usar método tradicional
         const hasCredentials = 
           (userMemberships && userMemberships.length > 0) ||
           (userCredentials && userCredentials.length > 0);
-
-        console.log("🔑 [Personalized] Tiene credenciales:", hasCredentials);
 
         if (hasCredentials) {
           const discounts = await getPersonalizedDiscounts(
             userMemberships || [],
             userCredentials || []
           );
-          setPersonalizedOffers(discounts as AIRecommendedDiscount[]);
-          setIsAIRecommendation(false);
-          setAiInsight(null);
-          setLoading(false);
-        } else {
-          // Sin credenciales: intentar usar IA con datos del onboarding
-          console.log("🔍 [Personalized] Buscando datos de onboarding...");
-          const onboarding = await getOnboardingAnswers(user.uid);
-          console.log("📋 [Personalized] Onboarding encontrado:", onboarding);
-          
-          if (onboarding && onboarding.spendingCategories?.length > 0) {
-            // Tiene onboarding completado y hay descuentos - usar IA
-            if (allDiscounts.length > 0) {
-              await generateAIRecommendations(onboarding, allDiscounts as HomePageDiscount[]);
-            } else {
-              console.log("⚠️ [Personalized] No hay descuentos para generar recomendaciones");
-              setPersonalizedOffers([]);
-              setLoading(false);
-            }
-          } else {
-            // No tiene onboarding completado - mostrar estado vacío
-            console.log("⚠️ [Personalized] Usuario sin onboarding completado");
-            setPersonalizedOffers([]);
+          if (isMounted) {
+            setPersonalizedOffers(discounts as HomePageDiscount[]);
             setIsAIRecommendation(false);
             setLoading(false);
           }
+        } else {
+          const onboarding = await getOnboardingAnswers(user.uid);
+          
+          if (onboarding && onboarding.spendingCategories?.length > 0) {
+            // Tiene onboarding completado y hay descuentos - usar IA
+            if (allDiscounts.length > 0 && isMounted) {
+              await generateAIRecommendations(onboarding, allDiscounts as HomePageDiscount[]);
+            } else {
+              if (isMounted) {
+                setPersonalizedOffers([]);
+                setLoading(false);
+              }
+            }
+          } else {
+            if (isMounted) {
+              setPersonalizedOffers([]);
+              setIsAIRecommendation(false);
+              setLoading(false);
+            }
+          }
         }
       } catch (error) {
-        console.error("❌ [Personalized] Error cargando ofertas:", error);
-        setPersonalizedOffers([]);
-        setLoading(false);
+        if (isMounted) {
+          setPersonalizedOffers([]);
+          setLoading(false);
+        }
       }
     };
 
     loadOffers();
-  }, [user?.uid, userMemberships, userCredentials, allDiscounts, discountsLoading, generateAIRecommendations]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.uid, userMemberships, userCredentials, allDiscounts, discountsLoading, membershipsLoading, generateAIRecommendations]);
 
-  // Reset cuando cambia el usuario
+  // Reset cuando cambia el usuario o las membresías
   useEffect(() => {
     aiGeneratedRef.current = false;
-  }, [user?.uid]);
+  }, [user?.uid, userMemberships]);
 
   // Determinar subtítulo basado en el tipo de recomendación
   const getSubtitle = () => {
@@ -284,14 +272,7 @@ export function PersonalizedOffersSection({
         )}
       </div>
 
-      {/* Insight de IA */}
-      {isAIRecommendation && aiInsight && (
-        <div className="mb-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
-          <p className="text-sm text-purple-800">
-            💡 {aiInsight}
-          </p>
-        </div>
-      )}
+
 
       {loading ? (
         <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
@@ -335,7 +316,7 @@ export function PersonalizedOffersSection({
         </Card>
       ) : (
         <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
-          {personalizedOffers.slice(0, 3).map((offer) => (
+          {personalizedOffers.map((offer) => (
             <CardDiscountCompact
               key={offer.id}
               id={offer.id}

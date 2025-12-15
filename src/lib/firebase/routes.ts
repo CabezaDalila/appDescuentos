@@ -3,8 +3,8 @@
  */
 
 import { db } from "@/lib/firebase/firebase";
-import type { GeminiRecommendation } from "@/types/fuel";
 import type { DailyRoute, RoutesSummary } from "@/types/location";
+import type { AIRecommendation } from "@/types/recommendations";
 import {
     collection,
     doc,
@@ -16,6 +16,7 @@ import {
     setDoc,
     where
 } from "firebase/firestore";
+
 
 /**
  * Guardar ruta diaria del usuario
@@ -89,7 +90,7 @@ export async function getRoutesSummary(
  */
 export async function saveFuelRecommendation(
   userId: string,
-  recommendation: GeminiRecommendation
+  recommendation: AIRecommendation
 ): Promise<void> {
   const recommendationRef = doc(
     db,
@@ -110,7 +111,7 @@ export async function saveFuelRecommendation(
  */
 export async function getLatestFuelRecommendation(
   userId: string
-): Promise<GeminiRecommendation | null> {
+): Promise<AIRecommendation | null> {
   const recommendationRef = doc(
     db,
     "users",
@@ -124,7 +125,7 @@ export async function getLatestFuelRecommendation(
     return null;
   }
 
-  return snapshot.data() as GeminiRecommendation;
+  return snapshot.data() as AIRecommendation;
 }
 
 /**

@@ -61,7 +61,7 @@ export default function OnboardingPage() {
 
     // Cargar datos guardados (puede haber datos en onboarding.interests o onboarding.answers.interests)
     if (profile?.onboarding) {
-      const onboardingData = profile.onboarding;
+      const onboardingData = profile.onboarding as any;
       
       // Migración de datos antiguos a nuevos campos
       const categories =
@@ -169,33 +169,19 @@ export default function OnboardingPage() {
       
       // 2. Generar primera recomendación en segundo plano
       try {
-        console.log("🤖 [IA] Iniciando generación de recomendación...");
-        console.log("📊 [IA] Categorías seleccionadas:", selectedCategories);
-        console.log("🏦 [IA] Bancos seleccionados:", selectedBanks);
-        console.log("🚗 [IA] Transporte:", selectedTransport);
         
         // Filtrar descuentos relevantes según las categorías del usuario
         let relevantDiscounts = discounts.filter(d => 
           selectedCategories.includes(d.category || "")
         );
 
-        console.log(`🔍 [IA] Descuentos filtrados por categoría: ${relevantDiscounts.length} de ${discounts.length} totales`);
-
         // Si no hay descuentos de esas categorías, usar todos
         if (relevantDiscounts.length === 0) {
-          console.warn("⚠️ [IA] No hay descuentos de las categorías seleccionadas, usando todos");
           relevantDiscounts = discounts;
         }
 
         // Limitar a 10 descuentos para no sobrecargar Gemini
         const selectedDiscounts = relevantDiscounts.slice(0, 10);
-        
-        console.log("📦 [IA] Descuentos que se enviarán a Gemini:", selectedDiscounts.map(d => ({
-          id: d.id,
-          title: d.title,
-          category: d.category,
-          percentage: d.discountPercentage
-        })));
 
         if (selectedDiscounts.length > 0) {
           const request = {
@@ -208,22 +194,15 @@ export default function OnboardingPage() {
             availableDiscounts: selectedDiscounts as any,
           };
           
-          console.log("📤 [IA] Request completo enviado a Gemini:", request);
-          
-          // Generar recomendación (no bloqueante)
           generateRecommendation(request)
             .then(result => {
-              console.log("✅ [IA] Recomendación generada exitosamente:", result);
             })
             .catch(err => {
-              console.error("❌ [IA] Error generando recomendación:", err);
             });
         } else {
-          console.warn("⚠️ [IA] No hay descuentos disponibles para generar recomendación");
         }
       } catch (recError) {
         // Error en recomendación no debe bloquear el flujo
-        console.error("❌ [IA] Error en proceso de recomendación:", recError);
       }
 
       toast.success("¡Gracias! Personalizaremos tus ofertas desde ahora.");
