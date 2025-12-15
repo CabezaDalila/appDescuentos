@@ -1,26 +1,32 @@
 import {
-  applyActionCode,
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signOut,
+    applyActionCode,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    signInWithCredential,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signOut,
+    updateProfile,
 } from "firebase/auth";
 import {
-  doc,
-  getDoc,
-  increment,
-  serverTimestamp,
-  setDoc,
+    doc,
+    getDoc,
+    increment,
+    serverTimestamp,
+    setDoc,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 // Registro
-export const register = async (email, password) => {
+export const register = async (email, password, displayName) => {
   const result = await createUserWithEmailAndPassword(auth, email, password);
+
+  // Actualizar displayName si se proporciona
+  if (displayName) {
+    await updateProfile(result.user, { displayName });
+  }
 
   // Guardar datos del usuario antes de cerrar sesión
   await saveUserToFirestore(result.user);
@@ -67,9 +73,7 @@ export const resetPassword = async (email) => {
     // URL a la que se redirigirá después de hacer clic en el enlace
     url: typeof window !== "undefined" 
       ? `${window.location.origin}/reset-password`
-      : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/reset-password",
-    // Configuración adicional
-    handleCodeInApp: true,
+      : "https://app-descuentos-one.vercel.app/reset-password",
   };
 
   return sendPasswordResetEmail(auth, email, actionCodeSettings);
@@ -155,8 +159,8 @@ const saveUserToFirestore = async (user) => {
         // Esto ocurre cuando el usuario inicia sesión por primera vez después de verificar
         userData.onboarding = {
           completed: false,
-          interests: [],
-          goals: [],
+          spendingCategories: [],
+          mainGoal: "",
           banks: [],
         };
       }
@@ -214,9 +218,7 @@ export const resendEmailVerification = async (user) => {
     url:
       typeof window !== "undefined"
         ? `${window.location.origin}/login`
-        : "https://app-descuentos-gvnpe8xm0-dalilacabeza-gmailcoms-projects.vercel.app/login",
-    // Configuración adicional
-    handleCodeInApp: true,
+        : "https://app-descuentos-one.vercel.app/login",
   };
 
   return sendEmailVerification(user, actionCodeSettings);

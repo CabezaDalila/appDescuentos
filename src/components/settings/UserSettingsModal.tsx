@@ -1,24 +1,25 @@
 import { Button } from "@/components/Share/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { Separator } from "@/components/Share/separator";
 import { Switch } from "@/components/Share/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "@/hooks/useLocation";
 import { getUserPreferences, updateUserPreferences } from "@/lib/firebase/user";
 import { UserPreferences } from "@/types/user";
 import { Globe } from "lucide-react";
@@ -34,6 +35,7 @@ interface UserSettingsModalProps {
 const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
   function UserSettingsModal({ isOpen, onClose }: UserSettingsModalProps) {
     const { user } = useAuth();
+    const { requestPermissions, getLocation } = useLocation();
     const [activeTab, setActiveTab] = useState<"general" | "appearance">(
       "general"
     );
@@ -155,17 +157,8 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
           `user-prefs-${user.uid}`,
           JSON.stringify(formData)
         );
-        if (formData.useLocation) {
-          navigator.geolocation.getCurrentPosition(
-            () => {},
-            (error) => {
-              console.error("Error al obtener ubicación:", error);
-              setFormData((prev) => ({ ...prev, useLocation: false }));
-              toast.error("No se pudo obtener la ubicación.");
-            }
-          );
-        }
         setInitialPrefs(formData);
+        toast.success("Preferencias guardadas correctamente");
         onClose();
       } catch {
         localStorage.setItem(
@@ -189,52 +182,40 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
       onClose();
     }, [initialPrefs, onClose]);
 
-    const handleLocationToggle = useCallback((checked: boolean) => {
+    const handleLocationToggle = useCallback(async (checked: boolean) => {
       setFormData((prev) => ({ ...prev, useLocation: checked }));
 
       if (checked) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            fetch("https://ipapi.co/json/")
-              .then((res) => res.json())
-              .then((data) => {
-                if (data && data.country_name) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    region: data.country_name,
-                  }));
-                }
-              })
-              .catch(() => {
+        // Solicitar permisos y obtener ubicación usando nuestro hook
+        const granted = await requestPermissions();
+        
+        if (granted) {
+          const location = await getLocation();
+          
+          if (location) {
+            // Intentar obtener región desde IP API
+            try {
+              const response = await fetch("https://ipapi.co/json/");
+              const data = await response.json();
+              if (data && data.country_name) {
                 setFormData((prev) => ({
                   ...prev,
-                  region: `Lat: ${position.coords.latitude.toFixed(
-                    2
-                  )}, Lon: ${position.coords.longitude.toFixed(2)}`,
+                  region: data.country_name,
                 }));
-              });
-          },
-          () => {
-            fetch("https://ipapi.co/json/")
-              .then((res) => res.json())
-              .then((data) => {
-                if (data && data.country_name) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    region: data.country_name,
-                  }));
-                }
-              })
-              .catch(() => {});
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000,
+              }
+            } catch (error) {
+              console.error("Error obteniendo región:", error);
+            }
+          } else {
+            setFormData((prev) => ({ ...prev, useLocation: false }));
+            toast.error("No se pudo obtener la ubicación");
           }
-        );
+        } else {
+          setFormData((prev) => ({ ...prev, useLocation: false }));
+          toast.error("Permisos de ubicación denegados");
+        }
       }
-    }, []);
+    }, [requestPermissions, getLocation]);
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>

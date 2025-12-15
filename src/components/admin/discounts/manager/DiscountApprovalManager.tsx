@@ -49,21 +49,6 @@ export function DiscountApprovalManager({
     try {
       setLoading(true);
       const discounts = await getPendingDiscounts();
-      console.log(
-        `[DiscountApprovalManager] Descuentos cargados: ${discounts.length}`
-      );
-      // Log del primer descuento para ver qué campos tiene
-      if (discounts.length > 0) {
-        console.log("[DiscountApprovalManager] Primer descuento:", {
-          id: discounts[0].id,
-          name: discounts[0].name,
-          title: discounts[0].title,
-          category: discounts[0].category,
-          origin: discounts[0].origin,
-          description: discounts[0].description,
-          descripcion: discounts[0].descripcion,
-        });
-      }
       setPendingDiscounts(discounts);
     } catch (error) {
       console.error("Error cargando descuentos pendientes:", error);

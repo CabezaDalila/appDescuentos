@@ -24,7 +24,6 @@ export function useCachedDiscounts() {
               setDiscounts(fresh);
             })
             .catch((error) => {
-              console.error("[Cache] Error actualizando descuentos:", error);
             });
 
           return;

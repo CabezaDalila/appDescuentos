@@ -1,59 +1,78 @@
-import { db } from "@/lib/firebase/firebase";
 import {
   doc,
+  getDoc,
   serverTimestamp,
-  updateDoc,
-  deleteField,
+  setDoc
 } from "firebase/firestore";
+import { db } from "./firebase";
 
 export interface OnboardingAnswers {
-  interests: string[];
-  goals: string[];
+  spendingCategories: string[]; // Reemplaza interests
+  mainGoal: string; // Reemplaza goals (ahora es selección única)
   banks?: string[];
-}
-
-/**
- * Valida que las respuestas del onboarding sean válidas
- */
-function validateOnboardingAnswers(answers: OnboardingAnswers): void {
-  if (!Array.isArray(answers.interests)) {
-    throw new Error("Los intereses deben ser un array");
-  }
-  if (!Array.isArray(answers.goals)) {
-    throw new Error("Los objetivos deben ser un array");
-  }
-  if (answers.banks !== undefined && !Array.isArray(answers.banks)) {
-    throw new Error("Los bancos deben ser un array");
-  }
+  transportType?: string; // Reemplaza vehicleType
+  allowLocationTracking?: boolean;
+  estimatedMonthlyKm?: number; // Opcional: para futuro
 }
 
 /**
  * Guarda las respuestas del onboarding en Firestore
- * Elimina cualquier estructura duplicada (como onboarding.answers)
  */
 export async function saveOnboardingAnswers(
   userId: string,
   answers: OnboardingAnswers
 ): Promise<void> {
-  if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
-    throw new Error("El identificador del usuario es requerido");
-  }
-
-  // Validar los datos antes de guardar
-  validateOnboardingAnswers(answers);
-
   const userRef = doc(db, "users", userId);
 
-  // Usar updateDoc con notación de punto para actualizar campos anidados
-  // y eliminar la estructura duplicada 'answers' si existe
-  // deleteField() debe usarse en el nivel superior, no dentro de objetos anidados
-  await updateDoc(userRef, {
-    "onboarding.completed": true,
-    "onboarding.completedAt": serverTimestamp(),
-    "onboarding.interests": answers.interests,
-    "onboarding.goals": answers.goals,
-    "onboarding.banks": answers.banks || [],
-    // Eliminar la estructura duplicada 'answers' usando notación de punto
-    "onboarding.answers": deleteField(),
-  });
+  // Preparar datos solo con valores definidos
+  const onboardingData: any = {
+    completed: true,
+    spendingCategories: answers.spendingCategories || [],
+    mainGoal: answers.mainGoal || "",
+    banks: answers.banks || [],
+    allowLocationTracking: answers.allowLocationTracking || false,
+    completedAt: serverTimestamp(),
+  };
+
+  // Solo agregar transportType si tiene un valor
+  if (answers.transportType) {
+    onboardingData.transportType = answers.transportType;
+  }
+
+  await setDoc(
+    userRef,
+    {
+      onboarding: onboardingData,
+    },
+    { merge: true }
+  );
+}
+
+/**
+ * Obtiene las respuestas del onboarding de Firestore
+ */
+export async function getOnboardingAnswers(
+  userId: string
+): Promise<OnboardingAnswers | null> {
+  const userRef = doc(db, "users", userId);
+  const userDoc = await getDoc(userRef);
+
+  if (!userDoc.exists()) {
+    return null;
+  }
+
+  const data = userDoc.data();
+  const onboarding = data?.onboarding;
+
+  if (!onboarding || !onboarding.completed) {
+    return null;
+  }
+
+  return {
+    spendingCategories: onboarding.spendingCategories || [],
+    mainGoal: onboarding.mainGoal || "",
+    banks: onboarding.banks || [],
+    transportType: onboarding.transportType,
+    allowLocationTracking: onboarding.allowLocationTracking || false,
+  };
 }

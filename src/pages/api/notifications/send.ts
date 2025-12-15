@@ -139,9 +139,6 @@ export default async function handler(
         );
 
         await Promise.all(savePromises);
-        console.log(
-          `Notificaciones guardadas en Firestore para ${usersSnapshot.size} usuarios`
-        );
       } catch (firestoreError) {
         console.error(
           "Error guardando notificaciones en Firestore para todos los usuarios:",
