@@ -2,7 +2,6 @@ import { Card, CardContent } from "@/components/Share/card";
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
-import { getPersonalizedDiscounts } from "@/lib/discounts";
 import { getOnboardingAnswers } from "@/lib/firebase/onboarding";
 import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import type { UserCredential } from "@/types/credentials";
@@ -33,8 +32,6 @@ interface HomePageDiscount {
   };
 }
 
-
-
 interface PersonalizedOffersSectionProps {
   onOfferClick: (offerId: string, url?: string) => void;
   userMemberships?: string[];
@@ -45,123 +42,121 @@ interface PersonalizedOffersSectionProps {
 export function PersonalizedOffersSection({
   onOfferClick,
   userMemberships,
-  userCredentials,
-  membershipsLoading = false,
 }: PersonalizedOffersSectionProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { discounts: allDiscounts, loading: discountsLoading } = useCachedDiscounts();
-  
-  const [personalizedOffers, setPersonalizedOffers] = useState<HomePageDiscount[]>([]);
+  const { discounts: allDiscounts, loading: discountsLoading } =
+    useCachedDiscounts();
+
+  const [personalizedOffers, setPersonalizedOffers] = useState<
+    HomePageDiscount[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [isAIRecommendation, setIsAIRecommendation] = useState(false);
-  
+
   // Ref para evitar llamadas duplicadas a Gemini
   const aiGeneratedRef = useRef(false);
 
-  const generateAIRecommendations = useCallback(async (
-    onboarding: {
-      spendingCategories: string[];
-      mainGoal: string;
-      banks?: string[];
-      transportType?: string;
-    },
-    discounts: HomePageDiscount[]
-  ) => {
-    // Evitar llamadas duplicadas
-    if (aiGeneratedRef.current) {
-      return;
-    }
-    
-    try {
-      // Filtrar descuentos por categorías del usuario
-      let relevantDiscounts = discounts.filter(d => 
-        onboarding.spendingCategories.includes(d.category || "")
-      );
-
-      // Si no hay suficientes, usar todos
-      if (relevantDiscounts.length < 3) {
-        relevantDiscounts = discounts.slice(0, 10);
-      }
-
-      // Si no hay descuentos disponibles, mostrar fallback
-      if (relevantDiscounts.length === 0) {
-        setPersonalizedOffers([]);
-        setLoading(false);
+  const generateAIRecommendations = useCallback(
+    async (
+      onboarding: {
+        spendingCategories: string[];
+        mainGoal: string;
+        banks?: string[];
+        transportType?: string;
+      },
+      discounts: HomePageDiscount[]
+    ) => {
+      // Evitar llamadas duplicadas
+      if (aiGeneratedRef.current) {
         return;
       }
 
-      // Preparar request para Gemini
-      // Combinar bancos del onboarding + membresías del perfil
-      const banksFromOnboarding = onboarding.banks || [];
-      const banksFromMemberships = userMemberships || [];
-      
-      // Unir ambas listas y eliminar duplicados
-      const allUserBanks = [...new Set([...banksFromOnboarding, ...banksFromMemberships])];
-      
-      const request = {
-        userId: user!.uid,
-        userPreferences: {
-          interests: onboarding.spendingCategories,
-          vehicleType: onboarding.transportType,
-        },
-        userBanks: allUserBanks,
-        availableDiscounts: relevantDiscounts.slice(0, 10).map(d => ({
-          id: d.id,
-          name: d.title || d.name || "Descuento",
-          title: d.title,
-          category: d.category,
-          discountPercentage: typeof d.discountPercentage === 'string' 
-            ? parseInt(d.discountPercentage) || 0
-            : d.discountPercentage || 0,
-          membershipRequired: d.membershipRequired,
-          bancos: d.bancos,
-          description: d.description,
-        })),
-      };
+      try {
+        // Filtrar descuentos por categorías del usuario
+        let relevantDiscounts = discounts.filter((d) =>
+          onboarding.spendingCategories.includes(d.category || "")
+        );
 
-      const aiResult = await getSmartRecommendations(request);
-      
-      // Mapear recomendaciones de IA a descuentos
-      const aiOffers: HomePageDiscount[] = [];
-      
-      for (const rec of aiResult.recommendedDiscounts.slice(0, 5)) {
-        const discount = discounts.find(d => d.id === rec.discountId);
-        if (discount) {
-          aiOffers.push(discount);
+        // Si no hay suficientes, usar todos
+        if (relevantDiscounts.length < 3) {
+          relevantDiscounts = discounts.slice(0, 10);
         }
-      }
 
-      if (aiOffers.length > 0) {
-        setPersonalizedOffers(aiOffers);
-        setIsAIRecommendation(true);
-        aiGeneratedRef.current = true;
-      } else {
-        const fallbackDiscounts = relevantDiscounts.slice(0, 3);
-        setPersonalizedOffers(fallbackDiscounts);
+        // Si no hay descuentos disponibles, mostrar fallback
+        if (relevantDiscounts.length === 0) {
+          setPersonalizedOffers([]);
+          setLoading(false);
+          return;
+        }
+
+        // Preparar request para Gemini
+        // Combinar bancos del onboarding + membresías del perfil
+        const banksFromOnboarding = onboarding.banks || [];
+        const banksFromMemberships = userMemberships || [];
+
+        // Unir ambas listas y eliminar duplicados
+        const allUserBanks = [
+          ...new Set([...banksFromOnboarding, ...banksFromMemberships]),
+        ];
+
+        const request = {
+          userId: user!.uid,
+          userPreferences: {
+            interests: onboarding.spendingCategories,
+            vehicleType: onboarding.transportType,
+          },
+          userBanks: allUserBanks,
+          availableDiscounts: relevantDiscounts.slice(0, 10).map((d) => ({
+            id: d.id,
+            name: d.title || d.name || "Descuento",
+            title: d.title,
+            category: d.category,
+            discountPercentage:
+              typeof d.discountPercentage === "string"
+                ? parseInt(d.discountPercentage) || 0
+                : d.discountPercentage || 0,
+            membershipRequired: d.membershipRequired,
+            bancos: d.bancos,
+            description: d.description,
+          })),
+        };
+
+        const aiResult = await getSmartRecommendations(request);
+
+        // Mapear recomendaciones de IA a descuentos
+        const aiOffers: HomePageDiscount[] = [];
+
+        for (const rec of aiResult.recommendedDiscounts.slice(0, 5)) {
+          const discount = discounts.find((d) => d.id === rec.discountId);
+          if (discount) {
+            aiOffers.push(discount);
+          }
+        }
+
+        if (aiOffers.length > 0) {
+          setPersonalizedOffers(aiOffers);
+          setIsAIRecommendation(true);
+          aiGeneratedRef.current = true;
+        } else {
+          // Si la IA no genera resultados, mostrar vacío
+          setPersonalizedOffers([]);
+          setIsAIRecommendation(false);
+        }
+      } catch {
+        // Si la IA falla, mostrar vacío
+        setPersonalizedOffers([]);
         setIsAIRecommendation(false);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      // Fallback: mostrar descuentos aleatorios de las categorías
-      const fallbackDiscounts = discounts
-        .filter(d => onboarding.spendingCategories.includes(d.category || ""))
-        .slice(0, 3);
-      
-      if (fallbackDiscounts.length === 0) {
-        // Si no hay de las categorías, mostrar los primeros disponibles
-        setPersonalizedOffers(discounts.slice(0, 3));
-      } else {
-        setPersonalizedOffers(fallbackDiscounts);
-      }
-      setIsAIRecommendation(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+    },
+    [user, userMemberships]
+  );
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadOffers = async () => {
       if (!user?.uid || !isMounted) {
         setLoading(false);
@@ -173,47 +168,30 @@ export function PersonalizedOffersSection({
         return;
       }
 
-      if (membershipsLoading) {
-        return;
-      }
-
       try {
-        const hasCredentials = 
-          (userMemberships && userMemberships.length > 0) ||
-          (userCredentials && userCredentials.length > 0);
+        const onboarding = await getOnboardingAnswers(user.uid);
 
-        if (hasCredentials) {
-          const discounts = await getPersonalizedDiscounts(
-            userMemberships || [],
-            userCredentials || []
-          );
-          if (isMounted) {
-            setPersonalizedOffers(discounts as HomePageDiscount[]);
-            setIsAIRecommendation(false);
-            setLoading(false);
-          }
-        } else {
-          const onboarding = await getOnboardingAnswers(user.uid);
-          
-          if (onboarding && onboarding.spendingCategories?.length > 0) {
-            // Tiene onboarding completado y hay descuentos - usar IA
-            if (allDiscounts.length > 0 && isMounted) {
-              await generateAIRecommendations(onboarding, allDiscounts as HomePageDiscount[]);
-            } else {
-              if (isMounted) {
-                setPersonalizedOffers([]);
-                setLoading(false);
-              }
-            }
+        if (onboarding && onboarding.spendingCategories?.length > 0) {
+          // Tiene onboarding completado y hay descuentos - usar IA
+          if (allDiscounts.length > 0 && isMounted) {
+            await generateAIRecommendations(
+              onboarding,
+              allDiscounts as HomePageDiscount[]
+            );
           } else {
             if (isMounted) {
               setPersonalizedOffers([]);
-              setIsAIRecommendation(false);
               setLoading(false);
             }
           }
+        } else {
+          if (isMounted) {
+            setPersonalizedOffers([]);
+            setIsAIRecommendation(false);
+            setLoading(false);
+          }
         }
-      } catch (error) {
+      } catch {
         if (isMounted) {
           setPersonalizedOffers([]);
           setLoading(false);
@@ -222,11 +200,17 @@ export function PersonalizedOffersSection({
     };
 
     loadOffers();
-    
+
     return () => {
       isMounted = false;
     };
-  }, [user?.uid, userMemberships, userCredentials, allDiscounts, discountsLoading, membershipsLoading, generateAIRecommendations]);
+  }, [
+    user?.uid,
+    userMemberships,
+    allDiscounts,
+    discountsLoading,
+    generateAIRecommendations,
+  ]);
 
   // Reset cuando cambia el usuario o las membresías
   useEffect(() => {
@@ -238,9 +222,6 @@ export function PersonalizedOffersSection({
     if (isAIRecommendation) {
       return "Recomendado por IA";
     }
-    if (userCredentials && userCredentials.length > 0) {
-      return "Basado en tus credenciales";
-    }
     return "Basado en tus preferencias";
   };
 
@@ -248,7 +229,7 @@ export function PersonalizedOffersSection({
     <div className="w-full px-3 sm:px-4 lg:px-0 mb-4 sm:mb-5 lg:mb-6">
       <div className="flex justify-between items-center mb-2 sm:mb-3 lg:mb-4">
         <div className="flex items-center gap-2">
-          {isAIRecommendation && (
+          {personalizedOffers.length > 0 && (
             <div className="p-1.5 bg-purple-100 rounded-lg">
               <Sparkles className="h-4 w-4 text-purple-600" />
             </div>
@@ -271,8 +252,6 @@ export function PersonalizedOffersSection({
           </button>
         )}
       </div>
-
-
 
       {loading ? (
         <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
@@ -307,10 +286,7 @@ export function PersonalizedOffersSection({
               </svg>
             </div>
             <p className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-1 lg:mb-2">
-              Agrega tus credenciales
-            </p>
-            <p className="text-xs sm:text-sm lg:text-base text-gray-600">
-              Ve a tu perfil y agrega tus tarjetas y membresías para ver descuentos personalizados
+              Pronto verás recomendaciones personalizadas
             </p>
           </CardContent>
         </Card>
