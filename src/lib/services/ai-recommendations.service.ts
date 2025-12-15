@@ -151,6 +151,7 @@ async function analyzeWithGemini(
 
   const prompt = buildPrompt(request);
 
+  console.log("🤖 Consultando a Gemini para recomendaciones personalizadas...");
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
