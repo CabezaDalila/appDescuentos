@@ -54,8 +54,8 @@ export function PersonalizedOffersSection({
   const [loading, setLoading] = useState(true);
   const [isAIRecommendation, setIsAIRecommendation] = useState(false);
 
-  // Ref para evitar llamadas duplicadas a Gemini
   const aiGeneratedRef = useRef(false);
+  const isGeneratingRef = useRef(false);
 
   const generateAIRecommendations = useCallback(
     async (
@@ -67,13 +67,13 @@ export function PersonalizedOffersSection({
       },
       discounts: HomePageDiscount[]
     ) => {
-      // Evitar llamadas duplicadas
-      if (aiGeneratedRef.current) {
+      if (aiGeneratedRef.current || isGeneratingRef.current) {
         return;
       }
 
+      isGeneratingRef.current = true;
+
       try {
-        // Filtrar descuentos por categorías del usuario
         let relevantDiscounts = discounts.filter((d) =>
           onboarding.spendingCategories.includes(d.category || "")
         );
@@ -139,16 +139,16 @@ export function PersonalizedOffersSection({
           setIsAIRecommendation(true);
           aiGeneratedRef.current = true;
         } else {
-          // Si la IA no genera resultados, mostrar vacío
           setPersonalizedOffers([]);
           setIsAIRecommendation(false);
         }
-      } catch {
-        // Si la IA falla, mostrar vacío
+      } catch (error) {
+        console.error("Error generando recomendaciones:", error);
         setPersonalizedOffers([]);
         setIsAIRecommendation(false);
       } finally {
         setLoading(false);
+        isGeneratingRef.current = false;
       }
     },
     [user, userMemberships]
@@ -156,6 +156,7 @@ export function PersonalizedOffersSection({
 
   useEffect(() => {
     let isMounted = true;
+    aiGeneratedRef.current = false;
 
     const loadOffers = async () => {
       if (!user?.uid || !isMounted) {
