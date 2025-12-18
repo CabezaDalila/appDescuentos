@@ -7,6 +7,7 @@ import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/Discounts
 import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
+import { deleteField } from "@/lib/firebase/firebase";
 import { ManualDiscount } from "@/types/admin";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -155,44 +156,98 @@ export function ManualDiscountsManager({
         }
       }
 
-      const discountData = {
+      const discountData: any = {
         title: formData.title.trim(),
         origin: formData.origin.trim(),
         category: formData.category!,
         expirationDate: new Date(formData.expirationDate),
         description: formData.description.trim(),
         isVisible: formData.isVisible,
-        ...(formData.availableCredentials.length > 0 && {
-          availableCredentials: formData.availableCredentials,
-        }),
-        ...(formData.availableMemberships.length > 0 && {
-          availableMemberships: formData.availableMemberships,
-        }),
-        ...(formData.discountPercentage &&
-          formData.discountPercentage.trim() !== "" && {
-            discountPercentage: parseFloat(formData.discountPercentage),
-          }),
-        ...(formData.discountAmount &&
-          formData.discountAmount.trim() !== "" && {
-            discountAmount: parseFloat(formData.discountAmount),
-          }),
-        ...(formData.imageUrl &&
-          formData.imageUrl.trim() !== "" && {
-            imageUrl: formData.imageUrl.trim(),
-          }),
-        ...(formData.url &&
-          formData.url.trim() !== "" && {
-            url: formData.url.trim(),
-          }),
-        ...(formData.locationAddress &&
-          formData.locationCoordinates && {
-            location: {
-              latitude: formData.locationCoordinates.lat,
-              longitude: formData.locationCoordinates.lng,
-              address: formData.locationAddress,
-            },
-          }),
       };
+
+      if (editingDiscount) {
+        if (formData.availableCredentials.length > 0) {
+          discountData.availableCredentials = formData.availableCredentials;
+        } else {
+          discountData.availableCredentials = deleteField();
+        }
+
+        if (formData.availableMemberships.length > 0) {
+          discountData.availableMemberships = formData.availableMemberships;
+        } else {
+          discountData.availableMemberships = deleteField();
+        }
+
+        if (
+          formData.discountPercentage &&
+          formData.discountPercentage.trim() !== ""
+        ) {
+          discountData.discountPercentage = parseFloat(
+            formData.discountPercentage
+          );
+        } else {
+          discountData.discountPercentage = deleteField();
+        }
+
+        if (formData.discountAmount && formData.discountAmount.trim() !== "") {
+          discountData.discountAmount = parseFloat(formData.discountAmount);
+        } else {
+          discountData.discountAmount = deleteField();
+        }
+
+        if (formData.imageUrl && formData.imageUrl.trim() !== "") {
+          discountData.imageUrl = formData.imageUrl.trim();
+        } else {
+          discountData.imageUrl = deleteField();
+        }
+
+        if (formData.url && formData.url.trim() !== "") {
+          discountData.url = formData.url.trim();
+        } else {
+          discountData.url = deleteField();
+        }
+
+        if (formData.locationAddress && formData.locationCoordinates) {
+          discountData.location = {
+            latitude: formData.locationCoordinates.lat,
+            longitude: formData.locationCoordinates.lng,
+            address: formData.locationAddress,
+          };
+        } else {
+          discountData.location = deleteField();
+        }
+      } else {
+        if (formData.availableCredentials.length > 0) {
+          discountData.availableCredentials = formData.availableCredentials;
+        }
+        if (formData.availableMemberships.length > 0) {
+          discountData.availableMemberships = formData.availableMemberships;
+        }
+        if (
+          formData.discountPercentage &&
+          formData.discountPercentage.trim() !== ""
+        ) {
+          discountData.discountPercentage = parseFloat(
+            formData.discountPercentage
+          );
+        }
+        if (formData.discountAmount && formData.discountAmount.trim() !== "") {
+          discountData.discountAmount = parseFloat(formData.discountAmount);
+        }
+        if (formData.imageUrl && formData.imageUrl.trim() !== "") {
+          discountData.imageUrl = formData.imageUrl.trim();
+        }
+        if (formData.url && formData.url.trim() !== "") {
+          discountData.url = formData.url.trim();
+        }
+        if (formData.locationAddress && formData.locationCoordinates) {
+          discountData.location = {
+            latitude: formData.locationCoordinates.lat,
+            longitude: formData.locationCoordinates.lng,
+            address: formData.locationAddress,
+          };
+        }
+      }
 
       if (editingDiscount) {
         await updateDiscount(editingDiscount.id!, discountData);
