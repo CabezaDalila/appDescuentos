@@ -64,7 +64,11 @@ export default function OnboardingPage() {
 
     // Cargar datos guardados (puede haber datos en onboarding.interests o onboarding.answers.interests)
     if (profile?.onboarding) {
-      const onboardingData = profile.onboarding as OnboardingAnswers;
+      const onboardingData = profile.onboarding as OnboardingAnswers & {
+        interests?: string[]; // Backward compatibility
+        goals?: string[]; // Backward compatibility
+        vehicleType?: string; // Backward compatibility
+      };
 
       // Migración de datos antiguos a nuevos campos
       const categories =
@@ -198,7 +202,7 @@ export default function OnboardingPage() {
               vehicleType: selectedTransport || undefined,
             },
             userBanks: selectedBanks,
-            availableDiscounts: selectedDiscounts as any,
+            availableDiscounts: selectedDiscounts,
           };
 
           generateRecommendation(request)
