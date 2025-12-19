@@ -17,3 +17,8 @@ export interface AIRecommendation {
   }[];
   generatedAt: number;
 }
+
+export interface AIRecommendationWithDiscounts extends AIRecommendation {
+  fullDiscounts: Discount[];
+  savedAt: number;
+}

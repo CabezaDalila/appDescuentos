@@ -24,6 +24,7 @@ export function useCachedDiscounts() {
               setDiscounts(fresh);
             })
             .catch((error) => {
+              console.error("Error cargando descuentos:", error);
             });
 
           return;

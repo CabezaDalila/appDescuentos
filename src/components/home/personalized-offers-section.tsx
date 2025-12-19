@@ -1,13 +1,11 @@
 import { Card, CardContent } from "@/components/Share/card";
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
-import { useAuth } from "@/hooks/useAuth";
+import { useAIRecommendations } from "@/hooks/useAIRecommendations";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
-import { getOnboardingAnswers } from "@/lib/firebase/onboarding";
-import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import type { UserCredential } from "@/types/credentials";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo } from "react";
 
 interface HomePageDiscount {
   id: string;
@@ -44,179 +42,61 @@ export function PersonalizedOffersSection({
   userMemberships,
 }: PersonalizedOffersSectionProps) {
   const router = useRouter();
-  const { user } = useAuth();
   const { discounts: allDiscounts, loading: discountsLoading } =
     useCachedDiscounts();
 
-  const [personalizedOffers, setPersonalizedOffers] = useState<
-    HomePageDiscount[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [isAIRecommendation, setIsAIRecommendation] = useState(false);
+  // Convertir descuentos a formato Discount para el hook
+  const availableDiscounts = useMemo(() => {
+    return allDiscounts.map((d) => {
+      const discountWithExtras = d as HomePageDiscount & {
+        membershipRequired?: string[];
+        bancos?: string[];
+      };
+      return {
+        id: d.id,
+        name: d.title || "Descuento",
+        title: d.title,
+        category: d.category,
+        discountPercentage:
+          typeof d.discountPercentage === "string"
+            ? parseInt(d.discountPercentage) || 0
+            : d.discountPercentage || 0,
+        membershipRequired: discountWithExtras.membershipRequired,
+        bancos: discountWithExtras.bancos,
+        description: d.description,
+        imageUrl: d.image,
+        location: d.location,
+      };
+    });
+  }, [allDiscounts]);
 
-  const aiGeneratedRef = useRef(false);
-  const isGeneratingRef = useRef(false);
+  // Usar el hook con caché y generación automática
+  const { recommendation, loading: aiLoading } = useAIRecommendations({
+    autoGenerate: true,
+    availableDiscounts,
+    userMemberships: userMemberships || [],
+  });
 
-  const generateAIRecommendations = useCallback(
-    async (
-      onboarding: {
-        spendingCategories: string[];
-        mainGoal: string;
-        banks?: string[];
-        transportType?: string;
-      },
-      discounts: HomePageDiscount[]
-    ) => {
-      if (aiGeneratedRef.current || isGeneratingRef.current) {
-        return;
-      }
+  // Mapear recomendaciones a formato HomePageDiscount
+  const personalizedOffers = useMemo(() => {
+    if (!recommendation?.fullDiscounts) {
+      return [];
+    }
 
-      isGeneratingRef.current = true;
+    return recommendation.fullDiscounts
+      .map((discount) => {
+        // Buscar el descuento completo en allDiscounts para obtener todos los campos
+        const fullDiscount = allDiscounts.find((d) => d.id === discount.id);
+        if (!fullDiscount) return null;
 
-      try {
-        let relevantDiscounts = discounts.filter((d) =>
-          onboarding.spendingCategories.includes(d.category || "")
-        );
+        return fullDiscount;
+      })
+      .filter((d): d is HomePageDiscount => d !== null)
+      .slice(0, 5);
+  }, [recommendation, allDiscounts]);
 
-        // Si no hay suficientes, usar todos
-        if (relevantDiscounts.length < 3) {
-          relevantDiscounts = discounts.slice(0, 10);
-        }
-
-        // Si no hay descuentos disponibles, mostrar fallback
-        if (relevantDiscounts.length === 0) {
-          setPersonalizedOffers([]);
-          setLoading(false);
-          return;
-        }
-
-        // Preparar request para Gemini
-        // Combinar bancos del onboarding + membresías del perfil
-        const banksFromOnboarding = onboarding.banks || [];
-        const banksFromMemberships = userMemberships || [];
-
-        // Unir ambas listas y eliminar duplicados
-        const allUserBanks = [
-          ...new Set([...banksFromOnboarding, ...banksFromMemberships]),
-        ];
-
-        const request = {
-          userId: user!.uid,
-          userPreferences: {
-            interests: onboarding.spendingCategories,
-            vehicleType: onboarding.transportType,
-          },
-          userBanks: allUserBanks,
-          availableDiscounts: relevantDiscounts.slice(0, 10).map((d) => ({
-            id: d.id,
-            name: d.title || d.name || "Descuento",
-            title: d.title,
-            category: d.category,
-            discountPercentage:
-              typeof d.discountPercentage === "string"
-                ? parseInt(d.discountPercentage) || 0
-                : d.discountPercentage || 0,
-            membershipRequired: d.membershipRequired,
-            bancos: d.bancos,
-            description: d.description,
-          })),
-        };
-
-        const aiResult = await getSmartRecommendations(request);
-
-        // Mapear recomendaciones de IA a descuentos
-        const aiOffers: HomePageDiscount[] = [];
-
-        for (const rec of aiResult.recommendedDiscounts.slice(0, 5)) {
-          const discount = discounts.find((d) => d.id === rec.discountId);
-          if (discount) {
-            aiOffers.push(discount);
-          }
-        }
-
-        if (aiOffers.length > 0) {
-          setPersonalizedOffers(aiOffers);
-          setIsAIRecommendation(true);
-          aiGeneratedRef.current = true;
-        } else {
-          setPersonalizedOffers([]);
-          setIsAIRecommendation(false);
-        }
-      } catch (error) {
-        console.error("Error generando recomendaciones:", error);
-        setPersonalizedOffers([]);
-        setIsAIRecommendation(false);
-      } finally {
-        setLoading(false);
-        isGeneratingRef.current = false;
-      }
-    },
-    [user, userMemberships]
-  );
-
-  useEffect(() => {
-    let isMounted = true;
-    aiGeneratedRef.current = false;
-
-    const loadOffers = async () => {
-      if (!user?.uid || !isMounted) {
-        setLoading(false);
-        return;
-      }
-
-      // Esperar a que los descuentos estén cargados
-      if (discountsLoading) {
-        return;
-      }
-
-      try {
-        const onboarding = await getOnboardingAnswers(user.uid);
-
-        if (onboarding && onboarding.spendingCategories?.length > 0) {
-          // Tiene onboarding completado y hay descuentos - usar IA
-          if (allDiscounts.length > 0 && isMounted) {
-            await generateAIRecommendations(
-              onboarding,
-              allDiscounts as HomePageDiscount[]
-            );
-          } else {
-            if (isMounted) {
-              setPersonalizedOffers([]);
-              setLoading(false);
-            }
-          }
-        } else {
-          if (isMounted) {
-            setPersonalizedOffers([]);
-            setIsAIRecommendation(false);
-            setLoading(false);
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setPersonalizedOffers([]);
-          setLoading(false);
-        }
-      }
-    };
-
-    loadOffers();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    user?.uid,
-    userMemberships,
-    allDiscounts,
-    discountsLoading,
-    generateAIRecommendations,
-  ]);
-
-  // Reset cuando cambia el usuario o las membresías
-  useEffect(() => {
-    aiGeneratedRef.current = false;
-  }, [user?.uid, userMemberships]);
+  const loading = discountsLoading || aiLoading;
+  const isAIRecommendation = !!recommendation;
 
   // Determinar subtítulo basado en el tipo de recomendación
   const getSubtitle = () => {

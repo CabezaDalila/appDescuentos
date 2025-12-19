@@ -2,10 +2,6 @@ import type {
   AIRecommendation,
   RecommendationRequest,
 } from "@/types/recommendations";
-import {
-  getCachedRecommendation,
-  setCachedRecommendation,
-} from "./ai-cache.service";
 import { canMakeRequest, recordRequest } from "./ai-rate-limiter.service";
 
 /**
@@ -47,23 +43,16 @@ export async function getSmartRecommendations(
     request.userBanks = [];
   }
 
-  const cached = getCachedRecommendation(
-    request.userId,
-    request.userPreferences.interests || [],
-    request.userBanks
-  );
-
-  if (cached) {
-    return cached;
-  }
-
+  // Verificar rate limit antes de llamar a la IA
   const rateLimitCheck = canMakeRequest(request.userId);
   if (!rateLimitCheck.allowed) {
     throw new Error(`Rate limit excedido: ${rateLimitCheck.reason}`);
   }
 
   try {
+    console.log("[IA] Enviando request a Gemini API...");
     const recommendation = await callGeminiAPI(request);
+    console.log("[IA] Respuesta recibida de Gemini API");
 
     if (
       !recommendation.recommendedDiscounts ||
@@ -73,15 +62,10 @@ export async function getSmartRecommendations(
     }
 
     recordRequest(request.userId);
-    setCachedRecommendation(
-      request.userId,
-      request.userPreferences.interests || [],
-      request.userBanks,
-      recommendation
-    );
 
     return recommendation;
   } catch (error) {
+    console.error("[IA] Error llamando a Gemini API:", error);
     throw error;
   }
 }

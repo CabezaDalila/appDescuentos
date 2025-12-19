@@ -82,7 +82,7 @@ class Cache {
         }
       }
     } catch (error) {
-      // Limpiar localStorage si está corrupto
+      console.error("Error cargando datos persistentes:", error);
       this.clearPersistentData();
     }
   }
@@ -100,8 +100,7 @@ class Cache {
       this.cleanupOldPersistentData();
       try {
         localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(entry));
-      } catch (retryError) {
-      }
+      } catch (retryError) {}
     }
   }
 
@@ -127,8 +126,7 @@ class Cache {
           }
         }
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
@@ -142,8 +140,7 @@ class Cache {
           localStorage.removeItem(key);
         }
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   /**
