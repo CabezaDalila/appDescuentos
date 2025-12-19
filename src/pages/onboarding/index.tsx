@@ -195,6 +195,22 @@ export default function OnboardingPage() {
         const selectedDiscounts = relevantDiscounts.slice(0, 10);
 
         if (selectedDiscounts.length > 0) {
+          const discountsForRequest = selectedDiscounts.map((d) => ({
+            id: d.id,
+            name: d.title || "Descuento",
+            title: d.title,
+            category: d.category,
+            discountPercentage:
+              typeof d.discountPercentage === "string"
+                ? parseInt(d.discountPercentage) || 0
+                : d.discountPercentage || 0,
+            description: d.description,
+            imageUrl: d.image,
+            location: d.location,
+            status: d.status,
+            origin: d.origin,
+          }));
+
           const request = {
             userId: user.uid,
             userPreferences: {
@@ -202,7 +218,7 @@ export default function OnboardingPage() {
               vehicleType: selectedTransport || undefined,
             },
             userBanks: selectedBanks,
-            availableDiscounts: selectedDiscounts,
+            availableDiscounts: discountsForRequest,
           };
 
           generateRecommendation(request)
