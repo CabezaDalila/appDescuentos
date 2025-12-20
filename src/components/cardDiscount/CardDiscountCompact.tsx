@@ -1,15 +1,16 @@
-import { useDistance } from "@/hooks/useDistance";
 import { useAuth } from "@/hooks/useAuth";
+import { useDistance } from "@/hooks/useDistance";
+import { isLocationPermissionEnabled } from "@/hooks/useGeolocation";
 import {
-  getUserInteraction,
-  toggleFavorite as toggleFavoriteInteraction,
+    getUserInteraction,
+    toggleFavorite as toggleFavoriteInteraction,
 } from "@/lib/firebase/interactions";
 import { getImageByCategory } from "@/utils/category-mapping";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
-import toast from "react-hot-toast";
 
 interface CardDiscountCompactProps {
   id?: string;
@@ -172,25 +173,27 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
 
         {/* Información adicional */}
         <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500">
-          <span className="flex items-center gap-0.5 sm:gap-1">
-            <Image
-              src="/distance.png"
-              alt="Distance"
-              width={8}
-              height={8}
-              className="sm:w-[10px] sm:h-[10px]"
-            />
-            {distanceLoading ? (
-              <span className="flex items-center gap-1">
-                <div className="animate-spin rounded-full h-2 w-2 border-b border-gray-400"></div>
-                <span>Calculando...</span>
-              </span>
-            ) : calculatedDistance ? (
-              calculatedDistance
-            ) : (
-              "Sin ubicación"
-            )}
-          </span>
+          {isLocationPermissionEnabled() && (calculatedDistance || distanceLoading) ? (
+            <span className="flex items-center gap-0.5 sm:gap-1">
+              <Image
+                src="/distance.png"
+                alt="Distance"
+                width={8}
+                height={8}
+                className="sm:w-[10px] sm:h-[10px]"
+              />
+              {distanceLoading ? (
+                <span className="flex items-center gap-1">
+                  <div className="animate-spin rounded-full h-2 w-2 border-b border-gray-400"></div>
+                  <span>Calculando...</span>
+                </span>
+              ) : (
+                calculatedDistance
+              )}
+            </span>
+          ) : (
+            <span></span>
+          )}
           <span className="flex items-center gap-0.5 sm:gap-1">
             <Image
               src="/expiration.png"

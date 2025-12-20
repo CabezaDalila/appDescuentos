@@ -1,4 +1,4 @@
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { isLocationPermissionEnabled, useGeolocation } from "@/hooks/useGeolocation";
 import { getRealDistance } from "@/utils/real-distance";
 import { useEffect, useState } from "react";
 
@@ -23,7 +23,7 @@ export function useDistance({
   enabled = true,
 }: UseDistanceOptions): UseDistanceReturn {
   const [distance, setDistance] = useState<string>(
-    initialDistance || "Sin ubicación"
+    initialDistance || ""
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,12 +32,17 @@ export function useDistance({
   const { position, getCurrentPosition } = useGeolocation();
 
   useEffect(() => {
-    if (!enabled) return;
+    // Si la ubicación no está habilitada, no calcular nada
+    if (!enabled || !isLocationPermissionEnabled()) {
+      setDistance("");
+      return;
+    }
 
     if (
       initialDistance &&
       initialDistance !== "Calculando..." &&
-      initialDistance !== "Sin ubicación"
+      initialDistance !== "Sin ubicación" &&
+      initialDistance !== ""
     ) {
       setDistance(initialDistance);
       setHasCalculated(true);
@@ -45,7 +50,7 @@ export function useDistance({
     }
 
     if (!discountLocation) {
-      setDistance("Sin ubicación");
+      setDistance("");
       return;
     }
 
@@ -59,7 +64,7 @@ export function useDistance({
         setDistance("Calculando...");
         await getCurrentPosition();
       } catch {
-        setDistance("Sin ubicación");
+        setDistance("");
         setLoading(false);
       }
     };
@@ -74,6 +79,12 @@ export function useDistance({
   ]);
 
   useEffect(() => {
+    // Si la ubicación no está habilitada, no calcular
+    if (!isLocationPermissionEnabled()) {
+      setDistance("");
+      return;
+    }
+
     if (
       !enabled ||
       !position ||
@@ -81,7 +92,8 @@ export function useDistance({
       hasCalculated ||
       (initialDistance &&
         initialDistance !== "Calculando..." &&
-        initialDistance !== "Sin ubicación")
+        initialDistance !== "Sin ubicación" &&
+        initialDistance !== "")
     ) {
       return;
     }
@@ -98,13 +110,13 @@ export function useDistance({
         if (result) {
           setDistance(result.distanceText);
         } else {
-          setDistance("Sin ubicación");
+          setDistance("");
         }
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Error calculando distancia";
         setError(errorMessage);
-        setDistance("Sin ubicación");
+        setDistance("");
       } finally {
         setLoading(false);
         setHasCalculated(true);

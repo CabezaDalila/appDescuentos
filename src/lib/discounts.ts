@@ -140,7 +140,11 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
         } as HomePageDiscount;
       })
       .filter((discount) => {
-        return discount.status === "active" && discount.isVisible !== false;
+        // Filtrar descuentos activos, visibles y con fecha de validez no expirada
+        const now = new Date();
+        const expirationDate = new Date(discount.expiration.split('/').reverse().join('-'));
+        const isNotExpired = expirationDate >= now || isNaN(expirationDate.getTime());
+        return discount.status === "active" && discount.isVisible !== false && isNotExpired;
       });
   } catch {
     return [];
@@ -185,8 +189,13 @@ export const getDiscountsBySearch = async (
       type?: string;
     };
 
+    const now = new Date();
     return all.filter((d: Discount) => {
       const e = d as ExtendedDiscount;
+      // Filtrar descuentos expirados
+      const isNotExpired = !d.validUntil || d.validUntil >= now;
+      if (!isNotExpired) return false;
+      
       const haystack = [
         normalize(e.title),
         normalize(e.name),
@@ -491,10 +500,16 @@ export const getNearbyDiscounts = async (
       const data = doc.data() as FirestoreDiscount;
       const id = doc.id;
 
+      // Verificar si el descuento está expirado
+      const now = new Date();
+      const validUntil = data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
+      const isExpired = validUntil && validUntil < now;
+
       if (
         data.approvalStatus !== "approved" ||
         data.isVisible === false ||
-        !data.location
+        !data.location ||
+        isExpired
       ) {
         continue;
       }
@@ -572,10 +587,16 @@ export const getNearbyDiscountsProgressive = async (
       const data = doc.data() as FirestoreDiscount;
       const id = doc.id;
 
+      // Verificar si el descuento está expirado
+      const now = new Date();
+      const validUntil = data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
+      const isExpired = validUntil && validUntil < now;
+
       if (
         data.approvalStatus === "approved" &&
         data.isVisible !== false &&
-        data.location
+        data.location &&
+        !isExpired
       ) {
         validDocs.push({ doc, data, id });
       }

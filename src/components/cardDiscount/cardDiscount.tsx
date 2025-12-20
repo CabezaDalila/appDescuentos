@@ -1,15 +1,16 @@
 import { useAuth } from "@/hooks/useAuth";
+import { isLocationPermissionEnabled } from "@/hooks/useGeolocation";
 import {
-  getUserInteraction,
-  toggleFavorite as toggleFavoriteInteraction,
+    getUserInteraction,
+    toggleFavorite as toggleFavoriteInteraction,
 } from "@/lib/firebase/interactions";
 import { CreditCard, Users } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Badge } from "../Share/badge";
 import { Button } from "../Share/button";
 import { Separator } from "../Share/separator";
-import toast from "react-hot-toast";
 
 interface CardDiscountProps {
   id?: string;
@@ -171,10 +172,12 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
       <h1 className="text-sm font-bold text-gray-600">{title}</h1>
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-600 flex items-center gap-1">
-            <Image src="/distance.png" alt="Distance" width={10} height={10} />
-            {distance}
-          </span>
+          {isLocationPermissionEnabled() && distance && distance !== "" && (
+            <span className="text-xs text-gray-600 flex items-center gap-1">
+              <Image src="/distance.png" alt="Distance" width={10} height={10} />
+              {distance}
+            </span>
+          )}
           <span className="text-xs text-gray-600 flex items-center gap-1">
             <Image
               src="/expiration.png"
