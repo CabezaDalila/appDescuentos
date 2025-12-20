@@ -23,7 +23,7 @@ import {
 } from "@/lib/firebase/firebase-auth";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { CheckCircle, Loader2, Lock, Mail, Phone, User } from "lucide-react";
+import { CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -70,6 +70,7 @@ export default function AuthForm() {
   );
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptMarketing, setAcceptMarketing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -813,25 +814,39 @@ export default function AuthForm() {
                   <Lock className="h-4 w-4" />
                   Contraseña
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Ingresa tu contraseña"
-                  value={formData.password}
-                  onChange={(e) =>
-                    handleInputChange("password", e.target.value)
-                  }
-                  onFocus={handlePasswordFocus}
-                  onBlur={handlePasswordBlur}
-                  disabled={isLoading}
-                  className={
-                    validationErrors.password
-                      ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
-                      : formData.password.length > 0 && passwordIsValid
-                      ? "border-green-500 focus-visible:border-green-500 focus-visible:ring-2 focus-visible:ring-green-500"
-                      : ""
-                  }
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Ingresa tu contraseña"
+                    value={formData.password}
+                    onChange={(e) =>
+                      handleInputChange("password", e.target.value)
+                    }
+                    onFocus={handlePasswordFocus}
+                    onBlur={handlePasswordBlur}
+                    disabled={isLoading}
+                    className={`pr-10 ${
+                      validationErrors.password
+                        ? "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
+                        : formData.password.length > 0 && passwordIsValid
+                        ? "border-green-500 focus-visible:border-green-500 focus-visible:ring-2 focus-visible:ring-green-500"
+                        : ""
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 {mode === "register" &&
                   formData.password.length > 0 &&
                   (showPasswordRequirements || !passwordIsValid) && (
