@@ -299,13 +299,13 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:py-4 sticky top-0 z-10 flex-shrink-0">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
           <button
             onClick={handleBack}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
@@ -313,7 +313,7 @@ export default function EditProfilePage() {
           <Button
             onClick={handleSave}
             disabled={saving || uploadingPhoto || !hasChanges}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving
               ? "Guardando..."
@@ -324,9 +324,10 @@ export default function EditProfilePage() {
         </div>
       </div>
 
-      <div className="px-4 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto px-5 py-5 pb-24 max-w-lg mx-auto w-full">
+        <div className="space-y-6">
         {/* Foto de perfil */}
-        <div className="text-center">
+        <div className="text-center py-3">
           <div className="relative w-24 h-24 mx-auto">
             {photoPreview ? (
               <Image
@@ -371,7 +372,7 @@ export default function EditProfilePage() {
 
           {/* Nombre */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-gray-700">
+            <Label className="flex items-center gap-2 text-sm text-gray-700">
               <User className="h-4 w-4" />
               Nombre *
             </Label>
@@ -379,7 +380,7 @@ export default function EditProfilePage() {
               value={formData.firstName}
               onChange={(e) => handleFieldChange("firstName", e.target.value)}
               placeholder="Juan"
-              className={`border-gray-300 ${
+              className={`border-gray-300 h-11 text-base ${
                 errors.firstName ? "border-red-500" : ""
               }`}
             />
@@ -390,7 +391,7 @@ export default function EditProfilePage() {
 
           {/* Apellido */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-gray-700">
+            <Label className="flex items-center gap-2 text-sm text-gray-700">
               <User className="h-4 w-4" />
               Apellido *
             </Label>
@@ -398,7 +399,7 @@ export default function EditProfilePage() {
               value={formData.lastName}
               onChange={(e) => handleFieldChange("lastName", e.target.value)}
               placeholder="Pérez"
-              className={`border-gray-300 ${
+              className={`border-gray-300 h-11 text-base ${
                 errors.lastName ? "border-red-500" : ""
               }`}
             />
@@ -409,7 +410,7 @@ export default function EditProfilePage() {
 
           {/* Correo electrónico */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-gray-700">
+            <Label className="flex items-center gap-2 text-sm text-gray-700">
               <Mail className="h-4 w-4" />
               Correo electrónico
             </Label>
@@ -417,13 +418,13 @@ export default function EditProfilePage() {
               value={formData.email}
               readOnly
               disabled
-              className="border-gray-300 bg-gray-100 cursor-not-allowed"
+              className="border-gray-300 bg-gray-100 cursor-not-allowed h-11 text-base"
             />
           </div>
 
           {/* Fecha de nacimiento */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-gray-700">
+            <Label className="flex items-center gap-2 text-sm text-gray-700">
               <Calendar className="h-4 w-4" />
               Fecha de nacimiento
             </Label>
@@ -431,7 +432,7 @@ export default function EditProfilePage() {
               type="date"
               value={formData.birthDate}
               onChange={(e) => handleFieldChange("birthDate", e.target.value)}
-              className={`border-gray-300 ${
+              className={`border-gray-300 h-11 text-base ${
                 errors.birthDate ? "border-red-500" : ""
               }`}
               max={new Date().toISOString().split("T")[0]}
@@ -443,7 +444,7 @@ export default function EditProfilePage() {
 
           {/* Género */}
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-gray-700">
+            <Label className="flex items-center gap-2 text-sm text-gray-700">
               <Users className="h-4 w-4" />
               Género
             </Label>
@@ -451,7 +452,7 @@ export default function EditProfilePage() {
               value={formData.gender}
               onValueChange={(value) => handleFieldChange("gender", value)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full h-11 text-base">
                 <SelectValue placeholder="Selecciona un género (opcional)" />
               </SelectTrigger>
               <SelectContent>
@@ -461,6 +462,7 @@ export default function EditProfilePage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
         </div>
       </div>
     </div>
