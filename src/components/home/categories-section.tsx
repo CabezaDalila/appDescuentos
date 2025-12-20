@@ -1,5 +1,6 @@
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { Heart, MapPin } from "lucide-react";
+import { useRouter } from "next/router";
 
 interface Category {
   id: string;
@@ -33,22 +34,24 @@ interface QuickActionsSectionProps {
 export function QuickActionsSection({
   onCategoryClick,
 }: QuickActionsSectionProps) {
-  const {
-    position,
-    error: locationError,
-    loading: locationLoading,
-    getCurrentPosition,
-  } = useGeolocation();
+  const router = useRouter();
+  const { loading: locationLoading, getCurrentPosition } = useGeolocation();
 
   const handleCategoryClick = async (categoryId: string) => {
     if (categoryId === "cerca") {
       const currentPosition = await getCurrentPosition();
 
       if (currentPosition) {
-        const url = `/search?location=true&lat=${currentPosition.latitude}&lng=${currentPosition.longitude}`;
-        window.location.href = url;
-      } else if (locationError) {
-        onCategoryClick(categoryId);
+        const query = {
+          location: "true",
+          lat: currentPosition.latitude.toString(),
+          lng: currentPosition.longitude.toString(),
+        };
+        router.push({ pathname: "/search", query }, undefined, { shallow: false });
+      } else {
+        // Si no hay ubicación (desactivada o error), ir a búsqueda con filtro de ubicación
+        // Se mostrará el mensaje apropiado (activar ubicación o error)
+        router.push({ pathname: "/search", query: { location: "true" } });
       }
     } else {
       onCategoryClick(categoryId);

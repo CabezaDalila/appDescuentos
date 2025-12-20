@@ -1,29 +1,29 @@
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import {
-  CARD_BRANDS,
-  CARD_LEVELS,
-  CARD_TYPES,
-  Membership,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+    Membership,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  getMembershipById,
-  updateCardInMembership,
+    getMembershipById,
+    updateCardInMembership,
 } from "@/lib/firebase/memberships";
 import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
 import { ArrowLeft, CreditCard, Save } from "lucide-react";
@@ -101,7 +101,6 @@ export default function EditCardPage() {
     try {
       setSaving(true);
       await updateCardInMembership(membership.id, cardId as string, cardData);
-      toast.success("Tarjeta actualizada exitosamente");
       router.push(`/memberships/${membership.id}`);
     } catch (error) {
       console.error("Error al actualizar tarjeta:", error);
@@ -218,9 +217,11 @@ export default function EditCardPage() {
               {/* Card Type and Expiry Date */}
               <div className="flex justify-between items-center mt-auto">
                 <div className="text-base">{cardData.type}</div>
-                <div className="text-sm opacity-90">
-                  {cardData.expiryDate || "MM/AA"}
-                </div>
+                {cardData.expiryDate && (
+                  <div className="text-sm opacity-90">
+                    {cardData.expiryDate}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

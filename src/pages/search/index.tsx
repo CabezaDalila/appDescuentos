@@ -2,21 +2,22 @@ import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { EmptyState } from "@/components/home/empty-state";
 import { SearchSection } from "@/components/home/search-section";
 import { PageHeader } from "@/components/Share/page-header";
-import { EXPLORE_CATEGORIES } from "@/constants/categories";
+import { DISCOUNT_CATEGORIES, EXPLORE_CATEGORIES } from "@/constants/categories";
 import { useAuth } from "@/hooks/useAuth";
+import { isLocationPermissionEnabled, useGeolocation } from "@/hooks/useGeolocation";
 import {
-  getDiscountsBySearch,
-  getHomePageDiscounts,
-  getNearbyDiscountsProgressive,
-  getPersonalizedDiscounts,
-  MAX_DISTANCE_KM,
+    getDiscountsBySearch,
+    getHomePageDiscounts,
+    getNearbyDiscountsProgressive,
+    getPersonalizedDiscounts,
+    MAX_DISTANCE_KM,
 } from "@/lib/discounts";
 import { getFavoriteDiscountIdsForUser } from "@/lib/firebase/interactions";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
-import { Filter, X } from "lucide-react";
+import { Heart, MapPin, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -78,13 +79,30 @@ export default function Search() {
     map["favoritos"] = "Favoritos";
     return map;
   }, []);
-  const [maxCategoryChips, setMaxCategoryChips] = useState(2);
+  
+  // Mapeo de colores por categoría (favoritos tiene estilo especial)
+  const getCategoryStyle = (categoryId: string) => {
+    if (categoryId === "favoritos") {
+      return {
+        color: "bg-red-50 text-red-700 border-red-200",
+        icon: Heart,
+      };
+    }
+    const category = DISCOUNT_CATEGORIES.find((c) => c.id === categoryId);
+    return {
+      color: category?.color || "bg-purple-100 text-purple-800",
+      icon: null,
+    };
+  };
+  
+  const [maxCategoryChips, setMaxCategoryChips] = useState(4);
   const [dragY, setDragY] = useState(0);
   const touchStartY = useRef<number | null>(null);
   const touchStartScrollTop = useRef<number | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const { getCurrentPosition } = useGeolocation();
   const [favoriteIdSet, setFavoriteIdSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -247,23 +265,6 @@ export default function Search() {
     return () => clearTimeout(handler);
   }, [searchTerm, search, q, category, router]);
 
-  const getCurrentPosition = () =>
-    new Promise<{ lat: number; lng: number }>((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation no soportada"));
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        (position) =>
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }),
-        (error) => reject(error),
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    });
-
   const applyFiltersRealtime = useCallback(async () => {
     setSelectedCategories(draftCategories);
     setIsLocationFilter(draftNearby);
@@ -271,17 +272,23 @@ export default function Search() {
     if (draftNearby) {
       try {
         const pos = await getCurrentPosition();
-        const queryObj: Record<string, string> = {};
-        if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
-        if (draftCategories.length > 0)
-          queryObj.categories = draftCategories.join(",");
-        queryObj.location = "true";
-        queryObj.lat = String(pos.lat);
-        queryObj.lng = String(pos.lng);
-        router.push({ pathname: "/search", query: queryObj }, undefined, {
-          shallow: true,
-        });
-      } catch {
+        if (pos) {
+          const queryObj: Record<string, string> = {};
+          if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
+          if (draftCategories.length > 0)
+            queryObj.categories = draftCategories.join(",");
+          queryObj.location = "true";
+          queryObj.lat = String(pos.latitude);
+          queryObj.lng = String(pos.longitude);
+          router.push({ pathname: "/search", query: queryObj }, undefined, {
+            shallow: true,
+          });
+        } else {
+          console.warn("No se pudo obtener la ubicación");
+          applyFiltersLocal(allDiscounts, draftCategories);
+        }
+      } catch (error) {
+        console.error("Error obteniendo ubicación:", error);
         applyFiltersLocal(allDiscounts, draftCategories);
       }
     } else {
@@ -294,6 +301,7 @@ export default function Search() {
     searchTerm,
     router,
     applyFiltersLocal,
+    getCurrentPosition,
   ]);
 
   useEffect(() => {
@@ -426,15 +434,17 @@ export default function Search() {
         setFilteredDiscounts([]);
         setAllDiscounts([]);
 
-        const hasLocationFilter = location === "true" && lat && lng;
-        setIsLocationFilter(!!hasLocationFilter);
-        setDraftNearby(!!hasLocationFilter);
+        // Activar filtro de ubicación si location=true (aunque no haya coordenadas)
+        const wantsLocationFilter = location === "true";
+        const hasValidCoordinates = lat && lng;
+        setIsLocationFilter(wantsLocationFilter);
+        setDraftNearby(wantsLocationFilter);
 
         setLoading(true);
 
         let data: SearchDiscount[] = [];
 
-        if (hasLocationFilter) {
+        if (wantsLocationFilter && hasValidCoordinates) {
           const latitude = parseFloat(lat as string);
           const longitude = parseFloat(lng as string);
 
@@ -452,38 +462,39 @@ export default function Search() {
             urlCategories = [category as string];
           }
 
+          // Limpiar estados antes de comenzar la búsqueda progresiva
+          let accumulatedDiscounts: HomePageDiscount[] = [];
+          
           const finalData = await getNearbyDiscountsProgressive(
             latitude,
             longitude,
             MAX_DISTANCE_KM,
             (batch, isComplete) => {
               if (batch.length > 0) {
-                setAllDiscounts((prev) => {
-                  const combined = [...prev, ...batch];
-                  const unique = combined.filter(
-                    (discount, index, self) =>
-                      index === self.findIndex((d) => d.id === discount.id)
-                  );
-                  const sorted = unique.sort((a, b) => {
-                    const distanceA =
-                      "distance" in a && a.distance
-                        ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
-                        : 999;
-                    const distanceB =
-                      "distance" in b && b.distance
-                        ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
-                        : 999;
-                    return distanceA - distanceB;
-                  });
-
-                  if (urlCategories.length === 0) {
-                    setFilteredDiscounts(sorted);
-                  }
-
-                  setLoading(false);
-
-                  return sorted;
+                // Usar variable local en lugar de estado previo para evitar mezclar con descuentos anteriores
+                accumulatedDiscounts = [...accumulatedDiscounts, ...batch];
+                const unique = accumulatedDiscounts.filter(
+                  (discount, index, self) =>
+                    index === self.findIndex((d) => d.id === discount.id)
+                );
+                const sorted = unique.sort((a, b) => {
+                  const distanceA =
+                    "distance" in a && a.distance
+                      ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
+                      : 999;
+                  const distanceB =
+                    "distance" in b && b.distance
+                      ? parseFloat(b.distance.replace(/[^\d.]/g, ""))
+                      : 999;
+                  return distanceA - distanceB;
                 });
+
+                setAllDiscounts(sorted);
+                if (urlCategories.length === 0) {
+                  setFilteredDiscounts(sorted);
+                }
+
+                setLoading(false);
               }
 
               if (isComplete) {
@@ -519,6 +530,13 @@ export default function Search() {
             setFilteredDiscounts(sortedFinal);
           }
 
+          return;
+        } else if (wantsLocationFilter && !hasValidCoordinates) {
+          // Ubicación desactivada: mostrar lista vacía para que aparezca el mensaje
+          setLoading(false);
+          setAllDiscounts([]);
+          setFilteredDiscounts([]);
+          hasInitialLoad.current = true;
           return;
         } else if (personalized === "true") {
           const memberships = await getActiveMemberships();
@@ -890,29 +908,33 @@ export default function Search() {
 
           {(selectedCategories.length > 0 || isLocationFilter) && (
             <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                {selectedCategories.slice(0, maxCategoryChips).map((cat) => (
-                  <span
-                    key={cat}
-                    className="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium"
-                  >
-                    <Filter className="w-3 h-3" />
-                    {categoryLabelMap[cat] || cat}
-                    <button
-                      onClick={() => handleClearCategory(cat)}
-                      className="ml-0.5 hover:bg-purple-200 rounded-full p-0.5 transition-colors"
-                      aria-label={`Quitar filtro ${
-                        categoryLabelMap[cat] || cat
-                      }`}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {selectedCategories.slice(0, maxCategoryChips).map((cat) => {
+                  const style = getCategoryStyle(cat);
+                  const IconComponent = style.icon;
+                  return (
+                    <span
+                      key={cat}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${style.color}`}
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+                      {IconComponent && <IconComponent className="w-3 h-3" />}
+                      {categoryLabelMap[cat] || cat}
+                      <button
+                        onClick={() => handleClearCategory(cat)}
+                        className="hover:opacity-70 rounded-full p-0.5 transition-opacity"
+                        aria-label={`Quitar filtro ${
+                          categoryLabelMap[cat] || cat
+                        }`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
 
                 {selectedCategories.length > maxCategoryChips && (
                   <button
-                    className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-medium hover:bg-purple-100 transition-colors"
+                    className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full text-xs font-medium hover:bg-gray-200 transition-colors border border-gray-300"
                     onClick={() => setShowFilters(true)}
                     title={selectedCategories
                       .slice(maxCategoryChips)
@@ -927,16 +949,35 @@ export default function Search() {
                 )}
 
                 {isLocationFilter && (
-                  <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
-                    <Filter className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200">
+                    <MapPin className="w-3 h-3" />
                     Cerca de ti
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        // Limpiar estados de ubicación
+                        setIsLocationFilter(false);
+                        setDraftNearby(false);
+                        
+                        // Forzar recarga de descuentos al quitar filtro de ubicación
+                        hasInitialLoad.current = false;
+                        setAllDiscounts([]);
+                        setFilteredDiscounts([]);
+                        
+                        // Construir query sin parámetros de ubicación
+                        const queryObj: Record<string, string> = {};
+                        if (searchTerm.trim().length >= 2) {
+                          queryObj.search = searchTerm.trim();
+                        }
+                        if (selectedCategories.length > 0) {
+                          queryObj.categories = selectedCategories.join(",");
+                        }
+                        
+                        // Navegar sin filtro de ubicación (esto recargará los descuentos)
                         router.push({
                           pathname: "/search",
-                          query: { search: searchTerm },
-                        })
-                      }
+                          query: queryObj,
+                        });
+                      }}
                       className="ml-0.5 hover:bg-green-200 rounded-full p-0.5 transition-colors"
                       aria-label="Quitar filtro de ubicación"
                     >
@@ -963,7 +1004,9 @@ export default function Search() {
         ) : filteredDiscounts.length === 0 && !loadingMore ? (
           <EmptyState
             type={
-              isLocationFilter
+              isLocationFilter && !isLocationPermissionEnabled()
+                ? "location-disabled"
+                : isLocationFilter
                 ? "no-nearby"
                 : selectedCategories.length > 0
                 ? "filtered-empty"
@@ -977,6 +1020,7 @@ export default function Search() {
                 ? handleViewAllDiscounts
                 : undefined
             }
+            onEnableLocation={() => router.push("/privacy/location")}
           />
         ) : (
           <div className="space-y-2">

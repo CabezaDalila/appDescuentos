@@ -4,9 +4,9 @@ import { Card, Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { db } from "@/lib/firebase/firebase";
 import {
-  deleteCardFromMembership,
-  deleteMembership,
-  getMembershipById,
+    deleteCardFromMembership,
+    deleteMembership,
+    getMembershipById,
 } from "@/lib/firebase/memberships";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { ArrowLeft, Eye, Pencil, Trash2, Wifi } from "lucide-react";
@@ -130,20 +130,6 @@ export default function MembershipDetailsPage() {
         newMembershipStatus,
         updatedCards
       );
-
-      // Mensaje informativo
-      let message = `Tarjeta ${
-        newStatus === "active" ? "activada" : "desactivada"
-      } exitosamente`;
-
-      // Si el estado de la membresía cambió, agregarlo al mensaje
-      if (newMembershipStatus !== membership.status) {
-        message += `. Membresía ${
-          newMembershipStatus === "active" ? "activada" : "desactivada"
-        } automáticamente`;
-      }
-
-      toast.success(message);
     } catch (error) {
       console.error("Error al cambiar estado de tarjeta:", error);
       toast.error("Error al cambiar el estado de la tarjeta");
@@ -215,13 +201,6 @@ export default function MembershipDetailsPage() {
 
       // Actualizar en Firebase
       await updateMembershipStatus(membership.id, newStatus, updatedCards);
-
-      const message =
-        newStatus === "inactive"
-          ? "Membresía y todas las tarjetas desactivadas exitosamente"
-          : "Membresía activada exitosamente";
-
-      toast.success(message);
     } catch (error) {
       console.error("Error al cambiar estado de membresía:", error);
       toast.error("Error al cambiar el estado de la membresía");
@@ -433,8 +412,6 @@ export default function MembershipDetailsPage() {
                       </div>
                       <div className="text-sm opacity-90">Tarjeta bancaria</div>
                     </div>
-
-                    <div className="text-right text-sm">MM/AA</div>
                   </>
                 ) : (
                   // Membresía simple (solo nombre)
@@ -515,9 +492,11 @@ export default function MembershipDetailsPage() {
                     {/* Card Type and Expiry Date */}
                     <div className="flex justify-between items-center mt-auto">
                       <div className="text-base">{card.type}</div>
-                      <div className="text-sm opacity-90">
-                        {card.expiryDate || "MM/AA"}
-                      </div>
+                      {card.expiryDate && (
+                        <div className="text-sm opacity-90">
+                          {card.expiryDate}
+                        </div>
+                      )}
                     </div>
                   </div>
 

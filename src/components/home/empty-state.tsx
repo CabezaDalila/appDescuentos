@@ -1,10 +1,11 @@
-import { Filter, MapPin, Search, ShoppingCart } from "lucide-react";
+import { Filter, MapPin, Search, Settings, ShoppingCart } from "lucide-react";
 
 interface EmptyStateProps {
-  type: "no-discounts" | "no-results" | "filtered-empty" | "no-nearby";
+  type: "no-discounts" | "no-results" | "filtered-empty" | "no-nearby" | "location-disabled";
   categoryName?: string;
   onClearFilter?: () => void;
   onViewAll?: () => void;
+  onEnableLocation?: () => void;
 }
 
 export function EmptyState({
@@ -12,6 +13,7 @@ export function EmptyState({
   categoryName,
   onClearFilter,
   onViewAll,
+  onEnableLocation,
 }: EmptyStateProps) {
   const getContent = () => {
     switch (type) {
@@ -52,6 +54,16 @@ export function EmptyState({
           showButton: true,
           buttonText: "Ver todos los descuentos",
         };
+
+      case "location-disabled":
+        return {
+          icon: MapPin,
+          title: "¡Activa tu ubicación!",
+          description:
+            "Para mostrarte los mejores descuentos cerca de ti, necesitamos acceder a tu ubicación. ¡No te pierdas las ofertas de tu zona!",
+          showButton: false,
+          showLocationButton: true,
+        };
     }
   };
 
@@ -79,6 +91,16 @@ export function EmptyState({
         >
           <Filter className="w-4 h-4" />
           {content.buttonText}
+        </button>
+      )}
+
+      {"showLocationButton" in content && content.showLocationButton && onEnableLocation && (
+        <button
+          onClick={onEnableLocation}
+          className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-sm"
+        >
+          <Settings className="w-4 h-4" />
+          Activar ubicación
         </button>
       )}
 

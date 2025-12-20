@@ -1,29 +1,29 @@
 import { Badge } from "@/components/Share/badge";
 import { Button } from "@/components/Share/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/Share/dialog";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { Separator } from "@/components/Share/separator";
 import { Switch } from "@/components/Share/switch";
 import {
-  Card,
-  CARD_BRANDS,
-  CARD_LEVELS,
-  CARD_TYPES,
-  CardLevel,
-  Membership,
+    Card,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+    CardLevel,
+    Membership,
 } from "@/constants/membership";
 import { AlertTriangle, CreditCard, Edit, Plus, Trash2 } from "lucide-react";
 import React, { useState } from "react";
@@ -194,7 +194,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
     try {
       if (showEditCardModal && selectedCard && onUpdateCard) {
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
-        toast.success("Tarjeta actualizada correctamente");
       } else if (showAddCardModal && onAddCard) {
         await onAddCard(localMembership.id, newCard);
         toast.success("Tarjeta agregada correctamente");

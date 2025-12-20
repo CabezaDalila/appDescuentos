@@ -1,17 +1,17 @@
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
@@ -253,7 +253,6 @@ export default function AddMembershipPage() {
         };
 
         await createMembership(membershipData);
-        toast.success("Membresía bancaria creada exitosamente");
       } else {
         // Para otras membresías
         const selectedType = membershipTypes.find(
@@ -267,7 +266,6 @@ export default function AddMembershipPage() {
         };
 
         await createMembership(membershipData);
-        toast.success("Membresía agregada exitosamente");
       }
 
       router.push("/memberships");
@@ -293,7 +291,18 @@ export default function AddMembershipPage() {
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push("/memberships")}
+            onClick={() => {
+              if (formData.category) {
+                // Si ya seleccionó una categoría, volver a la selección de categorías
+                setFormData((prev) => ({ ...prev, category: "" }));
+                setCurrentStep(0);
+                setSelectedMembership("");
+                setBankData({ bank: "", cardType: "", brand: "", level: "" });
+              } else {
+                // Si está en la selección de categorías, ir a membresías
+                router.push("/memberships");
+              }
+            }}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -321,7 +330,7 @@ export default function AddMembershipPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 pb-6">
+            <div className="space-y-3 pb-6">
               {membershipTypes.map((type) => (
                 <button
                   key={type.id}
@@ -336,19 +345,19 @@ export default function AddMembershipPage() {
                       setCurrentStep(1);
                     }
                   }}
-                  className="aspect-square p-4 border border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:shadow-md active:scale-95 flex flex-col items-center justify-center gap-2 group bg-white"
+                  className="w-full p-4 border border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 hover:shadow-md active:scale-[0.99] flex items-center gap-4 group bg-white"
                 >
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-transform group-hover:scale-110"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
                     style={{ backgroundColor: type.color + "20" }}
                   >
                     {type.icon}
                   </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-900 text-sm group-hover:text-gray-700 leading-tight">
+                  <div className="text-left flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-base group-hover:text-gray-700">
                       {type.name}
                     </h3>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                    <p className="text-sm text-gray-500 truncate">
                       {type.description}
                     </p>
                   </div>

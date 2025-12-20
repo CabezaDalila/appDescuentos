@@ -42,7 +42,8 @@ export function LayoutHome({ children }: LayoutHomeProps) {
       path === "/profile" ||
       path.startsWith("/profile/") ||
       path.startsWith("/memberships") ||
-      path.startsWith("/support")
+      path.startsWith("/support") ||
+      path.startsWith("/privacy")
     ) {
       setActiveTab("profile");
     } else {

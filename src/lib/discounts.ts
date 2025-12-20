@@ -4,16 +4,16 @@ import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { getRealDistance } from "@/utils/real-distance";
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-  updateDoc,
-  where,
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+    Timestamp,
+    updateDoc,
+    where,
 } from "firebase/firestore";
 
 export const MAX_DISTANCE_KM = 2;

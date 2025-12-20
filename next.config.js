@@ -5,6 +5,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Para desarrollo web: "standalone"
+  // Para build de Android/Capacitor: "export"
   output: "standalone",
 };
 

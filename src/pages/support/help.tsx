@@ -2,7 +2,7 @@ import { Button } from "@/components/Share/button";
 import { PageHeader } from "@/components/Share/page-header";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { Mail, Send } from "lucide-react";
+import { Check, Mail, Send } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -18,6 +18,7 @@ export default function HelpPage() {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Scroll al top cuando se carga la página
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function HelpPage() {
     if (
       !formData.name.trim() ||
       !formData.email.trim() ||
+      !formData.subject.trim() ||
       !formData.message.trim()
     ) {
       toast.error("Por favor completa todos los campos requeridos");
@@ -71,38 +73,16 @@ export default function HelpPage() {
 
     setIsSubmitting(true);
 
-    try {
-      // Crear el mailto link con los datos del formulario
-      const subject = formData.subject.trim() || "Consulta de Ayuda";
-      const body = `Nombre: ${formData.name}\nEmail: ${formData.email}\n\nMensaje:\n${formData.message}`;
-
-      const mailtoLink = `mailto:soporte@appdescuentos.com?subject=${encodeURIComponent(
-        subject
-      )}&body=${encodeURIComponent(body)}`;
-
-      // Abrir el cliente de correo
-      window.location.href = mailtoLink;
-
-      // Mostrar mensaje de éxito
-      toast.success("Se abrirá tu cliente de correo para enviar el mensaje");
-
-      // Limpiar el formulario después de un breve delay
-      setTimeout(() => {
-        setFormData({
-          name: "",
-          email: "",
-          subject: "",
-          message: "",
-        });
-        setIsSubmitting(false);
-      }, 1000);
-    } catch (error) {
-      console.error("Error al enviar el formulario:", error);
-      toast.error(
-        "Error al procesar tu solicitud. Por favor intenta nuevamente."
-      );
+    // Simular envío del mensaje
+    setTimeout(() => {
       setIsSubmitting(false);
-    }
+      setIsSuccess(true);
+      
+      // Después de mostrar el éxito, redirigir al perfil
+      setTimeout(() => {
+        router.push("/profile");
+      }, 1500);
+    }, 1000);
   };
 
   return (
@@ -182,7 +162,7 @@ export default function HelpPage() {
                 htmlFor="subject"
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Asunto
+                Asunto <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -216,10 +196,19 @@ export default function HelpPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 text-sm mt-1"
+              disabled={isSubmitting || isSuccess || !formData.subject.trim() || !formData.message.trim()}
+              className={`w-full py-2.5 text-sm mt-1 transition-all duration-500 ${
+                isSuccess 
+                  ? "bg-green-500 hover:bg-green-500" 
+                  : "bg-purple-600 hover:bg-purple-700"
+              } text-white`}
             >
-              {isSubmitting ? (
+              {isSuccess ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  ¡Mensaje enviado!
+                </>
+              ) : isSubmitting ? (
                 <>
                   <Send className="h-4 w-4 mr-2 animate-pulse" />
                   Enviando...

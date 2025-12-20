@@ -1,6 +1,6 @@
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileSection, {
-  createProfileSections,
+    createProfileSections,
 } from "@/components/profile/ProfileSection";
 import UserSettingsModal from "@/components/settings/UserSettingsModal";
 import { Button } from "@/components/Share/button";
@@ -60,8 +60,8 @@ export default function Profile() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="px-4 py-6">
+    <div className="min-h-screen bg-gray-50 with-bottom-nav-pb">
+      <main className="px-4 py-5">
         {/* Header del perfil */}
         <ProfileHeader
           user={user}

@@ -1,7 +1,6 @@
-import { Card, CardContent } from "@/components/Share/card";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { User } from "firebase/auth";
 import Image from "next/image";
-import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface ProfileHeaderProps {
   user: User;
@@ -69,26 +68,26 @@ export default function ProfileHeader({
   };
 
   return (
-    <div className="mb-8">
+    <div className="mb-6">
       {/* Header con título */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
       </div>
 
       {/* Tarjeta de perfil principal */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="p-6">
+        <div className="p-5">
           <div className="flex items-center gap-4">
             {/* Imagen de perfil */}
             <div className="w-16 h-16 flex-shrink-0">
-              {typeof user.photoURL === "string" &&
+            {typeof user.photoURL === "string" &&
               user.photoURL.trim().length > 0 ? (
                 <Image
                   src={user.photoURL}
                   alt="Foto de perfil"
                   width={64}
                   height={64}
-                  className="rounded-full object-cover border-2 border-gray-200"
+                  className="rounded-full object-cover border-2 border-gray-200 w-16 h-16"
                 />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold select-none">
@@ -99,17 +98,14 @@ export default function ProfileHeader({
 
             {/* Información del usuario */}
             <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-gray-900 mb-1">
+              <h2 className="text-xl font-bold text-gray-900 mb-0.5">
                 {getFullName()}
               </h2>
-              <p className="text-gray-600 text-sm mb-2">{user.email}</p>
+              <p className="text-gray-600 text-sm mb-1">{user.email}</p>
               {getMemberSinceDate(user) && (
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                  <span className="text-gray-500 text-xs">
-                    Miembro desde {getMemberSinceDate(user)}
-                  </span>
-                </div>
+                <span className="text-gray-500 text-xs">
+                  Miembro desde {getMemberSinceDate(user)}
+                </span>
               )}
             </div>
           </div>

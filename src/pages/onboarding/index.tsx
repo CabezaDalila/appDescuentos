@@ -3,27 +3,25 @@ import { OptionCard } from "@/components/onboarding/option-card";
 import { ProgressHeader } from "@/components/onboarding/progress-header";
 import { StepNavigation } from "@/components/onboarding/step-navigation";
 import {
-  BANK_OPTIONS,
-  MAIN_GOALS,
-  SPENDING_CATEGORIES,
-  TRANSPORT_TYPES,
+    BANK_OPTIONS,
+    MAIN_GOALS,
+    SPENDING_CATEGORIES,
+    TRANSPORT_TYPES,
 } from "@/constants/onboarding";
 import { useAIRecommendations } from "@/hooks/useAIRecommendations";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
-import { useLocation } from "@/hooks/useLocation";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import {
-  OnboardingAnswers,
-  saveOnboardingAnswers,
+    OnboardingAnswers,
+    saveOnboardingAnswers,
 } from "@/lib/firebase/onboarding";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "react-hot-toast";
 
-const ONBOARDING_TOTAL_STEPS = 6;
+const ONBOARDING_TOTAL_STEPS = 5;
 
-type Step = 0 | 1 | 2 | 3 | 4 | 5;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -36,11 +34,8 @@ export default function OnboardingPage() {
   const [selectedTransport, setSelectedTransport] = useState<string | null>(
     null
   );
-  const [locationPermissionGranted, setLocationPermissionGranted] =
-    useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { requestPermissions, checkPermissions } = useLocation();
   const { generateRecommendation } = useAIRecommendations();
   const { discounts } = useCachedDiscounts();
 
@@ -120,48 +115,9 @@ export default function OnboardingPage() {
     );
   }, []);
 
-  const handleRequestLocation = useCallback(async () => {
-    const granted = await requestPermissions();
-    if (granted) {
-      setLocationPermissionGranted(true);
-      toast.success(
-        "¡Perfecto! Ahora podremos darte recomendaciones personalizadas"
-      );
-    } else {
-      toast.error(
-        "Necesitamos acceso a tu ubicación para darte mejores recomendaciones"
-      );
-    }
-  }, [requestPermissions]);
-
-  // Verificar permisos al cargar
-  useEffect(() => {
-    checkPermissions().then(setLocationPermissionGranted);
-  }, [checkPermissions]);
-
   const handleFinish = useCallback(async () => {
     if (!user?.uid) {
-      toast.error(
-        "No se pudo identificar tu usuario. Por favor, inicia sesión nuevamente."
-      );
-      return;
-    }
-
-    // Validar que haya al menos una selección    // Validaciones por paso
-    if (step === 1 && selectedCategories.length === 0) {
-      toast.error("Seleccioná al menos una categoría de gasto");
-      return;
-    }
-    if (step === 1 && selectedCategories.length > 5) {
-      toast.error("Podés seleccionar hasta 5 categorías");
-      return;
-    }
-    if (step === 2 && !selectedGoal) {
-      toast.error("Seleccioná tu objetivo principal");
-      return;
-    }
-    if (step === 3 && selectedBanks.length === 0) {
-      toast.error("Por favor, selecciona al menos un banco");
+      router.replace("/login");
       return;
     }
 
@@ -170,7 +126,7 @@ export default function OnboardingPage() {
       mainGoal: selectedGoal,
       banks: selectedBanks,
       transportType: selectedTransport || undefined,
-      allowLocationTracking: locationPermissionGranted,
+      allowLocationTracking: false,
     };
 
     try {
@@ -230,15 +186,9 @@ export default function OnboardingPage() {
         // Error en recomendación no debe bloquear el flujo
       }
 
-      toast.success("¡Gracias! Personalizaremos tus ofertas desde ahora.");
       router.push("/home");
     } catch (error) {
       console.error("Error guardando onboarding:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "No pudimos guardar tus preferencias. Intenta nuevamente.";
-      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -251,15 +201,15 @@ export default function OnboardingPage() {
     router,
     discounts,
     generateRecommendation,
-  ]);
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNextStep = useCallback(async () => {
-    if (step === 5) {
+    if (step === 4) {
       await handleFinish();
       return;
     }
 
-    setStep((prev) => Math.min(prev + 1, 5) as Step);
+    setStep((prev) => Math.min(prev + 1, 4) as Step);
   }, [step, handleFinish]);
 
   const handlePreviousStep = useCallback(() => {
@@ -268,7 +218,7 @@ export default function OnboardingPage() {
 
   // Memoizar valores calculados para evitar recálculos innecesarios
   const primaryButtonLabel = useMemo(
-    () => (step === 5 ? "Finalizar" : "Continuar"),
+    () => (step === 4 ? "Finalizar" : "Continuar"),
     [step]
   );
 
@@ -284,9 +234,6 @@ export default function OnboardingPage() {
         return selectedBanks.length > 0;
       case 4:
         // Permitir continuar sin vehículo (opcional)
-        return true;
-      case 5:
-        // Permitir continuar sin permisos (opcional)
         return true;
       default:
         return false;
@@ -471,171 +418,6 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {step === 5 && (
-            <div className="flex flex-1 flex-col min-h-0">
-              <div className="mb-4 flex-shrink-0">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  📍 Activá recomendaciones inteligentes
-                </h2>
-                <p className="mt-2 text-sm text-gray-600">
-                  Permitinos acceder a tu ubicación para darte las mejores
-                  recomendaciones
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="space-y-6">
-                  {/* Beneficios */}
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-purple-900 mb-4">
-                      ✨ Con tu ubicación podemos:
-                    </h3>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium text-purple-900">
-                            Detectar tus rutas habituales
-                          </p>
-                          <p className="text-sm text-purple-700">
-                            Identificamos dónde vas frecuentemente
-                          </p>
-                        </div>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium text-purple-900">
-                            Recomendarte descuentos en el momento justo
-                          </p>
-                          <p className="text-sm text-purple-700">
-                            Te avisamos cuando estés cerca de una oferta
-                          </p>
-                        </div>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <div className="mt-1 p-1.5 bg-purple-500 rounded-full">
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="font-medium text-purple-900">
-                            Calcular tu ahorro potencial
-                          </p>
-                          <p className="text-sm text-purple-700">
-                            Estimamos cuánto podés ahorrar por mes
-                          </p>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Estado de permisos */}
-                  {locationPermissionGranted ? (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500 rounded-full mb-4">
-                        <svg
-                          className="h-8 w-8 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-semibold text-green-900 mb-2">
-                        ¡Permisos otorgados!
-                      </h3>
-                      <p className="text-sm text-green-700">
-                        Ya podés recibir recomendaciones personalizadas
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleRequestLocation}
-                      className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-4 px-6 rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                      <div className="flex items-center justify-center gap-3">
-                        <svg
-                          className="h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <span>Permitir Acceso a Ubicación</span>
-                      </div>
-                    </button>
-                  )}
-
-                  {/* Privacidad */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                    <p className="text-xs text-gray-600 text-center">
-                      🔒 Tu privacidad es importante. Podés desactivar el
-                      tracking en cualquier momento desde tu perfil. No
-                      compartimos tu ubicación con terceros.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <StepNavigation

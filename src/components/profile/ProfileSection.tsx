@@ -1,12 +1,11 @@
 import {
-  Bell,
-  ChevronRight,
-  CreditCard,
-  HelpCircle,
-  LogOut,
-  MapPin,
-  Pencil,
-  Shield,
+    Bell,
+    ChevronRight,
+    CreditCard,
+    HelpCircle,
+    LogOut,
+    Pencil,
+    Shield,
 } from "lucide-react";
 
 interface ProfileSectionProps {
@@ -26,9 +25,9 @@ interface ProfileItem {
 
 export default function ProfileSection({ title, items }: ProfileSectionProps) {
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
-      <div className="space-y-2">
+    <div className="mb-5">
+      {title && <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>}
+      <div className="space-y-1">
         {items.map((item, index) => (
           <button
             key={index}
@@ -119,13 +118,7 @@ export function createProfileSections(
       icon: <Shield className="h-5 w-5" />,
       title: "Privacidad y seguridad",
       description: "Controla tu privacidad",
-      onClick: () => {},
-    },
-    {
-      icon: <MapPin className="h-5 w-5" />,
-      title: "Ubicación",
-      description: "Gestiona tu ubicación",
-      onClick: () => {},
+      onClick: () => router.push("/privacy"),
     },
   ];
 

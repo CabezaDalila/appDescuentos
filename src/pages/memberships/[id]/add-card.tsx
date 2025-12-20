@@ -1,23 +1,23 @@
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  addCardToMembership,
-  getMembershipById,
+    addCardToMembership,
+    getMembershipById,
 } from "@/lib/firebase/memberships";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
@@ -240,7 +240,7 @@ export default function AddCardPage() {
                 : "Agregar Tarjeta"}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Paso {currentStep} de {isBank ? 5 : 6}
+              Paso {currentStep} de {isBank ? 3 : 4}
             </p>
           </div>
           <button
@@ -264,7 +264,7 @@ export default function AddCardPage() {
               <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentStep / 5) * 100}%` }}
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
             </CardHeader>
@@ -413,7 +413,7 @@ export default function AddCardPage() {
                     </Button>
                   )}
 
-                  {currentStep < (isBank ? 5 : 6) ? (
+                  {currentStep < (isBank ? 3 : 4) ? (
                     <Button
                       type="button"
                       onClick={nextStep}
@@ -426,7 +426,7 @@ export default function AddCardPage() {
                   ) : (
                     <Button
                       type="submit"
-                      disabled={saving || !isStepComplete(isBank ? 5 : 6)}
+                      disabled={saving || !isStepComplete(currentStep)}
                       className="flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       {saving ? "Guardando..." : "Crear Tarjeta"}

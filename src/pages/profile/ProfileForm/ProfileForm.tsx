@@ -1,20 +1,21 @@
+import { profileFormSchema } from "@/components/pages/profile/ProfileForm/validations";
 import { Button } from "@/components/Share/button";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import {
-  updateDisplayName,
-  updatePhotoURL,
-  updateUserProfile,
-  uploadProfilePhoto,
+    updateDisplayName,
+    updatePhotoURL,
+    updateUserProfile,
+    uploadProfilePhoto,
 } from "@/lib/firebase/profileService";
 import { ArrowLeft, Calendar, Camera, Mail, User, Users } from "lucide-react";
 import Image from "next/image";
@@ -22,7 +23,6 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import * as yup from "yup";
-import { profileFormSchema } from "@/components/pages/profile/ProfileForm/validations";
 
 export default function EditProfilePage() {
   const { user, loading: authLoading } = useAuth();
@@ -256,7 +256,6 @@ export default function EditProfilePage() {
         }
       );
 
-      toast.success("Perfil actualizado exitosamente");
       setHasChanges(false);
       setSelectedPhotoFile(null);
       setSaving(false);
