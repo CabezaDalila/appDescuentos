@@ -78,21 +78,21 @@ export default function LocationPermissionPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white shadow-sm">
+      <div className="flex-shrink-0 bg-white shadow-sm">
         <PageHeader
           title="Permiso de ubicación"
           onBack={() => router.push("/privacy")}
         />
       </div>
 
-      {/* Mapa - ocupa todo el espacio y está bloqueado */}
+      {/* Mapa - ocupa todo el espacio disponible y está bloqueado */}
       <div className="relative flex-1 bg-gray-100 overflow-hidden">
         {isLoading || loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-            <p className="text-gray-600">Obteniendo ubicación...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-3"></div>
+            <p className="text-gray-600 text-sm">Obteniendo ubicación...</p>
           </div>
         ) : position ? (
           <>
@@ -108,40 +108,40 @@ export default function LocationPermissionPage() {
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 px-4">
-            <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mb-4">
-              <MapPin className="h-10 w-10 text-gray-400" />
+            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3">
+              <MapPin className="h-8 w-8 text-gray-400" />
             </div>
-            <p className="text-lg font-medium text-center">Ubicación no disponible</p>
-            <p className="text-sm text-center mt-1">Activa el permiso para ver tu ubicación en el mapa</p>
+            <p className="text-base font-medium text-center">Ubicación no disponible</p>
+            <p className="text-xs text-center mt-1">Activa el permiso para ver tu ubicación</p>
           </div>
         )}
       </div>
 
-      {/* Panel inferior - llega hasta la navbar */}
-      <div className="bg-white border-t border-gray-200 px-6 py-5 pb-20">
+      {/* Panel inferior */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-5 safe-area-bottom">
         {/* Estado */}
         <div className="flex items-center gap-3 mb-2">
           {isEnabled ? (
             <>
-              <CheckCircle className="h-6 w-6 text-green-500" />
+              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
               <span className="text-green-600 font-semibold text-lg">Activado</span>
             </>
           ) : (
             <>
-              <XCircle className="h-6 w-6 text-red-500" />
+              <XCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
               <span className="text-red-600 font-semibold text-lg">Desactivado</span>
             </>
           )}
         </div>
 
         {/* Descripción */}
-        <p className="text-gray-600 text-sm mb-4">
+        <p className="text-gray-600 text-sm mb-4 leading-relaxed">
           {isEnabled 
             ? "Tu ubicación nos permite mostrarte los mejores descuentos cerca de ti."
             : "Activa tu ubicación para descubrir descuentos exclusivos en comercios cercanos."}
         </p>
 
-        {/* Botón centrado y más chico */}
+        {/* Botón centrado */}
         <div className="flex justify-center">
           <Button
             onClick={handleToggleLocation}
