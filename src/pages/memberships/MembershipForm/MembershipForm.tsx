@@ -44,11 +44,25 @@ export default function AddMembershipPage() {
 
   const membershipTypes = [
     {
-      id: "streaming",
-      name: "Streaming",
-      description: "Netflix, Spotify, Disney+",
-      color: "#FF6B6B",
-      icon: "📺",
+      id: "banco",
+      name: "Banco",
+      description: "Tarjetas de crédito/débito",
+      color: "#DDA0DD",
+      icon: "🏦",
+    },
+    {
+      id: "seguro",
+      name: "Seguros",
+      description: "Compañías de seguros",
+      color: "#10B981",
+      icon: "🛡️",
+    },
+    {
+      id: "telecomunicacion",
+      name: "Telecomunicaciones",
+      description: "Compañías de teléfono e internet",
+      color: "#3B82F6",
+      icon: "📱",
     },
     {
       id: "club",
@@ -72,25 +86,25 @@ export default function AddMembershipPage() {
       icon: "🎓",
     },
     {
-      id: "gym",
-      name: "Gimnasio",
-      description: "Membresías deportivas",
-      color: "#FFEAA7",
-      icon: "💪",
-    },
-    {
-      id: "banco",
-      name: "Banco",
-      description: "Tarjetas de crédito/débito",
-      color: "#DDA0DD",
-      icon: "🏦",
-    },
-    {
       id: "billeteras",
       name: "Billeteras",
       description: "MercadoPago, PersonalPay, Yoy",
       color: "#00CED1",
       icon: "💳",
+    },
+    {
+      id: "streaming",
+      name: "Streaming",
+      description: "Netflix, Spotify, Disney+",
+      color: "#FF6B6B",
+      icon: "📺",
+    },
+    {
+      id: "gym",
+      name: "Gimnasio",
+      description: "Membresías deportivas",
+      color: "#FFEAA7",
+      icon: "💪",
     },
   ];
 
@@ -124,6 +138,30 @@ export default function AddMembershipPage() {
 
   // Opciones específicas para cada tipo de membresía
   const membershipOptions = {
+    seguro: [
+      "La Caja",
+      "Federación Patronal",
+      "Sancor Seguros",
+      "Allianz",
+      "Zurich",
+      "Mapfre",
+      "Provincia Seguros",
+      "San Cristóbal",
+      "Rivadavia Seguros",
+      "La Segunda",
+    ],
+    telecomunicacion: [
+      "Personal",
+      "Movistar",
+      "Claro",
+      "Telecom",
+      "Fibertel",
+      "Cablevisión",
+      "DirecTV",
+      "Tuenti",
+      "Flow",
+      "Telecentro",
+    ],
     streaming: [
       "Netflix",
       "Spotify",
