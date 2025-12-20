@@ -115,7 +115,7 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
 
   return (
     <div className="flex justify-start flex-col bg-white rounded-lg p-2 gap-3">
-      <div className="flex items-center justify-center h-70 w-full relative">
+      <div className="flex items-center justify-center h-48 sm:h-56 w-full relative rounded-lg overflow-hidden">
         {/* Badge de descuento */}
         {discountPercentage && (
           <div className="absolute top-2 left-2 z-10">
@@ -155,9 +155,10 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
         <Image
           src={image}
           alt="Card Discount"
-          width={100}
-          height={100}
+          width={400}
+          height={224}
           className="object-cover w-full h-full"
+          priority={false}
         />
       </div>
       <div className="flex items-center justify-between">
