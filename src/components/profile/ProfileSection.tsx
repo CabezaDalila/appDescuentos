@@ -1,12 +1,12 @@
 import {
-    Bell,
-    ChevronRight,
-    CreditCard,
-    HelpCircle,
-    LogOut,
-    MapPin,
-    Pencil,
-    Shield,
+  Bell,
+  ChevronRight,
+  CreditCard,
+  HelpCircle,
+  LogOut,
+  MapPin,
+  Pencil,
+  Shield,
 } from "lucide-react";
 
 interface ProfileSectionProps {
@@ -119,13 +119,13 @@ export function createProfileSections(
       icon: <Shield className="h-5 w-5" />,
       title: "Privacidad y seguridad",
       description: "Controla tu privacidad",
-      onClick: () => router.push("/privacy"),
+      onClick: () => {},
     },
     {
       icon: <MapPin className="h-5 w-5" />,
       title: "Ubicación",
       description: "Gestiona tu ubicación",
-      onClick: () => router.push("/location"),
+      onClick: () => {},
     },
   ];
 
