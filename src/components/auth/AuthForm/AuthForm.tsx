@@ -917,46 +917,53 @@ export default function AuthForm() {
               {mode === "register" && (
                 <>
                   <div className="space-y-3 pt-1">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50/50 border border-gray-100">
+                    <label
+                      htmlFor="terms"
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        acceptTerms
+                          ? "bg-purple-50 border-purple-400"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
                       <Checkbox
                         id="terms"
                         checked={acceptTerms}
                         onCheckedChange={(checked) =>
                           setAcceptTerms(checked === true)
                         }
-                        className="mt-0.5"
+                        className="h-5 w-5 rounded border-2 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                      <Label
-                        htmlFor="terms"
-                        className="text-sm text-gray-600 leading-5 cursor-pointer"
-                      >
+                      <span className="text-sm text-gray-700 leading-5">
                         Acepto los{" "}
-                        <span className="text-primary-600 font-medium hover:text-primary-700">
+                        <span className="text-purple-600 font-medium hover:underline">
                           términos y condiciones
                         </span>{" "}
                         y la{" "}
-                        <span className="text-primary-600 font-medium hover:text-primary-700">
+                        <span className="text-purple-600 font-medium hover:underline">
                           política de privacidad
                         </span>
-                      </Label>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50/50 border border-gray-100">
+                      </span>
+                    </label>
+                    <label
+                      htmlFor="marketing"
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        acceptMarketing
+                          ? "bg-purple-50 border-purple-400"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
                       <Checkbox
                         id="marketing"
                         checked={acceptMarketing}
                         onCheckedChange={(checked) =>
                           setAcceptMarketing(checked === true)
                         }
-                        className="mt-0.5"
+                        className="h-5 w-5 rounded border-2 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
                       />
-                      <Label
-                        htmlFor="marketing"
-                        className="text-sm text-gray-600 leading-5 cursor-pointer"
-                      >
-                        Quiero recibir ofertas y promociones exclusivas por
-                        email
-                      </Label>
-                    </div>
+                      <span className="text-sm text-gray-700 leading-5">
+                        Quiero recibir ofertas y promociones exclusivas por email
+                      </span>
+                    </label>
                   </div>
                 </>
               )}
