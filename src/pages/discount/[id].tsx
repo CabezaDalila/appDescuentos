@@ -72,9 +72,9 @@ export default function DiscountDetail() {
   if (!router.isReady) {
     return (
       <div className="min-h-screen with-bottom-nav-pb">
-        <div className="flex items-center p-1">
-          <BackButton className="mr-4" />
-          <h1 className="text-lg font-semibold text-gray-700">
+        <div className="flex items-center px-3 py-4">
+          <BackButton className="mr-3" />
+          <h1 className="text-lg font-semibold text-gray-700 leading-none">
             Detalle del Descuento
           </h1>
         </div>
@@ -92,9 +92,9 @@ export default function DiscountDetail() {
     <div className="min-h-screen with-bottom-nav-pb">
       {/* Header con botón de regreso */}
       <div>
-        <div className="flex items-center p-1">
-          <BackButton className="mr-4" />
-          <h1 className="text-lg font-semibold text-gray-700">
+        <div className="flex items-center px-3 py-4">
+          <BackButton className="mr-3" />
+          <h1 className="text-lg font-semibold text-gray-700 leading-none">
             Detalle del Descuento
           </h1>
         </div>

@@ -2,13 +2,13 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import {
-  getUserVote,
-  removeVote,
-  voteDiscount,
-  type VoteType,
+    getUserVote,
+    removeVote,
+    voteDiscount,
+    type VoteType,
 } from "@/lib/firebase/discount-votes";
-import { setFeedback } from "@/lib/firebase/interactions";
 import { db } from "@/lib/firebase/firebase";
+import { setFeedback } from "@/lib/firebase/interactions";
 import { doc, getDoc } from "firebase/firestore";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -82,7 +82,6 @@ export function DiscountVote({
           onPointsUpdate?.(data.points || 0);
         }
 
-        toast.success("Voto eliminado");
       } else {
         // Si había un voto diferente, actualizar
         // Si no había voto, crear uno nuevo
@@ -103,12 +102,6 @@ export function DiscountVote({
         }
 
         setUserVote(voteType);
-
-        toast.success(
-          voteType === "up"
-            ? "¡Gracias por recomendar este descuento!"
-            : "Voto registrado"
-        );
       }
     } catch (error) {
       console.error("Error al votar:", error);
