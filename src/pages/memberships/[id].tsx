@@ -21,11 +21,12 @@ export default function MembershipDetailsPage() {
   const [membership, setMembership] = useState<Membership | null>(null);
   const [loadingMembership, setLoadingMembership] = useState(true);
 
+  // Recargar cuando cambia el id o cuando se navega de vuelta a esta página
   useEffect(() => {
     if (id && typeof id === "string") {
       loadMembership(id);
     }
-  }, [id]);
+  }, [id, router.asPath]);
 
   const loadMembership = async (membershipId: string) => {
     try {
@@ -256,7 +257,6 @@ export default function MembershipDetailsPage() {
       } else {
         // Solo se eliminó la tarjeta, actualizar la vista
         await loadMembership(membership.id);
-        toast.success(result.message || "Tarjeta eliminada exitosamente");
       }
     } catch (error) {
       console.error("Error al eliminar tarjeta:", error);

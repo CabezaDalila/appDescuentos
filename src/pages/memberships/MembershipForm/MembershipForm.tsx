@@ -297,7 +297,7 @@ export default function AddMembershipPage() {
                 setFormData((prev) => ({ ...prev, category: "" }));
                 setCurrentStep(0);
                 setSelectedMembership("");
-                setBankData({ bank: "", cardType: "", brand: "", level: "" });
+                setBankData({ bank: "", cardType: "", brand: "", level: "", expiryDate: "", cardName: "" });
               } else {
                 // Si está en la selección de categorías, ir a membresías
                 router.push("/memberships");

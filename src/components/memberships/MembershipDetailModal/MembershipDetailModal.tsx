@@ -196,7 +196,6 @@ const MembershipDetailModal: React.FC<MembershipDetailModalProps> = ({
         await onUpdateCard(localMembership.id, selectedCard.id, cardFormData);
       } else if (showAddCardModal && onAddCard) {
         await onAddCard(localMembership.id, newCard);
-        toast.success("Tarjeta agregada correctamente");
       }
     } catch (error) {
       // Revertir actualización optimista en caso de error

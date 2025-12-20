@@ -1,32 +1,31 @@
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { CARD_BRANDS, CARD_LEVELS, Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  deleteCardFromMembership,
-  getMembershipById,
-  updateMembership,
+    deleteCardFromMembership,
+    getMembershipById,
+    updateMembership,
 } from "@/lib/firebase/memberships";
 import {
-  getCardStatus,
-  getCardStatusColor,
-  getCardStatusText,
-  isCardExpired,
-  validateAndFormatExpiryInput,
+    getCardStatus,
+    getCardStatusColor,
+    getCardStatusText,
+    validateAndFormatExpiryInput
 } from "@/lib/utils/expiryUtils";
 import { ArrowLeft, CreditCard, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/router";
@@ -173,7 +172,6 @@ export default function EditMembershipPage() {
         expiryDate: "",
       });
 
-      toast.success("Tarjeta agregada y guardada exitosamente");
     } catch (error) {
       console.error("Error al agregar tarjeta:", error);
       toast.error("Error al agregar la tarjeta");
@@ -244,7 +242,6 @@ export default function EditMembershipPage() {
       } else {
         // Solo se eliminó la tarjeta, actualizar la vista
         await loadMembership(membership.id);
-        toast.success(result.message || "Tarjeta eliminada exitosamente");
       }
     } catch (error: any) {
       console.error("Error al eliminar tarjeta:", error);

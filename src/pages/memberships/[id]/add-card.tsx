@@ -125,6 +125,7 @@ export default function AddCardPage() {
             brand: bankData.brand,
             level: bankData.level,
             status: "active",
+            isActive: true,
           }
         : {
             id: Date.now().toString(),
@@ -132,12 +133,11 @@ export default function AddCardPage() {
             brand: formData.brand,
             level: formData.level,
             status: "active",
+            isActive: true,
           };
 
       await addCardToMembership(membership.id, cardData);
-
-      toast.success("Tarjeta agregada exitosamente");
-      router.push(`/memberships/${membership.id}`);
+      router.replace(`/memberships/${membership.id}`);
     } catch (error) {
       console.error("Error agregando tarjeta:", error);
       toast.error("Error agregando tarjeta");

@@ -1,14 +1,14 @@
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    serverTimestamp,
+    updateDoc,
+    where,
 } from "firebase/firestore";
 import { auth, db } from "./firebase.js";
 // Obtener todas las membresías del usuario
@@ -296,8 +296,12 @@ export const addCardToMembership = async (membershipId, cardData) => {
 
     const updatedCards = [...membership.cards, newCard];
 
+    // Al agregar una tarjeta nueva, siempre activar la membresía
+    // (la tarjeta nueva siempre viene activa por defecto)
     await updateDoc(membershipRef, {
       cards: updatedCards,
+      status: "active",
+      isActive: true,
       updatedAt: serverTimestamp(),
     });
 
