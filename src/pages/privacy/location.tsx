@@ -117,7 +117,7 @@ export default function LocationPermissionPage() {
         )}
       </div>
 
-      {/* Panel inferior */}
+      {/* Panel inferior - responsive */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-5 safe-area-bottom">
         {/* Estado */}
         <div className="flex items-center gap-3 mb-2">
