@@ -184,14 +184,11 @@ export default function MembershipDetailsPage() {
       membership.status === "active" ? "inactive" : "active";
 
     try {
-      // Si se está desactivando la membresía, también desactivar todas las tarjetas
-      const updatedCards: Card[] =
-        newStatus === "inactive"
-          ? membership.cards.map((card) => ({
-              ...card,
-              status: "inactive" as Card["status"],
-            }))
-          : membership.cards; // Si se activa, mantener el estado actual de las tarjetas
+      // Actualizar todas las tarjetas al mismo estado que la membresía
+      const updatedCards: Card[] = membership.cards.map((card) => ({
+        ...card,
+        status: newStatus as Card["status"],
+      }));
 
       // Actualizar el estado localmente primero
       setMembership({
