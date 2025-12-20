@@ -170,7 +170,7 @@ export default function HelpPage() {
                 name="subject"
                 value={formData.subject}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300"
+                className="w-full px-3 py-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300"
                 placeholder="¿Sobre qué necesitas ayuda?"
               />
             </div>
@@ -189,7 +189,7 @@ export default function HelpPage() {
                 onChange={handleChange}
                 required
                 rows={4}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 resize-none"
+                className="w-full px-3 py-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 resize-none"
                 placeholder="Describe tu consulta o problema..."
               />
             </div>
