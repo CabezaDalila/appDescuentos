@@ -4,16 +4,16 @@ import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { getRealDistance } from "@/utils/real-distance";
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    Timestamp,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 
 export const MAX_DISTANCE_KM = 2;
@@ -136,15 +136,24 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
           isVisible: data.isVisible ?? true,
+          membershipRequired: data.membershipRequired,
+          bancos: data.bancos,
           location: data.location,
         } as HomePageDiscount;
       })
       .filter((discount) => {
         // Filtrar descuentos activos, visibles y con fecha de validez no expirada
         const now = new Date();
-        const expirationDate = new Date(discount.expiration.split('/').reverse().join('-'));
-        const isNotExpired = expirationDate >= now || isNaN(expirationDate.getTime());
-        return discount.status === "active" && discount.isVisible !== false && isNotExpired;
+        const expirationDate = new Date(
+          discount.expiration.split("/").reverse().join("-")
+        );
+        const isNotExpired =
+          expirationDate >= now || isNaN(expirationDate.getTime());
+        return (
+          discount.status === "active" &&
+          discount.isVisible !== false &&
+          isNotExpired
+        );
       });
   } catch {
     return [];
@@ -195,7 +204,7 @@ export const getDiscountsBySearch = async (
       // Filtrar descuentos expirados
       const isNotExpired = !d.validUntil || d.validUntil >= now;
       if (!isNotExpired) return false;
-      
+
       const haystack = [
         normalize(e.title),
         normalize(e.name),
@@ -363,130 +372,6 @@ export const getDiscountById = async (
   }
 };
 
-export const getPersonalizedDiscounts = async (
-  userMemberships: string[],
-  userCredentials: UserCredential[]
-): Promise<HomePageDiscount[]> => {
-  try {
-    if (
-      (!userMemberships || userMemberships.length === 0) &&
-      (!userCredentials || userCredentials.length === 0)
-    ) {
-      return [];
-    }
-
-    const userMembershipsClean = userMemberships.filter(
-      (m) => typeof m === "string" && m.trim().length > 0
-    );
-
-    const hasMembershipMatch = (discountMembership: string): boolean => {
-      const result = userMembershipsClean.includes(discountMembership);
-      return result;
-    };
-
-    const hasCredentialMatch = (discountCred: {
-      bank: string;
-      type: string;
-      brand: string;
-      level: string;
-    }): boolean => {
-      const result = userCredentials.some((userCred) => {
-        const matches =
-          discountCred.bank === userCred.bank &&
-          discountCred.type === userCred.type &&
-          discountCred.brand === userCred.brand &&
-          discountCred.level === userCred.level;
-        return matches;
-      });
-      return result;
-    };
-
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "approved"),
-      where("status", "==", "active")
-    );
-
-    const snapshot = await getDocs(q);
-
-    const allDiscounts = snapshot.docs.map((doc) => {
-      const data = doc.data() as FirestoreDiscount;
-      return {
-        id: doc.id,
-        data,
-      };
-    });
-
-    const matchedDiscounts = allDiscounts.filter(({ data }) => {
-      if (
-        data.availableMemberships &&
-        Array.isArray(data.availableMemberships) &&
-        data.availableMemberships.length > 0
-      ) {
-        const matchFound = data.availableMemberships.some(
-          (availableMembership) => {
-            return hasMembershipMatch(availableMembership);
-          }
-        );
-        if (matchFound) {
-          return true;
-        }
-      }
-
-      if (
-        data.availableCredentials &&
-        Array.isArray(data.availableCredentials) &&
-        data.availableCredentials.length > 0
-      ) {
-        const matchFound = data.availableCredentials.some((discountCred) => {
-          return hasCredentialMatch(discountCred);
-        });
-        if (matchFound) {
-          return true;
-        }
-      }
-
-      return false;
-    });
-
-    return matchedDiscounts.slice(0, 10).map(({ id, data }) => {
-      const title = data.title || data.name || "Sin título";
-      const category = data.category || "Sin categoría";
-      const discountPercentage = data.discountPercentage
-        ? `${data.discountPercentage}%`
-        : "Sin descuento";
-
-      const image =
-        data.imageUrl?.trim() ||
-        data.image?.trim() ||
-        getImageByCategory(data.category);
-
-      const expiration =
-        data.validUntil?.toDate?.() ||
-        data.expirationDate?.toDate?.() ||
-        new Date();
-
-      return {
-        id,
-        title,
-        image,
-        category,
-        discountPercentage,
-        points: data.points || 0,
-        distance: "",
-        expiration: expiration.toLocaleDateString("es-ES"),
-        description: data.description || data.descripcion || "",
-        origin: data.origin,
-        status: data.status,
-        isVisible: data.isVisible ?? true,
-        location: data.location,
-      } as HomePageDiscount;
-    });
-  } catch {
-    return [];
-  }
-};
-
 export const getNearbyDiscounts = async (
   userLatitude: number,
   userLongitude: number,
@@ -502,7 +387,8 @@ export const getNearbyDiscounts = async (
 
       // Verificar si el descuento está expirado
       const now = new Date();
-      const validUntil = data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
+      const validUntil =
+        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
       const isExpired = validUntil && validUntil < now;
 
       if (
@@ -589,7 +475,8 @@ export const getNearbyDiscountsProgressive = async (
 
       // Verificar si el descuento está expirado
       const now = new Date();
-      const validUntil = data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
+      const validUntil =
+        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
       const isExpired = validUntil && validUntil < now;
 
       if (

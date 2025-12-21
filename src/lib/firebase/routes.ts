@@ -3,7 +3,7 @@
  */
 
 import { db } from "@/lib/firebase/firebase";
-import type { Discount } from "@/types/discount";
+import type { HomePageDiscount } from "@/types/discount";
 import type { DailyRoute, RoutesSummary } from "@/types/location";
 import type {
   AIRecommendation,
@@ -118,7 +118,7 @@ function removeUndefinedFields(obj: any): any {
 export async function saveAIRecommendation(
   userId: string,
   recommendation: AIRecommendation,
-  fullDiscounts: Discount[] // Descuentos completos mapeados desde los IDs
+  fullDiscounts: HomePageDiscount[] // Descuentos completos con todos los campos (points, distance, etc.)
 ): Promise<void> {
   const recommendationRef = doc(
     db,
@@ -131,10 +131,9 @@ export async function saveAIRecommendation(
   const recommendationWithDiscounts: AIRecommendationWithDiscounts = {
     ...recommendation,
     fullDiscounts,
-    savedAt: Date.now(), // Guardar timestamp en milisegundos
+    savedAt: Date.now(),
   };
 
-  // Limpiar valores undefined antes de guardar en Firestore
   const cleanedData = removeUndefinedFields(recommendationWithDiscounts);
 
   await setDoc(recommendationRef, cleanedData);
@@ -157,12 +156,11 @@ export async function getLatestAIRecommendation(
   const snapshot = await getDoc(recommendationRef);
 
   if (!snapshot.exists()) {
-    console.log("[IA] No hay recomendación guardada en Firestore");
     return null;
   }
 
   const data = snapshot.data() as AIRecommendationWithDiscounts;
-  const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+  const CACHE_DURATION = 24 * 60 * 60 * 1000;
   const now = Date.now();
   const age = now - (data.savedAt || 0);
 

@@ -38,7 +38,6 @@ export interface Discount {
   };
 }
 
-// Tipo específico para los descuentos de la página de inicio
 export interface HomePageDiscount {
   id: string;
   title: string;
@@ -52,6 +51,8 @@ export interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  membershipRequired?: string[];
+  bancos?: string[];
   location?: {
     latitude: number;
     longitude: number;

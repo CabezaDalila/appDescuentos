@@ -3,6 +3,7 @@
  */
 
 import { useAuth } from "@/hooks/useAuth";
+import { getHomePageDiscounts } from "@/lib/discounts";
 import { getOnboardingAnswers } from "@/lib/firebase/onboarding";
 import {
   getLatestAIRecommendation,
@@ -10,7 +11,7 @@ import {
 } from "@/lib/firebase/routes";
 import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import { sendRecommendationNotification } from "@/lib/services/notification.service";
-import type { Discount } from "@/types/discount";
+import type { Discount, HomePageDiscount } from "@/types/discount";
 import type {
   AIRecommendationWithDiscounts,
   RecommendationRequest,
@@ -21,6 +22,7 @@ interface UseAIRecommendationsOptions {
   autoGenerate?: boolean; // Si debe generar automáticamente si no encuentra recomendaciones
   availableDiscounts?: Discount[]; // Descuentos disponibles para generar recomendaciones
   userMemberships?: string[]; // Membresías del usuario
+  originalHomePageDiscounts?: HomePageDiscount[]; // Descuentos completos con todos los campos (points, distance, etc.)
 }
 
 export function useAIRecommendations(
@@ -30,6 +32,7 @@ export function useAIRecommendations(
     autoGenerate = false,
     availableDiscounts = [],
     userMemberships = [],
+    originalHomePageDiscounts = [],
   } = options;
   const { user } = useAuth();
   const [recommendation, setRecommendation] =
@@ -93,17 +96,25 @@ export function useAIRecommendations(
       // Llamar a Gemini para generar recomendación
       console.log("[IA] Llamando a Gemini API para generar recomendaciones...");
       const newRecommendation = await getSmartRecommendations(request);
-      console.log("[IA] Recomendaciones generadas exitosamente");
 
-      // Mapear IDs a descuentos completos
-      const fullDiscounts = newRecommendation.recommendedDiscounts
-        .map((rec) => {
-          const discount = request.availableDiscounts.find(
-            (d) => d.id === rec.discountId
-          );
-          return discount;
-        })
-        .filter((d): d is NonNullable<typeof d> => d !== undefined);
+      let fullDiscounts: HomePageDiscount[] = [];
+
+      if (originalHomePageDiscounts.length > 0) {
+        fullDiscounts = newRecommendation.recommendedDiscounts
+          .map((rec) => {
+            return originalHomePageDiscounts.find(
+              (d) => d.id === rec.discountId
+            );
+          })
+          .filter((d): d is HomePageDiscount => d !== undefined);
+      } else {
+        const allHomeDiscounts = await getHomePageDiscounts();
+        fullDiscounts = newRecommendation.recommendedDiscounts
+          .map((rec) => {
+            return allHomeDiscounts.find((d) => d.id === rec.discountId);
+          })
+          .filter((d): d is HomePageDiscount => d !== undefined);
+      }
 
       // Crear recomendación con descuentos completos
       const recommendationWithDiscounts: AIRecommendationWithDiscounts = {
@@ -112,16 +123,18 @@ export function useAIRecommendations(
         savedAt: Date.now(),
       };
 
-      // Guardar en Firestore con descuentos completos
       await saveAIRecommendation(user.uid, newRecommendation, fullDiscounts);
-      console.log("[IA] Recomendaciones guardadas en Firestore exitosamente");
 
       // Enviar notificación automática
       if (fullDiscounts.length > 0) {
         const topDiscount = fullDiscounts[0];
+        const percentage =
+          typeof topDiscount.discountPercentage === "string"
+            ? parseInt(topDiscount.discountPercentage) || 0
+            : topDiscount.discountPercentage || 0;
         await sendRecommendationNotification(user.uid, newRecommendation, {
-          merchant: topDiscount.name || topDiscount.title || "Comercio",
-          percentage: topDiscount.discountPercentage || 0,
+          merchant: topDiscount.title || "Comercio",
+          percentage,
           card:
             topDiscount.membershipRequired?.[0] ||
             topDiscount.bancos?.[0] ||
@@ -139,7 +152,12 @@ export function useAIRecommendations(
     } finally {
       setLoading(false);
     }
-  }, [user?.uid, availableDiscounts, userMemberships]);
+  }, [
+    user?.uid,
+    availableDiscounts,
+    userMemberships,
+    originalHomePageDiscounts,
+  ]);
 
   const loadLatestRecommendation = useCallback(async () => {
     if (!user?.uid) {
@@ -192,11 +210,23 @@ export function useAIRecommendations(
   }, [user?.uid]);
 
   // Cargar última recomendación al montar o cuando los descuentos estén listos
+  // Si autoGenerate es false, cargar incluso si availableDiscounts está vacío (solo lectura)
   useEffect(() => {
-    if (user?.uid && availableDiscounts.length > 0 && !hasLoadedRef.current) {
-      loadLatestRecommendation();
+    if (user?.uid && !hasLoadedRef.current) {
+      if (autoGenerate && availableDiscounts.length > 0) {
+        // Si autoGenerate está activado, esperar a que haya descuentos disponibles
+        loadLatestRecommendation();
+      } else if (!autoGenerate) {
+        // Si autoGenerate está desactivado, cargar directamente desde Firestore
+        loadLatestRecommendation();
+      }
     }
-  }, [user?.uid, availableDiscounts.length, loadLatestRecommendation]);
+  }, [
+    user?.uid,
+    autoGenerate,
+    availableDiscounts.length,
+    loadLatestRecommendation,
+  ]);
 
   // Generar recomendación
   const generateRecommendation = useCallback(
@@ -213,15 +243,15 @@ export function useAIRecommendations(
         // Llamar a Gemini para generar recomendación
         const newRecommendation = await getSmartRecommendations(request);
 
-        // Mapear IDs a descuentos completos
-        const fullDiscounts = newRecommendation.recommendedDiscounts
-          .map((rec) => {
-            const discount = request.availableDiscounts.find(
-              (d) => d.id === rec.discountId
-            );
-            return discount;
-          })
-          .filter((d): d is NonNullable<typeof d> => d !== undefined);
+        // Mapear IDs a descuentos completos (HomePageDiscount)
+        // Obtener los descuentos completos desde la fuente original
+        const allHomeDiscounts = await getHomePageDiscounts();
+        const fullDiscounts: HomePageDiscount[] =
+          newRecommendation.recommendedDiscounts
+            .map((rec) => {
+              return allHomeDiscounts.find((d) => d.id === rec.discountId);
+            })
+            .filter((d): d is HomePageDiscount => d !== undefined);
 
         // Crear recomendación con descuentos completos
         const recommendationWithDiscounts: AIRecommendationWithDiscounts = {
@@ -237,8 +267,11 @@ export function useAIRecommendations(
         if (fullDiscounts.length > 0) {
           const topDiscount = fullDiscounts[0];
           await sendRecommendationNotification(user.uid, newRecommendation, {
-            merchant: topDiscount.name || topDiscount.title || "Comercio",
-            percentage: topDiscount.discountPercentage || 0,
+            merchant: topDiscount.title || "Comercio",
+            percentage:
+              typeof topDiscount.discountPercentage === "string"
+                ? parseInt(topDiscount.discountPercentage.replace("%", "")) || 0
+                : 0,
             card:
               topDiscount.membershipRequired?.[0] ||
               topDiscount.bancos?.[0] ||
