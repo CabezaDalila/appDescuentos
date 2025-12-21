@@ -38,7 +38,6 @@ export interface Discount {
   };
 }
 
-// Tipo específico para los descuentos de la página de inicio
 export interface HomePageDiscount {
   id: string;
   title: string;
