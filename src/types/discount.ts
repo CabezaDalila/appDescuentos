@@ -52,6 +52,8 @@ export interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  membershipRequired?: string[];
+  bancos?: string[];
   location?: {
     latitude: number;
     longitude: number;

@@ -1,4 +1,4 @@
-import type { Discount } from "./discount";
+import type { Discount, HomePageDiscount } from "./discount";
 
 export interface RecommendationRequest {
   userId: string;
@@ -19,6 +19,6 @@ export interface AIRecommendation {
 }
 
 export interface AIRecommendationWithDiscounts extends AIRecommendation {
-  fullDiscounts: Discount[];
+  fullDiscounts: HomePageDiscount[];
   savedAt: number;
 }

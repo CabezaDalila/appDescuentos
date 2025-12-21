@@ -75,25 +75,25 @@ export function PersonalizedOffersSection({
     autoGenerate: true,
     availableDiscounts,
     userMemberships: userMemberships || [],
+    originalHomePageDiscounts: allDiscounts, // Pasar los descuentos completos para guardar todos los campos
   });
 
-  // Mapear recomendaciones a formato HomePageDiscount
+  // Los descuentos ya vienen completos con todos los campos (points, distance, etc.)
   const personalizedOffers = useMemo(() => {
     if (!recommendation?.fullDiscounts) {
       return [];
     }
 
-    return recommendation.fullDiscounts
-      .map((discount) => {
-        // Buscar el descuento completo en allDiscounts para obtener todos los campos
-        const fullDiscount = allDiscounts.find((d) => d.id === discount.id);
-        if (!fullDiscount) return null;
-
-        return fullDiscount;
+    // Ordenar según el orden de recomendación de IA y tomar los primeros 5
+    return recommendation.recommendedDiscounts
+      .map((rec) => {
+        return recommendation.fullDiscounts.find(
+          (d) => d.id === rec.discountId
+        );
       })
-      .filter((d): d is HomePageDiscount => d !== null)
+      .filter((d): d is HomePageDiscount => d !== undefined)
       .slice(0, 5);
-  }, [recommendation, allDiscounts]);
+  }, [recommendation]);
 
   const loading = discountsLoading || aiLoading;
   const isAIRecommendation = !!recommendation;

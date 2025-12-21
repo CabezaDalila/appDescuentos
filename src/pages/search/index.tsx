@@ -2,19 +2,25 @@ import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { EmptyState } from "@/components/home/empty-state";
 import { SearchSection } from "@/components/home/search-section";
 import { PageHeader } from "@/components/Share/page-header";
-import { DISCOUNT_CATEGORIES, EXPLORE_CATEGORIES } from "@/constants/categories";
-import { useAuth } from "@/hooks/useAuth";
-import { isLocationPermissionEnabled, useGeolocation } from "@/hooks/useGeolocation";
 import {
-    getDiscountsBySearch,
-    getHomePageDiscounts,
-    getNearbyDiscountsProgressive,
-    getPersonalizedDiscounts,
-    MAX_DISTANCE_KM,
+  DISCOUNT_CATEGORIES,
+  EXPLORE_CATEGORIES,
+} from "@/constants/categories";
+import { useAIRecommendations } from "@/hooks/useAIRecommendations";
+import { useAuth } from "@/hooks/useAuth";
+import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
+import {
+  isLocationPermissionEnabled,
+  useGeolocation,
+} from "@/hooks/useGeolocation";
+import {
+  getDiscountsBySearch,
+  getHomePageDiscounts,
+  getNearbyDiscountsProgressive,
+  MAX_DISTANCE_KM,
 } from "@/lib/discounts";
 import { getFavoriteDiscountIdsForUser } from "@/lib/firebase/interactions";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
-import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
 import { Heart, MapPin, X } from "lucide-react";
@@ -79,7 +85,7 @@ export default function Search() {
     map["favoritos"] = "Favoritos";
     return map;
   }, []);
-  
+
   // Mapeo de colores por categoría (favoritos tiene estilo especial)
   const getCategoryStyle = (categoryId: string) => {
     if (categoryId === "favoritos") {
@@ -94,7 +100,7 @@ export default function Search() {
       icon: null,
     };
   };
-  
+
   const [maxCategoryChips, setMaxCategoryChips] = useState(4);
   const [dragY, setDragY] = useState(0);
   const touchStartY = useRef<number | null>(null);
@@ -104,6 +110,130 @@ export default function Search() {
   const { user } = useAuth();
   const { getCurrentPosition } = useGeolocation();
   const [favoriteIdSet, setFavoriteIdSet] = useState<Set<string>>(new Set());
+
+  // Para personalized=true, usar los mismos hooks que en la home
+  const { discounts: cachedDiscounts } = useCachedDiscounts();
+  const [userMemberships, setUserMemberships] = useState<string[]>([]);
+
+  const availableDiscounts = useMemo(() => {
+    if (personalized !== "true") return [];
+    return cachedDiscounts.map((d) => {
+      const discountWithExtras = d as HomePageDiscount & {
+        membershipRequired?: string[];
+        bancos?: string[];
+      };
+      return {
+        id: d.id,
+        name: d.title || "Descuento",
+        title: d.title,
+        category: d.category,
+        discountPercentage:
+          typeof d.discountPercentage === "string"
+            ? parseInt(d.discountPercentage) || 0
+            : d.discountPercentage || 0,
+        membershipRequired: discountWithExtras.membershipRequired,
+        bancos: discountWithExtras.bancos,
+        description: d.description,
+        imageUrl: d.image,
+        location: d.location,
+      };
+    });
+  }, [cachedDiscounts, personalized]);
+
+  const { recommendation: aiRecommendation, loading: aiLoading } =
+    useAIRecommendations({
+      autoGenerate: false,
+      availableDiscounts: personalized === "true" ? availableDiscounts : [],
+      userMemberships: personalized === "true" ? userMemberships : [],
+      originalHomePageDiscounts: personalized === "true" ? cachedDiscounts : [],
+    });
+
+  // Actualizar descuentos cuando aiRecommendation esté disponible
+  useEffect(() => {
+    if (personalized === "true") {
+      if (aiLoading) {
+        // Mostrar loader mientras carga
+        setLoading(true);
+      } else if (aiRecommendation?.fullDiscounts) {
+        // Datos listos, procesarlos
+        const discountsMap = new Map(
+          aiRecommendation.fullDiscounts.map((d) => [d.id, d])
+        );
+
+        let data = aiRecommendation.recommendedDiscounts
+          .map((rec) => discountsMap.get(rec.discountId))
+          .filter((d): d is HomePageDiscount => d !== undefined);
+
+        const usedIds = new Set(data.map((d) => d.id));
+        const remainingDiscounts = aiRecommendation.fullDiscounts.filter(
+          (d) => !usedIds.has(d.id)
+        );
+        data = [...data, ...remainingDiscounts];
+
+        setAllDiscounts(data);
+        hasInitialLoad.current = true;
+        setLoading(false);
+
+        const categoriesRaw = router.query.categories as unknown;
+        let urlCategories: string[] = [];
+        if (typeof categoriesRaw === "string") {
+          urlCategories = (categoriesRaw as string)
+            .split(",")
+            .map((c) => c.trim())
+            .filter(Boolean);
+        } else if (typeof category === "string") {
+          urlCategories = [category as string];
+        }
+
+        if (urlCategories.length > 0) {
+          applyFilters(data, urlCategories);
+        } else {
+          setFilteredDiscounts(data);
+        }
+      } else {
+        // No hay recomendaciones disponibles
+        setLoading(false);
+        setAllDiscounts([]);
+        setFilteredDiscounts([]);
+        hasInitialLoad.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    personalized,
+    aiLoading,
+    aiRecommendation,
+    router.query.categories,
+    category,
+  ]);
+
+  useEffect(() => {
+    const loadMemberships = async () => {
+      if (personalized !== "true" || !user) {
+        setUserMemberships([]);
+        return;
+      }
+      try {
+        const memberships = await getActiveMemberships();
+        const membershipNames: string[] = [];
+        memberships.forEach((m: unknown) => {
+          const item = m as {
+            name?: string;
+            membershipName?: string;
+          };
+          const name = item.name || item.membershipName;
+          if (typeof name === "string" && name.trim().length > 0) {
+            membershipNames.push(name);
+          }
+        });
+        setUserMemberships(Array.from(new Set(membershipNames)));
+      } catch (error) {
+        console.error("Error cargando membresías:", error);
+        setUserMemberships([]);
+      }
+    };
+    loadMemberships();
+  }, [user, personalized]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -274,7 +404,8 @@ export default function Search() {
         const pos = await getCurrentPosition();
         if (pos) {
           const queryObj: Record<string, string> = {};
-          if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
+          if (searchTerm.trim().length >= 2)
+            queryObj.search = searchTerm.trim();
           if (draftCategories.length > 0)
             queryObj.categories = draftCategories.join(",");
           queryObj.location = "true";
@@ -464,7 +595,7 @@ export default function Search() {
 
           // Limpiar estados antes de comenzar la búsqueda progresiva
           let accumulatedDiscounts: HomePageDiscount[] = [];
-          
+
           const finalData = await getNearbyDiscountsProgressive(
             latitude,
             longitude,
@@ -539,44 +670,35 @@ export default function Search() {
           hasInitialLoad.current = true;
           return;
         } else if (personalized === "true") {
-          const memberships = await getActiveMemberships();
-          const membershipNames: string[] = [];
-          const credentials: UserCredential[] = [];
-          memberships.forEach((m: unknown) => {
-            const item = m as {
-              name?: string;
-              membershipName?: string;
-              membershipCategory?: string;
-              isCard?: boolean;
-              card?: { type?: string; brand?: string; level?: string };
-            };
-            const name = item.name || item.membershipName;
-            if (typeof name === "string" && name.trim().length > 0) {
-              membershipNames.push(name);
-            }
-            if (
-              item.isCard &&
-              item.membershipCategory === "banco" &&
-              item.card
-            ) {
-              const bank = name as string;
-              const { type, brand, level } = item.card || {};
-              if (
-                bank &&
-                typeof type === "string" &&
-                typeof brand === "string" &&
-                typeof level === "string"
-              ) {
-                credentials.push({
-                  bank,
-                  type: type as UserCredential["type"],
-                  brand: brand as UserCredential["brand"],
-                  level: level as UserCredential["level"],
-                });
-              }
-            }
-          });
-          data = await getPersonalizedDiscounts(membershipNames, credentials);
+          // Los datos se cargan automáticamente vía useEffect cuando aiRecommendation esté listo
+          // No hacer nada aquí para evitar sobrescribir los datos mientras el hook carga
+          if (aiLoading) {
+            // Aún cargando, el useEffect se encargará de actualizar cuando esté listo
+            setLoading(true);
+            return;
+          }
+          // Si ya terminó de cargar pero no hay datos, establecer array vacío
+          if (
+            !aiRecommendation?.fullDiscounts ||
+            aiRecommendation.fullDiscounts.length === 0
+          ) {
+            data = [];
+          } else {
+            // Si hay datos, el useEffect ya los procesó, pero por si acaso los procesamos aquí también
+            const discountsMap = new Map(
+              aiRecommendation.fullDiscounts.map((d) => [d.id, d])
+            );
+
+            data = aiRecommendation.recommendedDiscounts
+              .map((rec) => discountsMap.get(rec.discountId))
+              .filter((d): d is HomePageDiscount => d !== undefined);
+
+            const usedIds = new Set(data.map((d) => d.id));
+            const remainingDiscounts = aiRecommendation.fullDiscounts.filter(
+              (d) => !usedIds.has(d.id)
+            );
+            data = [...data, ...remainingDiscounts];
+          }
         } else if (
           (search && typeof search === "string") ||
           (q && typeof q === "string")
@@ -957,12 +1079,12 @@ export default function Search() {
                         // Limpiar estados de ubicación
                         setIsLocationFilter(false);
                         setDraftNearby(false);
-                        
+
                         // Forzar recarga de descuentos al quitar filtro de ubicación
                         hasInitialLoad.current = false;
                         setAllDiscounts([]);
                         setFilteredDiscounts([]);
-                        
+
                         // Construir query sin parámetros de ubicación
                         const queryObj: Record<string, string> = {};
                         if (searchTerm.trim().length >= 2) {
@@ -971,7 +1093,7 @@ export default function Search() {
                         if (selectedCategories.length > 0) {
                           queryObj.categories = selectedCategories.join(",");
                         }
-                        
+
                         // Navegar sin filtro de ubicación (esto recargará los descuentos)
                         router.push({
                           pathname: "/search",
@@ -992,12 +1114,16 @@ export default function Search() {
       </div>
 
       <div className="px-4 pt-4 pb-4">
-        {loading || (isLocationFilter && loadingMore) ? (
+        {loading ||
+        (isLocationFilter && loadingMore) ||
+        (personalized === "true" && aiLoading) ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-600">
               {isLocationFilter
                 ? "Calculando descuentos cercanos..."
+                : personalized === "true"
+                ? "Cargando recomendaciones..."
                 : "Cargando descuentos..."}
             </p>
           </div>
