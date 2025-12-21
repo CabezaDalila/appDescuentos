@@ -49,6 +49,7 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   renderVote,
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -89,6 +90,43 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     }
   };
 
+  const handleShare = async () => {
+    if (isSharing) {
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+
+      if (navigator.share) {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback: copiar al portapapeles
+        const shareText = `${title}\n\n${description}\n\n${window.location.href}`;
+        await navigator.clipboard.writeText(shareText);
+        toast.success("Enlace copiado al portapapeles");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Error al compartir:", error);
+        // Fallback: copiar al portapapeles si falla
+        try {
+          const shareText = `${title}\n\n${description}\n\n${window.location.href}`;
+          await navigator.clipboard.writeText(shareText);
+          toast.success("Enlace copiado al portapapeles");
+        } catch (clipboardError) {
+          toast.error("No se pudo compartir el descuento");
+        }
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm">
       {/* Imagen con overlay y badges */}
@@ -113,8 +151,15 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
           </div>
         )}
 
-        {/* Botón de favorito */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* Botones de acción */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          <button
+            onClick={handleShare}
+            disabled={isSharing}
+            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors disabled:opacity-50"
+          >
+            <Image src="/share.png" alt="Share" width={18} height={18} />
+          </button>
           <button
             onClick={handleLike}
             className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
