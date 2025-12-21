@@ -72,9 +72,9 @@ export default function LocationPermissionPage() {
     }
   };
 
-  // URL para OpenStreetMap embed con la ubicación real (zoom cercano)
+  // URL para Google Maps embed con la ubicación real
   const mapUrl = position
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${position.longitude - 0.003},${position.latitude - 0.002},${position.longitude + 0.003},${position.latitude + 0.002}&layer=mapnik&marker=${position.latitude},${position.longitude}`
+    ? `https://www.google.com/maps?q=${position.latitude},${position.longitude}&output=embed&z=17`
     : null;
 
   return (
@@ -96,13 +96,29 @@ export default function LocationPermissionPage() {
           </div>
         ) : position ? (
           <>
-            <iframe
-              src={mapUrl || ""}
-              style={{ border: 0 }}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="absolute -top-12 -left-12 -right-12 -bottom-10 w-[calc(100%+96px)] h-[calc(100%+88px)]"
-            />
+            {/* Iframe escalado para ocultar controles de Google Maps */}
+            <div 
+              style={{
+                position: 'absolute',
+                top: '-22%',
+                left: '-5%',
+                right: '-10%',
+                bottom: '-8%',
+                width: '115%',
+                height: '130%',
+              }}
+            >
+              <iframe
+                src={mapUrl || ""}
+                style={{ 
+                  border: 0,
+                  width: '100%',
+                  height: '100%',
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
             {/* Overlay para bloquear interacción con el mapa */}
             <div className="absolute inset-0 z-10" />
           </>
