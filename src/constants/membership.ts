@@ -68,56 +68,36 @@ export interface UpdateCardData {
   expiry?: string; // Formato MM/YY
 }
 
-// Categorías disponibles para el selector
+// Categorías disponibles para el selector (usuario)
 export const MEMBERSHIP_CATEGORIES = [
-  { value: "banco", label: "Bancos" },
-  { value: "club", label: "Clubes de beneficios" },
-  { value: "salud", label: "Salud" },
-  { value: "educacion", label: "Educación" },
-  { value: "seguro", label: "Seguros" },
-  { value: "telecomunicacion", label: "Telecomunicaciones" },
+  { value: "banco", label: "Bancos", icon: "🏦" },
+  { value: "seguro", label: "Seguros", icon: "🛡️" },
+  { value: "telecomunicacion", label: "Telecomunicaciones", icon: "📱" },
+  { value: "club", label: "Clubes de beneficios", icon: "🏆" },
+  { value: "salud", label: "Salud", icon: "❤️" },
+  { value: "educacion", label: "Educación", icon: "🎓" },
+  { value: "billeteras", label: "Billeteras digitales", icon: "💳" },
+  { value: "streaming", label: "Streaming", icon: "📺" },
+  { value: "gym", label: "Gimnasio", icon: "💪" },
 ] as const;
 
-// Entidades predefinidas por categoría (esto puede venir de una API o BD)
+// Bancos disponibles (para tarjetas)
+export const BANKS = [
+  "Galicia",
+  "Santander",
+  "Nación",
+  "Provincia",
+  "Ciudad",
+  "Macro",
+  "Itaú",
+  "HSBC",
+  "BBVA",
+  "Supervielle",
+] as const;
+
+// Entidades predefinidas por categoría (SIN bancos - los bancos se seleccionan con tarjetas)
+// Usado tanto en el perfil del usuario como en el admin para descuentos
 export const ENTITIES_BY_CATEGORY = {
-  banco: [
-    "Banco Galicia",
-    "Banco Santander",
-    "Banco Nación",
-    "Banco Provincia",
-    "Banco Ciudad",
-    "Banco Macro",
-    "Banco Itaú",
-    "Banco HSBC",
-    "Banco BBVA",
-    "Banco Supervielle",
-  ],
-  club: [
-    "Club La Nación",
-    "Club Clarín",
-    "Club Personal",
-    "Club Movistar",
-    "Club Claro",
-    "Club Despegar",
-    "Club Mercado Libre",
-  ],
-  salud: [
-    "OSDE",
-    "Swiss Medical",
-    "Medicus",
-    "Galeno",
-    "Omint",
-    "Accord Salud",
-    "SanCor Salud",
-  ],
-  educacion: [
-    "Univ de Buenos Aires",
-    "Univ Nacional de La Plata",
-    "Univ Nacional de Córdoba",
-    "Univ de Palermo",
-    "Univ de San Andrés",
-    "Univ Católica Argentina",
-  ],
   seguro: [
     "La Caja",
     "Federación Patronal",
@@ -126,6 +106,9 @@ export const ENTITIES_BY_CATEGORY = {
     "Zurich",
     "Mapfre",
     "Provincia Seguros",
+    "San Cristóbal",
+    "Rivadavia Seguros",
+    "La Segunda",
   ],
   telecomunicacion: [
     "Personal",
@@ -135,6 +118,73 @@ export const ENTITIES_BY_CATEGORY = {
     "Fibertel",
     "Cablevisión",
     "DirecTV",
+    "Tuenti",
+    "Flow",
+    "Telecentro",
+  ],
+  club: [
+    "Club La Nación",
+    "Club Clarín",
+    "Club Personal",
+    "Club Movistar",
+    "Club Claro",
+    "Club La Razón",
+    "Club Perfil",
+    "Club de Lectores",
+  ],
+  salud: [
+    "OSDE",
+    "Swiss Medical",
+    "Medicus",
+    "Galeno",
+    "Omint",
+    "Hospital Italiano",
+    "CEMIC",
+    "Avalian",
+    "SanCor Salud",
+  ],
+  educacion: [
+    "UBA",
+    "UTN",
+    "UADE",
+    "UCEMA",
+    "Di Tella",
+    "Austral",
+    "San Andrés",
+    "ITBA",
+    "ORT",
+  ],
+  streaming: [
+    "Netflix",
+    "Spotify",
+    "Disney+",
+    "Amazon Prime",
+    "HBO Max",
+    "Apple TV+",
+    "YouTube Premium",
+    "Paramount+",
+    "Crunchyroll",
+  ],
+  gym: [
+    "Megatlon",
+    "SportClub",
+    "Smart Fit",
+    "CrossFit",
+    "Pilates",
+    "Yoga",
+    "Spinning",
+    "Functional",
+  ],
+  billeteras: [
+    "MercadoPago",
+    "PersonalPay",
+    "Ualá",
+    "Naranja X",
+    "Brubank",
+    "Rebanking",
+    "Modo",
+    "Cuenta DNI",
+    "Bimo",
   ],
 } as const;
 

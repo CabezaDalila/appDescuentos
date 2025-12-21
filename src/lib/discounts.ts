@@ -4,16 +4,16 @@ import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { getRealDistance } from "@/utils/real-distance";
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-  updateDoc,
-  where,
+    addDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    orderBy,
+    query,
+    Timestamp,
+    updateDoc,
+    where,
 } from "firebase/firestore";
 
 export const MAX_DISTANCE_KM = 2;
@@ -80,6 +80,7 @@ interface HomePageDiscount {
   image: string;
   category: string;
   discountPercentage: string;
+  discountAmount?: number;
   points: number;
   distance: string;
   expiration: string;
@@ -129,6 +130,7 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           image,
           category,
           discountPercentage,
+          discountAmount: data.discountAmount,
           points: data.points || 0,
           distance: data.location ? "Calculando..." : "Sin ubicación",
           expiration: expiration.toLocaleDateString("es-ES"),
@@ -432,6 +434,7 @@ export const getNearbyDiscounts = async (
           image,
           category,
           discountPercentage,
+          discountAmount: data.discountAmount,
           points: data.points || 0,
           distance: result.distanceText,
           expiration: expiration.toLocaleDateString("es-ES"),
@@ -528,6 +531,7 @@ export const getNearbyDiscountsProgressive = async (
                 image,
                 category,
                 discountPercentage,
+                discountAmount: data.discountAmount,
                 points: data.points || 0,
                 distance: result.distanceText,
                 expiration: expiration.toLocaleDateString("es-ES"),

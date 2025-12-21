@@ -13,6 +13,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/Share/select";
+import {
+    BANKS,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+    ENTITIES_BY_CATEGORY,
+    MEMBERSHIP_CATEGORIES,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { createMembership } from "@/lib/firebase/memberships";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
@@ -42,197 +50,56 @@ export default function AddMembershipPage() {
     cardName: "",
   });
 
-  const membershipTypes = [
-    {
-      id: "banco",
-      name: "Banco",
-      description: "Tarjetas de crédito/débito",
-      color: "#DDA0DD",
-      icon: "🏦",
-    },
-    {
-      id: "seguro",
-      name: "Seguros",
-      description: "Compañías de seguros",
-      color: "#10B981",
-      icon: "🛡️",
-    },
-    {
-      id: "telecomunicacion",
-      name: "Telecomunicaciones",
-      description: "Compañías de teléfono e internet",
-      color: "#3B82F6",
-      icon: "📱",
-    },
-    {
-      id: "club",
-      name: "Club",
-      description: "Membresías de clubes",
-      color: "#4ECDC4",
-      icon: "🏆",
-    },
-    {
-      id: "salud",
-      name: "Salud",
-      description: "Obras sociales, prepagas",
-      color: "#45B7D1",
-      icon: "❤️",
-    },
-    {
-      id: "educacion",
-      name: "Educación",
-      description: "Universidades, institutos",
-      color: "#96CEB4",
-      icon: "🎓",
-    },
-    {
-      id: "billeteras",
-      name: "Billeteras",
-      description: "MercadoPago, PersonalPay, Yoy",
-      color: "#00CED1",
-      icon: "💳",
-    },
-    {
-      id: "streaming",
-      name: "Streaming",
-      description: "Netflix, Spotify, Disney+",
-      color: "#FF6B6B",
-      icon: "📺",
-    },
-    {
-      id: "gym",
-      name: "Gimnasio",
-      description: "Membresías deportivas",
-      color: "#FFEAA7",
-      icon: "💪",
-    },
-  ];
+  // Usar constantes centralizadas - mapear a formato para UI
+  const membershipTypes = MEMBERSHIP_CATEGORIES.map((cat) => ({
+    id: cat.value,
+    name: cat.label,
+    description: getDescriptionForCategory(cat.value),
+    color: getColorForCategory(cat.value),
+    icon: cat.icon,
+  }));
 
-  const banks = [
-    "Galicia",
-    "Santander",
-    "Nación",
-    "Provincia",
-    "Ciudad",
-    "Macro",
-    "Itaú",
-    "HSBC",
-    "BBVA",
-    "Supervielle",
-  ];
+  // Descripciones y colores por categoría
+  function getDescriptionForCategory(category: string): string {
+    const descriptions: Record<string, string> = {
+      banco: "Tarjetas de crédito/débito",
+      seguro: "Compañías de seguros",
+      telecomunicacion: "Compañías de teléfono e internet",
+      club: "Membresías de clubes",
+      salud: "Obras sociales, prepagas",
+      educacion: "Universidades, institutos",
+      billeteras: "MercadoPago, Ualá, etc",
+      streaming: "Netflix, Spotify, Disney+",
+      gym: "Membresías deportivas",
+    };
+    return descriptions[category] || "";
+  }
 
-  const cardTypes = ["Crédito", "Débito"];
-  const brands = ["Visa", "Mastercard", "American Express", "Diners Club"];
-  const levels = [
-    "Classic",
-    "Gold",
-    "Platinum",
-    "Black",
-    "Signature",
-    "Infinite",
-    "Internacional",
-    "Nacional",
-  ];
+  function getColorForCategory(category: string): string {
+    const colors: Record<string, string> = {
+      banco: "#DDA0DD",
+      seguro: "#10B981",
+      telecomunicacion: "#3B82F6",
+      club: "#4ECDC4",
+      salud: "#45B7D1",
+      educacion: "#96CEB4",
+      billeteras: "#00CED1",
+      streaming: "#FF6B6B",
+      gym: "#FFEAA7",
+    };
+    return colors[category] || "#gray";
+  }
+
+  // Usar constantes centralizadas
+  const banks = [...BANKS];
+  const cardTypes = CARD_TYPES.map((t) => t.value);
+  const brands = CARD_BRANDS.map((b) => b.value);
+  const levels = CARD_LEVELS.map((l) => l.value);
 
   const isBank = formData.category === "banco";
 
-  // Opciones específicas para cada tipo de membresía
-  const membershipOptions = {
-    seguro: [
-      "La Caja",
-      "Federación Patronal",
-      "Sancor Seguros",
-      "Allianz",
-      "Zurich",
-      "Mapfre",
-      "Provincia Seguros",
-      "San Cristóbal",
-      "Rivadavia Seguros",
-      "La Segunda",
-    ],
-    telecomunicacion: [
-      "Personal",
-      "Movistar",
-      "Claro",
-      "Telecom",
-      "Fibertel",
-      "Cablevisión",
-      "DirecTV",
-      "Tuenti",
-      "Flow",
-      "Telecentro",
-    ],
-    streaming: [
-      "Netflix",
-      "Spotify",
-      "Disney+",
-      "Amazon Prime",
-      "HBO Max",
-      "Apple TV+",
-      "YouTube Premium",
-      "Twitch",
-      "Crunchyroll",
-      "Paramount+",
-    ],
-    club: [
-      "Club La Nación",
-      "Club Clarín",
-      "Club La Razón",
-      "Club Perfil",
-      "Club de Lectores",
-      "Club de Beneficios",
-      "Club VIP",
-      "Club Premium",
-    ],
-    salud: [
-      "OSDE",
-      "Ospedin",
-      "Swiss Medical",
-      "Galeno",
-      "Medicus",
-      "Hospital Italiano",
-      "Sanatorio Güemes",
-      "CEMIC",
-      "Avalian",
-      "Omint",
-    ],
-    educacion: [
-      "UBA",
-      "UTN",
-      "UADE",
-      "UCEMA",
-      "Di Tella",
-      "Austral",
-      "San Andrés",
-      "Torcuato Di Tella",
-      "ITBA",
-      "ORT",
-    ],
-    gym: [
-      "Megatlon",
-      "SportClub",
-      "Smart Fit",
-      "CrossFit",
-      "Pilates",
-      "Yoga",
-      "Spinning",
-      "Functional",
-      "Boxing",
-      "Natación",
-    ],
-    billeteras: [
-      "MercadoPago",
-      "PersonalPay",
-      "Yoy",
-      "Ualá",
-      "Bimo",
-      "Brubank",
-      "Rebanking",
-      "Naranja X",
-      "Modo",
-      "Cuenta DNI",
-    ],
-  };
+  // Usar constantes centralizadas para opciones de membresía
+  const membershipOptions = ENTITIES_BY_CATEGORY;
 
   const nextStep = () => {
     if (currentStep < 4) {

@@ -1,11 +1,9 @@
 import { db } from "@/lib/firebase/firebase";
 import {
-  deleteDoc,
-  doc,
-  getDoc,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
+    doc,
+    getDoc,
+    runTransaction,
+    serverTimestamp
 } from "firebase/firestore";
 
 export type VoteType = "up" | "down";
@@ -28,62 +26,67 @@ export async function voteDiscount(
   discountId: string,
   vote: VoteType
 ): Promise<void> {
+  const voteRef = doc(db, "discountVotes", `${userId}_${discountId}`);
+  const discountRef = doc(db, "discounts", discountId);
+
   try {
-    const voteRef = doc(db, "discountVotes", `${userId}_${discountId}`);
-    const discountRef = doc(db, "discounts", discountId);
+    // Usar transacción para evitar condiciones de carrera
+    await runTransaction(db, async (transaction) => {
+      // Leer ambos documentos en la transacción
+      const voteDoc = await transaction.get(voteRef);
+      const discountDoc = await transaction.get(discountRef);
 
-    // Obtener el voto anterior si existe
-    const previousVoteDoc = await getDoc(voteRef);
-    const previousVote = previousVoteDoc.data() as DiscountVote | undefined;
-
-    // Guardar o actualizar el voto del usuario (para saber si ya votó)
-    await setDoc(
-      voteRef,
-      {
-        userId,
-        discountId,
-        vote,
-        createdAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    // Obtener el descuento
-    const discountDoc = await getDoc(discountRef);
-    if (!discountDoc.exists()) {
-      throw new Error("Descuento no encontrado");
-    }
-
-    // Obtener los contadores actuales de votos del descuento
-    const discountData = discountDoc.data();
-    let upVotes = discountData.upVotes || 0;
-    let downVotes = discountData.downVotes || 0;
-
-    // Revertir el voto anterior si existía
-    if (previousVote) {
-      if (previousVote.vote === "up") {
-        upVotes = Math.max(0, upVotes - 1); // Quitar un voto positivo
-      } else if (previousVote.vote === "down") {
-        downVotes = Math.max(0, downVotes - 1); // Quitar un voto negativo
+      if (!discountDoc.exists()) {
+        throw new Error("Descuento no encontrado");
       }
-    }
 
-    // Aplicar el nuevo voto
-    if (vote === "up") {
-      upVotes += 1; // Sumar un voto positivo
-    } else if (vote === "down") {
-      downVotes += 1; // Sumar un voto negativo
-    }
+      // Obtener el voto anterior si existe
+      const previousVote = voteDoc.exists()
+        ? (voteDoc.data() as DiscountVote)
+        : null;
 
-    // Calcular puntos: votos positivos - votos negativos
-    const points = Math.max(0, upVotes - downVotes);
+      // Obtener los contadores actuales
+      const discountData = discountDoc.data();
+      let upVotes = discountData.upVotes || 0;
+      let downVotes = discountData.downVotes || 0;
 
-    // Actualizar el descuento con los nuevos contadores y puntos
-    await updateDoc(discountRef, {
-      upVotes,
-      downVotes,
-      points,
-      updatedAt: serverTimestamp(),
+      // Revertir el voto anterior si existía
+      if (previousVote) {
+        if (previousVote.vote === "up") {
+          upVotes = Math.max(0, upVotes - 1);
+        } else if (previousVote.vote === "down") {
+          downVotes = Math.max(0, downVotes - 1);
+        }
+      }
+
+      // Aplicar el nuevo voto (solo sumar 1)
+      if (vote === "up") {
+        upVotes += 1;
+      } else if (vote === "down") {
+        downVotes += 1;
+      }
+
+      // Calcular puntos: votos positivos - votos negativos
+      const points = Math.max(0, upVotes - downVotes);
+
+      // Actualizar ambos documentos en la transacción
+      transaction.set(
+        voteRef,
+        {
+          userId,
+          discountId,
+          vote,
+          createdAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      transaction.update(discountRef, {
+        upVotes,
+        downVotes,
+        points,
+        updatedAt: serverTimestamp(),
+      });
     });
   } catch (error) {
     console.error("Error al votar por el descuento:", error);
@@ -126,48 +129,49 @@ export async function removeVote(
   userId: string,
   discountId: string
 ): Promise<void> {
+  const voteRef = doc(db, "discountVotes", `${userId}_${discountId}`);
+  const discountRef = doc(db, "discounts", discountId);
+
   try {
-    const voteRef = doc(db, "discountVotes", `${userId}_${discountId}`);
-    const discountRef = doc(db, "discounts", discountId);
+    // Usar transacción para evitar condiciones de carrera
+    await runTransaction(db, async (transaction) => {
+      // Leer ambos documentos en la transacción
+      const voteDoc = await transaction.get(voteRef);
+      const discountDoc = await transaction.get(discountRef);
 
-    // Obtener el voto anterior
-    const previousVoteDoc = await getDoc(voteRef);
-    if (!previousVoteDoc.exists()) {
-      return; // No hay voto que eliminar
-    }
+      if (!voteDoc.exists()) {
+        return; // No hay voto que eliminar
+      }
 
-    const previousVote = previousVoteDoc.data() as DiscountVote;
+      if (!discountDoc.exists()) {
+        return;
+      }
 
-    // Eliminar el voto del usuario
-    await deleteDoc(voteRef);
+      const previousVote = voteDoc.data() as DiscountVote;
 
-    // Obtener el descuento
-    const discountDoc = await getDoc(discountRef);
-    if (!discountDoc.exists()) {
-      return;
-    }
+      // Obtener los contadores actuales
+      const discountData = discountDoc.data();
+      let upVotes = discountData.upVotes || 0;
+      let downVotes = discountData.downVotes || 0;
 
-    // Obtener los contadores actuales
-    const discountData = discountDoc.data();
-    let upVotes = discountData.upVotes || 0;
-    let downVotes = discountData.downVotes || 0;
+      // Quitar solo el voto del usuario
+      if (previousVote.vote === "up") {
+        upVotes = Math.max(0, upVotes - 1);
+      } else if (previousVote.vote === "down") {
+        downVotes = Math.max(0, downVotes - 1);
+      }
 
-    // Quitar solo el voto del usuario (no sumar nada)
-    if (previousVote.vote === "up") {
-      upVotes = Math.max(0, upVotes - 1); // Solo quitar el voto positivo
-    } else if (previousVote.vote === "down") {
-      downVotes = Math.max(0, downVotes - 1); // Solo quitar el voto negativo
-    }
+      // Recalcular puntos: votos positivos - votos negativos
+      const points = Math.max(0, upVotes - downVotes);
 
-    // Recalcular puntos: votos positivos - votos negativos
-    const points = Math.max(0, upVotes - downVotes);
-
-    // Actualizar el descuento
-    await updateDoc(discountRef, {
-      upVotes,
-      downVotes,
-      points,
-      updatedAt: serverTimestamp(),
+      // Eliminar voto y actualizar descuento en la transacción
+      transaction.delete(voteRef);
+      transaction.update(discountRef, {
+        upVotes,
+        downVotes,
+        points,
+        updatedAt: serverTimestamp(),
+      });
     });
   } catch (error) {
     console.error("Error al eliminar el voto:", error);

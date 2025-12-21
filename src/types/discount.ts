@@ -44,6 +44,7 @@ export interface HomePageDiscount {
   image: string;
   category: string;
   discountPercentage: string;
+  discountAmount?: number;
   points: number;
   distance: string;
   expiration: string;

@@ -133,6 +133,7 @@ export default function DiscountDetail() {
                   ? `${discountData.discountPercentage}%`
                   : "Sin descuento"
               }
+              discountAmount={discountData.discountAmount}
               renderVote={
                 <DiscountVote
                   discountId={discountData.id}

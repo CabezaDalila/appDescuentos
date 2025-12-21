@@ -1,28 +1,29 @@
 import { Button } from "@/components/Share/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/Share/select";
 import { Switch } from "@/components/Share/switch";
 import { Textarea } from "@/components/Share/textarea";
 import { getAllCategories } from "@/constants/categories";
 import {
-  CARD_BRANDS,
-  CARD_LEVELS,
-  CARD_TYPES,
-  ENTITIES_BY_CATEGORY,
+    BANKS,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+    ENTITIES_BY_CATEGORY,
 } from "@/constants/membership";
 import { getAllOrigins } from "@/constants/origins";
 import { ManualDiscount } from "@/types/admin";
@@ -255,7 +256,7 @@ export function DiscountForm({
                       <SelectValue placeholder="Banco" />
                     </SelectTrigger>
                     <SelectContent className="max-h-64 overflow-y-auto">
-                      {ENTITIES_BY_CATEGORY.banco.map((bank) => (
+                      {BANKS.map((bank) => (
                         <SelectItem
                           key={bank}
                           value={bank}

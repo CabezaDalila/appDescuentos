@@ -28,6 +28,7 @@ interface CardDiscountProps {
   distance: string;
   expiration: string;
   discountPercentage: string;
+  discountAmount?: number;
   renderVote?: React.ReactNode;
 }
 
@@ -44,10 +45,10 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   distance,
   expiration,
   discountPercentage,
+  discountAmount,
   renderVote,
 }) => {
   const [isLiked, setIsLiked] = useState<boolean>(false);
-  const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -88,30 +89,6 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     }
   };
 
-  const handleShare = async () => {
-    if (isSharing) {
-      return;
-    }
-
-    try {
-      setIsSharing(true);
-
-      if (navigator.share) {
-        await navigator.share({
-          title: title,
-          text: description,
-          url: window.location.href,
-        });
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name !== "AbortError") {
-        console.error("Error al compartir:", error);
-      }
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
   return (
     <div className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm">
       {/* Imagen con overlay y badges */}
@@ -136,15 +113,8 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
           </div>
         )}
 
-        {/* Botones de acción */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors disabled:opacity-50"
-          >
-            <Image src="/share.png" alt="Share" width={18} height={18} />
-          </button>
+        {/* Botón de favorito */}
+        <div className="absolute top-3 right-3 z-10">
           <button
             onClick={handleLike}
             className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
@@ -200,9 +170,22 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
 
         {/* Descripción */}
         {description && (
-          <p className="text-sm text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl">
-            {description}
-          </p>
+          <div className="bg-gray-50 p-3 rounded-xl space-y-2">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {description}
+            </p>
+            {/* Tope de reintegro - integrado de forma sutil */}
+            {discountAmount && discountAmount > 0 && (
+              <div className="pt-2 border-t border-gray-200">
+                <span className="text-xs text-gray-500">
+                  Tope de reintegro:{" "}
+                  <span className="text-gray-700 font-medium">
+                    ${discountAmount.toLocaleString("es-AR")}
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Sección Aplican */}
