@@ -25,12 +25,14 @@ interface TrendingSectionProps {
   discounts: HomePageDiscount[];
   onOfferClick: (offerId: string, url?: string) => void;
   onViewAll?: () => void;
+  loading?: boolean;
 }
 
 export function TrendingSection({
   discounts,
   onOfferClick,
   onViewAll,
+  loading = false,
 }: TrendingSectionProps) {
   // Limitar a máximo 3 descuentos para que quepan bien en el ancho
   const limitedDiscounts = discounts.slice(0, 3);
@@ -53,7 +55,16 @@ export function TrendingSection({
           </button>
         )}
       </div>
-      {limitedDiscounts.length > 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-32 sm:h-40 lg:h-48 bg-gray-200 animate-pulse rounded-lg"
+            />
+          ))}
+        </div>
+      ) : limitedDiscounts.length > 0 ? (
         <div className="grid grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4">
           {limitedDiscounts.map((discount) => (
             <CardDiscountCompact

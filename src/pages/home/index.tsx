@@ -1,16 +1,16 @@
 import { EXPLORE_CATEGORIES } from "@/constants/categories";
 import {
-  Card,
-  CARD_BRANDS,
-  CARD_LEVELS,
-  CARD_TYPES,
+    Card,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
 import { useNotifications } from "@/hooks/useNotifications";
-import { getDiscountsBySearch } from "@/lib/discounts";
+import { getDiscountsBySearch, getTrendingDiscounts } from "@/lib/discounts";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
-import { Discount, type UserCredential } from "@/types/discount";
+import { Discount, HomePageDiscount, type UserCredential } from "@/types/discount";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -39,6 +39,8 @@ export default function Home() {
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
   const [userCredentials, setUserCredentials] = useState<UserCredential[]>([]);
   const [membershipsLoading, setMembershipsLoading] = useState(true);
+  const [trendingDiscounts, setTrendingDiscounts] = useState<HomePageDiscount[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
 
   // Determinar saludo según la hora del día
   useEffect(() => {
@@ -50,6 +52,24 @@ export default function Home() {
     } else {
       setGreeting("Buenas noches");
     }
+  }, []);
+
+  // Cargar descuentos de tendencias
+  useEffect(() => {
+    const loadTrending = async () => {
+      try {
+        setTrendingLoading(true);
+        const trending = await getTrendingDiscounts(3); // Top 3
+        setTrendingDiscounts(trending);
+      } catch (error) {
+        console.error("Error cargando tendencias:", error);
+        setTrendingDiscounts([]);
+      } finally {
+        setTrendingLoading(false);
+      }
+    };
+
+    loadTrending();
   }, []);
 
   // Cargar membresías y credenciales activas del usuario
@@ -295,9 +315,10 @@ export default function Home() {
           />
 
           <TrendingSection
-            discounts={discounts.slice(0, 3)}
+            discounts={trendingDiscounts}
             onOfferClick={handleOfferClick}
             onViewAll={() => router.push("/search")}
+            loading={trendingLoading}
           />
 
           <DiscountsSection

@@ -54,6 +54,8 @@ interface FirestoreDiscount {
     address: string;
   };
   points?: number;
+  favoritesCount?: number;
+  upVotes?: number;
 }
 
 export const getDiscounts = async (): Promise<Discount[]> => {
@@ -88,6 +90,8 @@ interface HomePageDiscount {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  membershipRequired?: string[];
+  bancos?: string[];
   location?: {
     latitude: number;
     longitude: number;
@@ -158,6 +162,101 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
         );
       });
   } catch {
+    return [];
+  }
+};
+
+/**
+ * Obtiene los descuentos más populares (tendencias) basado en:
+ * - upVotes del documento del descuento (colección discounts)
+ * - favoritesCount del documento del descuento (colección discounts)
+ * - Promedio entre ambos valores
+ */
+export const getTrendingDiscounts = async (
+  limit: number = 10
+): Promise<HomePageDiscount[]> => {
+  try {
+    // 1. Obtener todos los descuentos aprobados y activos
+    const discountsQuery = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", "approved"),
+      where("status", "==", "active")
+    );
+    const discountsSnapshot = await getDocs(discountsQuery);
+
+    // 4. Procesar descuentos y calcular promedio
+    const discountsWithScore: (HomePageDiscount & { average: number })[] = [];
+
+    for (const doc of discountsSnapshot.docs) {
+      const data = doc.data() as FirestoreDiscount;
+
+      // Filtrar descuentos expirados
+      const now = new Date();
+      const expiration =
+        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
+      const isExpired = expiration && expiration < now;
+      if (isExpired) continue;
+
+      const title = data.title || data.name || "Sin título";
+      const category = data.category || "Sin categoría";
+      const discountPercentage = data.discountPercentage
+        ? `${data.discountPercentage}%`
+        : "Sin descuento";
+
+      const image =
+        data.imageUrl?.trim() ||
+        data.image?.trim() ||
+        getImageByCategory(data.category);
+
+      const expirationDate =
+        data.validUntil?.toDate?.() ||
+        data.expirationDate?.toDate?.() ||
+        new Date();
+
+      // Obtener conteos directamente del documento del descuento
+      const upVotes = data.upVotes || 0;
+      const favorites = data.favoritesCount || 0;
+
+      // Calcular promedio: (upVotes + favoritos) / 2
+      const average = (upVotes + favorites) / 2;
+
+      const discount: HomePageDiscount = {
+        id: doc.id,
+        title,
+        image,
+        category,
+        discountPercentage,
+        discountAmount: data.discountAmount,
+        points: data.points || 0,
+        distance: data.location ? "Calculando..." : "Sin ubicación",
+        expiration: expirationDate.toLocaleDateString("es-ES"),
+        description: data.description || data.descripcion || "",
+        origin: data.origin || "Origen no especificado",
+        status: data.status || "active",
+        isVisible: data.isVisible ?? true,
+        membershipRequired: data.membershipRequired,
+        bancos: data.bancos,
+        location: data.location,
+      };
+
+      // Filtrar descuentos activos y visibles
+      if (
+        discount.status === "active" &&
+        discount.isVisible !== false &&
+        !isNaN(new Date(discount.expiration.split("/").reverse().join("-")).getTime())
+      ) {
+        discountsWithScore.push({ ...discount, average });
+      }
+    }
+
+    // 5. Ordenar por promedio (descendente) y limitar
+    const sorted = discountsWithScore.sort((a, b) => b.average - a.average);
+    const topDiscounts = sorted.slice(0, limit);
+
+    // 6. Remover el campo average antes de retornar
+    return topDiscounts.map(({ average, ...discount }) => discount);
+  } catch (error) {
+    console.error("Error obteniendo descuentos de tendencias:", error);
     return [];
   }
 };

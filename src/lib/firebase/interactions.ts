@@ -1,14 +1,16 @@
 import { db } from "@/lib/firebase/firebase";
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    increment,
+    query,
+    runTransaction,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
+    where,
 } from "firebase/firestore";
 
 const COLLECTION_NAME = "user_discount_interactions";
@@ -67,42 +69,84 @@ export async function getUserInteraction(
 
 /**
  * Alterna el estado de favorito (corazón) para un usuario y un descuento.
+ * También actualiza el contador de favoritos en el documento del descuento.
  * Devuelve el nuevo estado de favorito.
  */
 export async function toggleFavorite(
   userId: string,
   discountId: string
 ): Promise<boolean> {
-  const ref = getInteractionDocRef(userId, discountId);
+  const interactionRef = getInteractionDocRef(userId, discountId);
+  const discountRef = doc(db, "discounts", discountId);
   const now = serverTimestamp();
 
-  const snap = await getDoc(ref);
-  const existing = snap.exists()
-    ? (snap.data() as UserDiscountInteraction)
-    : null;
+  return await runTransaction(db, async (transaction) => {
+    // Leer la interacción actual
+    const interactionSnap = await transaction.get(interactionRef);
+    const existing = interactionSnap.exists()
+      ? (interactionSnap.data() as UserDiscountInteraction)
+      : null;
 
-  const currentFavorite = !!existing?.favorite;
-  const newFavorite = !currentFavorite;
+    const currentFavorite = !!existing?.favorite;
+    const newFavorite = !currentFavorite;
 
-  if (snap.exists()) {
-    await updateDoc(ref, {
-      userId,
-      discountId,
-      favorite: newFavorite,
-      updatedAt: now,
-    });
-  } else {
-    await setDoc(ref, {
-      userId,
-      discountId,
-      favorite: newFavorite,
-      feedback: 0,
-      createdAt: now,
-      updatedAt: now,
-    } as UserDiscountInteraction);
+    // Actualizar o crear la interacción
+    if (interactionSnap.exists()) {
+      transaction.update(interactionRef, {
+        userId,
+        discountId,
+        favorite: newFavorite,
+        updatedAt: now,
+      });
+    } else {
+      transaction.set(interactionRef, {
+        userId,
+        discountId,
+        favorite: newFavorite,
+        feedback: 0,
+        createdAt: now,
+        updatedAt: now,
+      } as UserDiscountInteraction);
+    }
+
+    // Actualizar el contador de favoritos en el documento del descuento
+    if (currentFavorite && !newFavorite) {
+      // Se desmarcó como favorito: decrementar
+      transaction.update(discountRef, {
+        favoritesCount: increment(-1),
+        updatedAt: now,
+      });
+    } else if (!currentFavorite && newFavorite) {
+      // Se marcó como favorito: incrementar
+      transaction.update(discountRef, {
+        favoritesCount: increment(1),
+        updatedAt: now,
+      });
+    }
+
+    return newFavorite;
+  });
+}
+
+/**
+ * Obtiene el contador de favoritos para un descuento específico.
+ * Calcula dinámicamente contando los documentos con favorite === true.
+ */
+export async function getFavoritesCountForDiscount(
+  discountId: string
+): Promise<number> {
+  try {
+    const favoritesQuery = query(
+      collection(db, COLLECTION_NAME),
+      where("discountId", "==", discountId),
+      where("favorite", "==", true)
+    );
+    const snapshot = await getDocs(favoritesQuery);
+    return snapshot.size;
+  } catch (error) {
+    console.error("Error obteniendo contador de favoritos:", error);
+    return 0;
   }
-
-  return newFavorite;
 }
 
 /**
@@ -171,6 +215,7 @@ export async function getFavoriteDiscountIdsForUser(
     return [];
   }
 }
+
 
 
 
