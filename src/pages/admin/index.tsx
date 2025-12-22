@@ -1,17 +1,22 @@
 import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { Button } from "@/components/Share/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/Share/card";
 import { useAdmin } from "@/hooks/useAdmin";
 import { LayoutAdmin } from "@/layouts/layout-admin";
 import { Shield } from "lucide-react";
+import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 
 export default function AdminPage() {
   const { isAdmin, adminLoading, user } = useAdmin();

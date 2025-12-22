@@ -5,17 +5,11 @@ interface GoogleMapProps {
 }
 
 export function GoogleMap({ latitude, longitude, address }: GoogleMapProps) {
-  const mapUrl = address
-    ? `https://www.google.com/maps?q=${encodeURIComponent(
-        address
-      )}&output=embed&z=15`
-    : `https://www.google.com/maps?q=${latitude},${longitude}&output=embed&z=15`;
+  const mapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&output=embed&z=15`;
 
   return (
     <div className="w-full rounded-lg overflow-hidden border border-gray-200 relative">
-      {/* Contenedor con overflow hidden para recortar el iframe */}
       <div className="relative h-[180px] overflow-hidden">
-        {/* Iframe escalado para ocultar controles */}
         <div 
           style={{
             position: 'absolute',
@@ -36,10 +30,11 @@ export function GoogleMap({ latitude, longitude, address }: GoogleMapProps) {
             loading="lazy"
             src={mapUrl}
             title={`Mapa de ubicación`}
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
       </div>
-      {/* Overlay para bloquear interacción */}
       <div className="absolute inset-0 z-10" />
     </div>
   );
