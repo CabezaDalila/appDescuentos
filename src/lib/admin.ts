@@ -203,6 +203,8 @@ export const createScrapedDiscount = async (
       updatedAt: Timestamp.now(),
       status: "active",
       type: "scraped",
+      approvalStatus: "pending", // Los descuentos de scraping deben estar pendientes de aprobación
+      source: "scraping",
     };
 
     const docRef = await addDoc(collection(db, "discounts"), discountData);
@@ -251,30 +253,46 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
   try {
     // Obtener todos los descuentos para mostrar
     const allSnapshot = await getDocs(collection(db, "discounts"));
-    const allDiscounts = allSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title || data.name || "Sin título",
-        origin: data.origin || "Origen no especificado",
-        category: data.category || "Sin categoría",
-        expirationDate:
-          data.expirationDate?.toDate?.() ||
-          data.validUntil?.toDate?.() ||
-          (data.expirationDate ? new Date(data.expirationDate) : null) ||
-          (data.validUntil ? new Date(data.validUntil) : null) ||
-          new Date(),
-        description: data.description || data.descripcion || "Sin descripción",
-        discountPercentage: data.discountPercentage,
-        discountAmount: data.discountAmount,
-        imageUrl: data.imageUrl,
-        isVisible: data.isVisible ?? true,
-        availableCredentials: data.availableCredentials || [],
-        availableMemberships: data.availableMemberships || [],
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as ManualDiscount;
-    });
+    const allDiscounts = allSnapshot.docs
+      .filter((doc) => {
+        const data = doc.data();
+        const type = data.type;
+        const approvalStatus = data.approvalStatus;
+        
+        // Solo incluir descuentos manuales aprobados
+        // Excluir descuentos de scraping (type === "scraped") que estén pendientes
+        // Incluir descuentos con type === "manual" o sin type pero aprobados
+        if (type === "scraped" && approvalStatus === "pending") {
+          return false; // Excluir descuentos de scraping pendientes
+        }
+        
+        // Incluir descuentos manuales o descuentos aprobados
+        return type === "manual" || approvalStatus === "approved";
+      })
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title || data.name || "Sin título",
+          origin: data.origin || "Origen no especificado",
+          category: data.category || "Sin categoría",
+          expirationDate:
+            data.expirationDate?.toDate?.() ||
+            data.validUntil?.toDate?.() ||
+            (data.expirationDate ? new Date(data.expirationDate) : null) ||
+            (data.validUntil ? new Date(data.validUntil) : null) ||
+            new Date(),
+          description: data.description || data.descripcion || "Sin descripción",
+          discountPercentage: data.discountPercentage,
+          discountAmount: data.discountAmount,
+          imageUrl: data.imageUrl,
+          isVisible: data.isVisible ?? true,
+          availableCredentials: data.availableCredentials || [],
+          availableMemberships: data.availableMemberships || [],
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as ManualDiscount;
+      });
 
     // Ordenar por fecha de creación (más recientes primero)
     return allDiscounts.sort((a, b) => {
