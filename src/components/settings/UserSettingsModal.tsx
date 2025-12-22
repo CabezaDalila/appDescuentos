@@ -1,24 +1,28 @@
 import { Button } from "@/components/Share/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/Share/dialog";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/Share/select";
 import { Separator } from "@/components/Share/separator";
 import { Switch } from "@/components/Share/switch";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  markLocationPermissionEnabled,
+  setLocationPermission,
+} from "@/hooks/useGeolocation";
 import { useLocation } from "@/hooks/useLocation";
 import { getUserPreferences, updateUserPreferences } from "@/lib/firebase/user";
 import { UserPreferences } from "@/types/user";
@@ -73,6 +77,12 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
           };
           setFormData(safePreferences);
           if (!initialPrefs) setInitialPrefs(safePreferences);
+          // Sincronizar con el sistema de permisos de ubicación
+          if (safePreferences.useLocation) {
+            markLocationPermissionEnabled();
+          } else {
+            setLocationPermission(false);
+          }
         } else {
           // Fallback: intentar cargar de localStorage
           const local = localStorage.getItem(`user-prefs-${user.uid}`);
@@ -85,6 +95,12 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
             };
             setFormData(safeLocalPrefs);
             if (!initialPrefs) setInitialPrefs(safeLocalPrefs);
+            // Sincronizar con el sistema de permisos de ubicación
+            if (safeLocalPrefs.useLocation) {
+              markLocationPermissionEnabled();
+            } else {
+              setLocationPermission(false);
+            }
           } else {
             const lang = navigator.language.startsWith("es") ? "es" : "en";
             const defaultPrefs: UserPreferences = {
@@ -94,6 +110,8 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
             };
             setFormData(defaultPrefs);
             if (!initialPrefs) setInitialPrefs(defaultPrefs);
+            // Sincronizar con el sistema de permisos de ubicación
+            setLocationPermission(false);
           }
         }
       } catch (error) {
@@ -157,6 +175,14 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
           `user-prefs-${user.uid}`,
           JSON.stringify(formData)
         );
+
+        // Sincronizar con el sistema de permisos de ubicación
+        if (formData.useLocation) {
+          markLocationPermissionEnabled();
+        } else {
+          setLocationPermission(false);
+        }
+
         setInitialPrefs(formData);
         toast.success("Preferencias guardadas correctamente");
         onClose();
@@ -165,6 +191,14 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
           `user-prefs-${user.uid}`,
           JSON.stringify(formData)
         );
+
+        // Sincronizar con el sistema de permisos de ubicación incluso si falla el guardado en la nube
+        if (formData.useLocation) {
+          markLocationPermissionEnabled();
+        } else {
+          setLocationPermission(false);
+        }
+
         toast.error(
           "No se pudo guardar en la nube, pero tus preferencias se guardaron localmente."
         );
@@ -182,40 +216,48 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = React.memo(
       onClose();
     }, [initialPrefs, onClose]);
 
-    const handleLocationToggle = useCallback(async (checked: boolean) => {
-      setFormData((prev) => ({ ...prev, useLocation: checked }));
+    const handleLocationToggle = useCallback(
+      async (checked: boolean) => {
+        setFormData((prev) => ({ ...prev, useLocation: checked }));
 
-      if (checked) {
-        // Solicitar permisos y obtener ubicación usando nuestro hook
-        const granted = await requestPermissions();
-        
-        if (granted) {
-          const location = await getLocation();
-          
-          if (location) {
-            // Intentar obtener región desde IP API
-            try {
-              const response = await fetch("https://ipapi.co/json/");
-              const data = await response.json();
-              if (data && data.country_name) {
-                setFormData((prev) => ({
-                  ...prev,
-                  region: data.country_name,
-                }));
+        if (checked) {
+          const granted = await requestPermissions();
+
+          if (granted) {
+            const location = await getLocation();
+
+            if (location) {
+              markLocationPermissionEnabled();
+
+              try {
+                const response = await fetch("https://ipapi.co/json/");
+                const data = await response.json();
+                if (data && data.country_name) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    region: data.country_name,
+                  }));
+                }
+              } catch (error) {
+                console.error("Error obteniendo región:", error);
               }
-            } catch (error) {
-              console.error("Error obteniendo región:", error);
+            } else {
+              setFormData((prev) => ({ ...prev, useLocation: false }));
+              setLocationPermission(false);
+              toast.error("No se pudo obtener la ubicación");
             }
           } else {
             setFormData((prev) => ({ ...prev, useLocation: false }));
-            toast.error("No se pudo obtener la ubicación");
+            setLocationPermission(false);
+            toast.error("Permisos de ubicación denegados");
           }
         } else {
-          setFormData((prev) => ({ ...prev, useLocation: false }));
-          toast.error("Permisos de ubicación denegados");
+          // Al desactivar, también desactivar el sistema de permisos
+          setLocationPermission(false);
         }
-      }
-    }, [requestPermissions, getLocation]);
+      },
+      [requestPermissions, getLocation]
+    );
 
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>

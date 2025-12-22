@@ -4,16 +4,16 @@ import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { getRealDistance } from "@/utils/real-distance";
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    orderBy,
-    query,
-    Timestamp,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  Timestamp,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 
 export const MAX_DISTANCE_KM = 2;
@@ -243,7 +243,9 @@ export const getTrendingDiscounts = async (
       if (
         discount.status === "active" &&
         discount.isVisible !== false &&
-        !isNaN(new Date(discount.expiration.split("/").reverse().join("-")).getTime())
+        !isNaN(
+          new Date(discount.expiration.split("/").reverse().join("-")).getTime()
+        )
       ) {
         discountsWithScore.push({ ...discount, average });
       }
@@ -314,8 +316,12 @@ export const getDiscountsBySearch = async (
         normalize(e.category),
         normalize(e.origin),
         normalize(e.type),
-      ];
-      return haystack.some((field) => field.includes(term));
+      ].filter((field) => field.length > 0);
+
+      return haystack.some((field) => {
+        const words = field.split(/\s+/);
+        return words.some((word) => word.startsWith(term));
+      });
     });
   } catch (error) {
     throw error;
