@@ -220,6 +220,9 @@ export const getTrendingDiscounts = async (
       // Calcular promedio: (upVotes + favoritos) / 2
       const average = (upVotes + favorites) / 2;
 
+      // Solo incluir descuentos con promedio mayor a 0
+      if (average <= 0) continue;
+
       const discount: HomePageDiscount = {
         id: doc.id,
         title,
