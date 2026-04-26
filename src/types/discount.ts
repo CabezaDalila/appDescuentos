@@ -9,7 +9,6 @@ export interface Discount {
   discountPercentage?: number;
   discountAmount?: number;
   validFrom?: Date;
-  validUntil?: Date;
   membershipRequired?: string[];
   terms?: string;
   imageUrl?: string;
@@ -54,6 +53,8 @@ export interface HomePageDiscount {
   isVisible: boolean;
   membershipRequired?: string[];
   bancos?: string[];
+  availableMemberships?: string[];
+  availableCredentials?: UserCredential[];
   location?: {
     latitude: number;
     longitude: number;

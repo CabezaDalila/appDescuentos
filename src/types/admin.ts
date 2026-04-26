@@ -36,7 +36,6 @@ export interface ManualDiscount {
   availableMemberships?: string[];
   createdAt?: Date;
   updatedAt?: Date;
-  validUntil?: Date;
   location?: {
     latitude: number;
     longitude: number;

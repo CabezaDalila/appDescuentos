@@ -7,6 +7,7 @@ export interface RecommendationRequest {
     interests?: string[];
   };
   userBanks: string[];
+  userCredentials?: Discount["availableCredentials"];
   availableDiscounts: Discount[];
 }
 

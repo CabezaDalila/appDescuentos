@@ -3,6 +3,7 @@ import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { useAIRecommendations } from "@/hooks/useAIRecommendations";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
 import type { UserCredential } from "@/types/credentials";
+import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/router";
 import { useMemo } from "react";
@@ -23,6 +24,8 @@ interface HomePageDiscount {
   isVisible: boolean;
   membershipRequired?: string[];
   bancos?: string[];
+  availableMemberships?: string[];
+  availableCredentials?: UserCredential[];
   location?: {
     latitude: number;
     longitude: number;
@@ -40,6 +43,7 @@ interface PersonalizedOffersSectionProps {
 export function PersonalizedOffersSection({
   onOfferClick,
   userMemberships,
+  userCredentials,
 }: PersonalizedOffersSectionProps) {
   const router = useRouter();
   const { discounts: allDiscounts, loading: discountsLoading } =
@@ -51,6 +55,8 @@ export function PersonalizedOffersSection({
       const discountWithExtras = d as HomePageDiscount & {
         membershipRequired?: string[];
         bancos?: string[];
+        availableMemberships?: string[];
+        availableCredentials?: UserCredential[];
       };
       return {
         id: d.id,
@@ -63,6 +69,8 @@ export function PersonalizedOffersSection({
             : d.discountPercentage || 0,
         membershipRequired: discountWithExtras.membershipRequired,
         bancos: discountWithExtras.bancos,
+        availableMemberships: discountWithExtras.availableMemberships,
+        availableCredentials: discountWithExtras.availableCredentials,
         description: d.description,
         imageUrl: d.image,
         location: d.location,
@@ -75,13 +83,23 @@ export function PersonalizedOffersSection({
     autoGenerate: true,
     availableDiscounts,
     userMemberships: userMemberships || [],
+    userCredentials: userCredentials || [],
     originalHomePageDiscounts: allDiscounts, // Pasar los descuentos completos para guardar todos los campos
   });
 
   // Los descuentos ya vienen completos con todos los campos (points, distance, etc.)
   const personalizedOffers = useMemo(() => {
+    const memberships = userMemberships || [];
+    const credentials = userCredentials || [];
+
+    const isEligibleByMembership = (discount: HomePageDiscount) =>
+      isUserEligibleForDiscountRestrictions(memberships, credentials, discount, {
+        requireRestrictions: true,
+        membershipOnly: true,
+      });
+
     if (!recommendation?.fullDiscounts) {
-      return [];
+      return allDiscounts.filter(isEligibleByMembership).slice(0, 5);
     }
 
     // Ordenar según el orden de recomendación de IA y tomar los primeros 5
@@ -92,8 +110,9 @@ export function PersonalizedOffersSection({
         );
       })
       .filter((d): d is HomePageDiscount => d !== undefined)
+      .filter(isEligibleByMembership)
       .slice(0, 5);
-  }, [recommendation]);
+  }, [allDiscounts, recommendation, userCredentials, userMemberships]);
 
   const loading = discountsLoading || aiLoading;
   const isAIRecommendation = !!recommendation;

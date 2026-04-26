@@ -6,10 +6,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const getGeminiClient = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Priorizar variable privada de servidor.
+  // Fallback temporal a NEXT_PUBLIC_* para compatibilidad con entornos ya configurados.
+  const apiKey =
+    process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
   if (!apiKey || apiKey === "") {
-    throw new Error("Gemini API key no configurada");
+    throw new Error(
+      "Gemini API key no configurada (definí GEMINI_API_KEY en .env.local)"
+    );
   }
 
   return new GoogleGenerativeAI(apiKey);
@@ -22,7 +27,13 @@ function buildPrompt(request: RecommendationRequest): string {
       const percentage = d.discountPercentage || 0;
 
       let cards = "Sin restricción de tarjeta";
-      if (d.membershipRequired && d.membershipRequired.length > 0) {
+      if (d.availableCredentials && d.availableCredentials.length > 0) {
+        cards = d.availableCredentials
+          .map((c) => `${c.bank} ${c.type} ${c.brand} ${c.level}`)
+          .join(", ");
+      } else if (d.availableMemberships && d.availableMemberships.length > 0) {
+        cards = d.availableMemberships.join(", ");
+      } else if (d.membershipRequired && d.membershipRequired.length > 0) {
         cards = d.membershipRequired.join(", ");
       } else if (d.bancos && d.bancos.length > 0) {
         cards = d.bancos.join(", ");
@@ -63,6 +74,13 @@ Analiza los siguientes datos del usuario:
 ${userContext}
 - Tarjetas/Bancos disponibles: ${
     request.userBanks.join(", ") || "ninguna especificada"
+  }
+- Credenciales de tarjeta disponibles: ${
+    request.userCredentials && request.userCredentials.length > 0
+      ? request.userCredentials
+          .map((c) => `${c.bank} ${c.type} ${c.brand} ${c.level}`)
+          .join(", ")
+      : "ninguna especificada"
   }
 
 Descuentos disponibles:

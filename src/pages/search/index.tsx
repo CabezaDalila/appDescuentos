@@ -6,7 +6,12 @@ import {
   DISCOUNT_CATEGORIES,
   EXPLORE_CATEGORIES,
 } from "@/constants/categories";
-import { useAIRecommendations } from "@/hooks/useAIRecommendations";
+import {
+  Card,
+  CARD_BRANDS,
+  CARD_LEVELS,
+  CARD_TYPES,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
 import {
@@ -21,8 +26,9 @@ import {
 } from "@/lib/discounts";
 import { getFavoriteDiscountIdsForUser } from "@/lib/firebase/interactions";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
-import { Discount } from "@/types/discount";
+import { Discount, UserCredential } from "@/types/discount";
 import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
+import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
 import { Heart, MapPin, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -40,6 +46,11 @@ type HomePageDiscount = {
   origin: string;
   status: "active" | "inactive" | "expired";
   isVisible: boolean;
+  membershipRequired?: string[];
+  bancos?: string[];
+  banks?: string[];
+  availableMemberships?: string[];
+  availableCredentials?: UserCredential[];
   location?: {
     latitude: number;
     longitude: number;
@@ -114,126 +125,165 @@ export default function Search() {
   // Para personalized=true, usar los mismos hooks que en la home
   const { discounts: cachedDiscounts } = useCachedDiscounts();
   const [userMemberships, setUserMemberships] = useState<string[]>([]);
+  const [userCredentials, setUserCredentials] = useState<UserCredential[]>([]);
 
-  const availableDiscounts = useMemo(() => {
-    if (personalized !== "true") return [];
-    return cachedDiscounts.map((d) => {
-      const discountWithExtras = d as HomePageDiscount & {
-        membershipRequired?: string[];
-        bancos?: string[];
-      };
-      return {
-        id: d.id,
-        name: d.title || "Descuento",
-        title: d.title,
-        category: d.category,
-        discountPercentage:
-          typeof d.discountPercentage === "string"
-            ? parseInt(d.discountPercentage) || 0
-            : d.discountPercentage || 0,
-        membershipRequired: discountWithExtras.membershipRequired,
-        bancos: discountWithExtras.bancos,
-        description: d.description,
-        imageUrl: d.image,
-        location: d.location,
-      };
-    });
-  }, [cachedDiscounts, personalized]);
+  const isDiscountEligibleForUser = useCallback(
+    (discount: SearchDiscount) =>
+      isUserEligibleForDiscountRestrictions(
+        userMemberships,
+        userCredentials,
+        discount as HomePageDiscount,
+        { requireRestrictions: true, strictPriority: true }
+      ),
+    [userCredentials, userMemberships]
+  );
 
-  const { recommendation: aiRecommendation, loading: aiLoading } =
-    useAIRecommendations({
-      autoGenerate: false,
-      availableDiscounts: personalized === "true" ? availableDiscounts : [],
-      userMemberships: personalized === "true" ? userMemberships : [],
-      originalHomePageDiscounts: personalized === "true" ? cachedDiscounts : [],
-    });
+  const isPersonalizedRoute = personalized === "true";
 
-  // Actualizar descuentos cuando aiRecommendation esté disponible
+  const withPersonalizedQuery = useCallback(
+    (query: Record<string, string>) => {
+      const next = { ...query };
+      if (isPersonalizedRoute) next.personalized = "true";
+      return next;
+    },
+    [isPersonalizedRoute]
+  );
+
+  // Aplicar restricciones de membresías/credenciales también en vista personalizada.
   useEffect(() => {
     if (personalized === "true") {
-      if (aiLoading) {
-        // Mostrar loader mientras carga
-        setLoading(true);
-      } else if (aiRecommendation?.fullDiscounts) {
-        // Datos listos, procesarlos
-        const discountsMap = new Map(
-          aiRecommendation.fullDiscounts.map((d) => [d.id, d])
-        );
+      // En "personalized" debemos partir SIEMPRE del universo completo
+      // de descuentos activos del home (cachedDiscounts), no del subset
+      // guardado por IA, para no ocultar descuentos compatibles.
+      const data = (cachedDiscounts as SearchDiscount[]).filter(
+        isDiscountEligibleForUser
+      );
+      setAllDiscounts(data);
+      hasInitialLoad.current = true;
+      setLoading(false);
 
-        let data = aiRecommendation.recommendedDiscounts
-          .map((rec) => discountsMap.get(rec.discountId))
-          .filter((d): d is HomePageDiscount => d !== undefined);
+      const categoriesRaw = router.query.categories as unknown;
+      let urlCategories: string[] = [];
+      if (typeof categoriesRaw === "string") {
+        urlCategories = (categoriesRaw as string)
+          .split(",")
+          .map((c) => c.trim())
+          .filter(Boolean);
+      } else if (typeof category === "string") {
+        urlCategories = [category as string];
+      }
 
-        const usedIds = new Set(data.map((d) => d.id));
-        const remainingDiscounts = aiRecommendation.fullDiscounts.filter(
-          (d) => !usedIds.has(d.id)
-        );
-        data = [...data, ...remainingDiscounts];
-
-        setAllDiscounts(data);
-        hasInitialLoad.current = true;
-        setLoading(false);
-
-        const categoriesRaw = router.query.categories as unknown;
-        let urlCategories: string[] = [];
-        if (typeof categoriesRaw === "string") {
-          urlCategories = (categoriesRaw as string)
-            .split(",")
-            .map((c) => c.trim())
-            .filter(Boolean);
-        } else if (typeof category === "string") {
-          urlCategories = [category as string];
-        }
-
-        if (urlCategories.length > 0) {
-          applyFilters(data, urlCategories);
-        } else {
-          setFilteredDiscounts(data);
-        }
+      if (urlCategories.length > 0) {
+        applyFilters(data, urlCategories);
       } else {
-        // No hay recomendaciones disponibles
-        setLoading(false);
-        setAllDiscounts([]);
-        setFilteredDiscounts([]);
-        hasInitialLoad.current = true;
+        setFilteredDiscounts(data);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     personalized,
-    aiLoading,
-    aiRecommendation,
+    cachedDiscounts,
+    isDiscountEligibleForUser,
     router.query.categories,
     category,
   ]);
 
   useEffect(() => {
     const loadMemberships = async () => {
-      if (personalized !== "true" || !user) {
+      if (!user) {
         setUserMemberships([]);
+        setUserCredentials([]);
         return;
       }
       try {
         const memberships = await getActiveMemberships();
         const membershipNames: string[] = [];
+        const credentials: UserCredential[] = [];
+
+        const validTypes = CARD_TYPES.map((t) => t.value) as ReadonlyArray<
+          Card["type"]
+        >;
+        const validBrands = CARD_BRANDS.map((b) => b.value) as ReadonlyArray<
+          Card["brand"]
+        >;
+        const validLevels = CARD_LEVELS.map((l) => l.value) as ReadonlyArray<
+          (typeof CARD_LEVELS)[number]["value"]
+        >;
+
+        const isValidType = (v: unknown): v is Card["type"] =>
+          typeof v === "string" &&
+          (validTypes as readonly string[]).includes(v);
+        const isValidBrand = (v: unknown): v is Card["brand"] =>
+          typeof v === "string" &&
+          (validBrands as readonly string[]).includes(v);
+        const isValidLevel = (
+          v: unknown
+        ): v is (typeof CARD_LEVELS)[number]["value"] =>
+          typeof v === "string" &&
+          (validLevels as readonly string[]).includes(v);
+
         memberships.forEach((m: unknown) => {
           const item = m as {
             name?: string;
             membershipName?: string;
+            membershipCategory?: string;
+            isCard?: boolean;
+            card?: { type?: string; brand?: string; level?: string };
+            cards?: Card[];
           };
           const name = item.name || item.membershipName;
           if (typeof name === "string" && name.trim().length > 0) {
             membershipNames.push(name);
           }
+
+          if (item.isCard && item.membershipCategory === "banco" && item.card) {
+            const bank = typeof name === "string" ? name : "";
+            const type = isValidType(item.card.type)
+              ? item.card.type
+              : undefined;
+            const brand = isValidBrand(item.card.brand)
+              ? item.card.brand
+              : undefined;
+            const level = isValidLevel(item.card.level)
+              ? item.card.level
+              : undefined;
+
+            if (bank && type && brand && level) {
+              credentials.push({ bank, type, brand, level });
+            }
+          } else if (Array.isArray(item.cards) && item.cards.length > 0) {
+            (item.cards as Card[]).forEach((card) => {
+              const bank = typeof name === "string" ? name : "";
+              const type = isValidType(card.type) ? card.type : undefined;
+              const brand = isValidBrand(card.brand) ? card.brand : undefined;
+              const level = isValidLevel(card.level) ? card.level : undefined;
+              if (bank && type && brand && level) {
+                credentials.push({ bank, type, brand, level });
+              }
+            });
+          }
         });
-        setUserMemberships(Array.from(new Set(membershipNames)));
+
+        setUserMemberships(
+          Array.from(
+            new Set(
+              membershipNames.filter(
+                (n) => typeof n === "string" && n.trim().length > 0
+              )
+            )
+          )
+        );
+        setUserCredentials(
+          credentials.filter((c) => c.bank && c.type && c.brand && c.level)
+        );
       } catch (error) {
         console.error("Error cargando membresías:", error);
         setUserMemberships([]);
+        setUserCredentials([]);
       }
     };
     loadMemberships();
-  }, [user, personalized]);
+  }, [user]);
 
   useEffect(() => {
     const loadFavorites = async () => {
@@ -380,20 +430,28 @@ export default function Search() {
         const baseQuery: Record<string, string> = {};
         if (typeof category === "string")
           baseQuery.category = category as string;
-        router.push({ pathname: "/search", query: baseQuery }, undefined, {
-          shallow: false,
-        });
+        router.push(
+          { pathname: "/search", query: withPersonalizedQuery(baseQuery) },
+          undefined,
+          {
+            shallow: false,
+          }
+        );
       } else if (next.length >= 2) {
         const queryObj: Record<string, string> = { search: next };
         if (typeof category === "string")
           queryObj.category = category as string;
-        router.push({ pathname: "/search", query: queryObj }, undefined, {
-          shallow: false,
-        });
+        router.push(
+          { pathname: "/search", query: withPersonalizedQuery(queryObj) },
+          undefined,
+          {
+            shallow: false,
+          }
+        );
       }
     }, 500);
     return () => clearTimeout(handler);
-  }, [searchTerm, search, q, category, router]);
+  }, [searchTerm, search, q, category, router, withPersonalizedQuery, personalized]);
 
   const applyFiltersRealtime = useCallback(async () => {
     setSelectedCategories(draftCategories);
@@ -411,9 +469,13 @@ export default function Search() {
           queryObj.location = "true";
           queryObj.lat = String(pos.latitude);
           queryObj.lng = String(pos.longitude);
-          router.push({ pathname: "/search", query: queryObj }, undefined, {
-            shallow: true,
-          });
+          router.push(
+            { pathname: "/search", query: withPersonalizedQuery(queryObj) },
+            undefined,
+            {
+              shallow: true,
+            }
+          );
         } else {
           console.warn("No se pudo obtener la ubicación");
           applyFiltersLocal(allDiscounts, draftCategories);
@@ -433,6 +495,7 @@ export default function Search() {
     router,
     applyFiltersLocal,
     getCurrentPosition,
+    withPersonalizedQuery,
   ]);
 
   useEffect(() => {
@@ -670,35 +733,16 @@ export default function Search() {
           hasInitialLoad.current = true;
           return;
         } else if (personalized === "true") {
-          // Los datos se cargan automáticamente vía useEffect cuando aiRecommendation esté listo
-          // No hacer nada aquí para evitar sobrescribir los datos mientras el hook carga
-          if (aiLoading) {
-            // Aún cargando, el useEffect se encargará de actualizar cuando esté listo
+          // Mostrar TODOS los descuentos compatibles con membresías/credenciales.
+          if (cachedDiscounts.length === 0) {
             setLoading(true);
             return;
           }
-          // Si ya terminó de cargar pero no hay datos, establecer array vacío
-          if (
-            !aiRecommendation?.fullDiscounts ||
-            aiRecommendation.fullDiscounts.length === 0
-          ) {
-            data = [];
-          } else {
-            // Si hay datos, el useEffect ya los procesó, pero por si acaso los procesamos aquí también
-            const discountsMap = new Map(
-              aiRecommendation.fullDiscounts.map((d) => [d.id, d])
-            );
-
-            data = aiRecommendation.recommendedDiscounts
-              .map((rec) => discountsMap.get(rec.discountId))
-              .filter((d): d is HomePageDiscount => d !== undefined);
-
-            const usedIds = new Set(data.map((d) => d.id));
-            const remainingDiscounts = aiRecommendation.fullDiscounts.filter(
-              (d) => !usedIds.has(d.id)
-            );
-            data = [...data, ...remainingDiscounts];
-          }
+          // Mismo criterio que en el effect superior: jamás limitar por
+          // la recomendación cacheada de IA en esta vista.
+          data = (cachedDiscounts as SearchDiscount[]).filter(
+            isDiscountEligibleForUser
+          );
         } else if (
           (search && typeof search === "string") ||
           (q && typeof q === "string")
@@ -709,6 +753,9 @@ export default function Search() {
         } else {
           data = await getHomePageDiscounts();
         }
+
+        // Regla global de buscador: solo mostrar descuentos asociados al usuario.
+        data = data.filter((discount) => isDiscountEligibleForUser(discount));
 
         setAllDiscounts(data);
         hasInitialLoad.current = true;
@@ -734,13 +781,28 @@ export default function Search() {
 
     loadDiscounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, q, category, location, lat, lng, personalized, openId, router]);
+  }, [
+    search,
+    q,
+    category,
+    location,
+    lat,
+    lng,
+    personalized,
+    openId,
+    router,
+    cachedDiscounts,
+    isDiscountEligibleForUser,
+  ]);
 
   const updateCategoriesInUrl = (cats: string[]) => {
     const queryObj: Record<string, string> = {};
     if (searchTerm.trim().length >= 2) queryObj.search = searchTerm.trim();
     if (cats.length > 0) queryObj.categories = cats.join(",");
-    router.push({ pathname: "/search", query: queryObj });
+    router.push({
+      pathname: "/search",
+      query: withPersonalizedQuery(queryObj),
+    });
   };
 
   const handleClearCategory = (cat?: string) => {
@@ -771,9 +833,13 @@ export default function Search() {
         queryObj.lng = lng;
       }
     }
-    router.replace({ pathname: "/search", query: queryObj }, undefined, {
-      shallow: true,
-    });
+    router.replace(
+      { pathname: "/search", query: withPersonalizedQuery(queryObj) },
+      undefined,
+      {
+        shallow: true,
+      }
+    );
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -818,7 +884,10 @@ export default function Search() {
     setSelectedCategories([]);
     setIsLocationFilter(false);
     setSearchTerm("");
-    router.push({ pathname: "/search", query: {} });
+    router.push({
+      pathname: "/search",
+      query: isPersonalizedRoute ? { personalized: "true" } : {},
+    });
   };
 
   const categoryInfoName =
@@ -1097,7 +1166,7 @@ export default function Search() {
                         // Navegar sin filtro de ubicación (esto recargará los descuentos)
                         router.push({
                           pathname: "/search",
-                          query: queryObj,
+                          query: withPersonalizedQuery(queryObj),
                         });
                       }}
                       className="ml-0.5 hover:bg-green-200 rounded-full p-0.5 transition-colors"
@@ -1115,15 +1184,12 @@ export default function Search() {
 
       <div className="px-4 pt-4 pb-4">
         {loading ||
-        (isLocationFilter && loadingMore) ||
-        (personalized === "true" && aiLoading) ? (
+        (isLocationFilter && loadingMore) ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-600">
               {isLocationFilter
                 ? "Calculando descuentos cercanos..."
-                : personalized === "true"
-                ? "Cargando recomendaciones..."
                 : "Cargando descuentos..."}
             </p>
           </div>

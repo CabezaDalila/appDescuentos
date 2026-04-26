@@ -10,7 +10,7 @@ export const validateDiscount = (discountData: {
   category: string;
   discountPercentage?: number;
   discountAmount?: number;
-  validUntil?: Date;
+  expirationDate?: Date;
 }): DiscountValidationResult => {
   const errors: string[] = [];
 
@@ -54,9 +54,9 @@ export const validateDiscount = (discountData: {
   }
 
   // Validar fecha de expiración
-  if (discountData.validUntil) {
+  if (discountData.expirationDate) {
     const now = new Date();
-    if (discountData.validUntil <= now) {
+    if (discountData.expirationDate <= now) {
       errors.push("La fecha de expiración debe ser futura");
     }
   }

@@ -11,7 +11,11 @@ import {
 } from "@/lib/firebase/routes";
 import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import { sendRecommendationNotification } from "@/lib/services/notification.service";
-import type { Discount, HomePageDiscount } from "@/types/discount";
+import type {
+  Discount,
+  HomePageDiscount,
+  UserCredential,
+} from "@/types/discount";
 import type {
   AIRecommendationWithDiscounts,
   RecommendationRequest,
@@ -22,6 +26,7 @@ interface UseAIRecommendationsOptions {
   autoGenerate?: boolean; // Si debe generar automáticamente si no encuentra recomendaciones
   availableDiscounts?: Discount[]; // Descuentos disponibles para generar recomendaciones
   userMemberships?: string[]; // Membresías del usuario
+  userCredentials?: UserCredential[]; // Credenciales de tarjetas del usuario
   originalHomePageDiscounts?: HomePageDiscount[]; // Descuentos completos con todos los campos (points, distance, etc.)
 }
 
@@ -32,6 +37,7 @@ export function useAIRecommendations(
     autoGenerate = false,
     availableDiscounts = [],
     userMemberships = [],
+    userCredentials = [],
     originalHomePageDiscounts = [],
   } = options;
   const { user } = useAuth();
@@ -90,6 +96,7 @@ export function useAIRecommendations(
           vehicleType: onboarding.transportType,
         },
         userBanks: allUserBanks,
+        userCredentials,
         availableDiscounts: relevantDiscounts.slice(0, 10),
       };
 
@@ -156,6 +163,7 @@ export function useAIRecommendations(
     user?.uid,
     availableDiscounts,
     userMemberships,
+    userCredentials,
     originalHomePageDiscounts,
   ]);
 

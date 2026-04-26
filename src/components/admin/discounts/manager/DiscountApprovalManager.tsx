@@ -66,7 +66,7 @@ export function DiscountApprovalManager({
       origin: discount.origin || "",
       category: discount.category || "",
       expirationDate:
-        discount.validUntil || discount.expirationDate || new Date(),
+        discount.expirationDate || new Date(),
       description: discount.description || discount.descripcion || "",
       discountPercentage: discount.discountPercentage,
       discountAmount: discount.discountAmount,
@@ -110,7 +110,6 @@ export function DiscountApprovalManager({
         origin: formData.origin.trim(),
         category: formData.category!,
         description: formData.description.trim(),
-        validUntil: Timestamp.fromDate(new Date(formData.expirationDate)),
         expirationDate: Timestamp.fromDate(new Date(formData.expirationDate)),
         isVisible: formData.isVisible,
         updatedAt: Timestamp.now(),

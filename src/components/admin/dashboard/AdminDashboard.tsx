@@ -98,8 +98,7 @@ export function AdminDashboard() {
         const now = new Date();
         const expiredDiscounts = discountsSnapshot.docs.filter((doc) => {
           const data = doc.data();
-          const expirationDate =
-            data.expirationDate?.toDate?.() || data.validUntil?.toDate?.();
+          const expirationDate = data.expirationDate?.toDate?.();
           return expirationDate && expirationDate < now;
         }).length;
 

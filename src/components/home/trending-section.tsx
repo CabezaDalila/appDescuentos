@@ -34,8 +34,8 @@ export function TrendingSection({
   onViewAll,
   loading = false,
 }: TrendingSectionProps) {
-  // Limitar a máximo 3 descuentos para que quepan bien en el ancho
-  const limitedDiscounts = discounts.slice(0, 3);
+  // Limitar a máximo 5 descuentos (ya vienen filtrados con promedio > 0)
+  const limitedDiscounts = discounts.slice(0, 5);
 
   return (
     <div className="w-full px-3 sm:px-4 lg:px-0 mb-4 sm:mb-5 lg:mb-6">

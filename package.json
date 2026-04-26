@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "export": "next build",
+    "migrate:expiration-date": "node scripts/migrate-discounts-expiration-field.js",
     "cap:add": "npx cap add android",
     "cap:copy": "npx cap copy",
     "cap:sync": "npx cap sync",

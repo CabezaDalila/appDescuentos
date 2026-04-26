@@ -45,6 +45,7 @@ interface FirestoreDiscount {
   source?: "manual" | "scraping";
   isVisible?: boolean;
   bancos?: string[];
+  banks?: string[];
   availableMemberships?: string[];
   availableCredentials?: UserCredential[];
 
@@ -58,6 +59,40 @@ interface FirestoreDiscount {
   upVotes?: number;
 }
 
+const APPROVED = "approved";
+const ACTIVE = "active";
+
+function getDiscountExpirationDate(data: FirestoreDiscount): Date | null {
+  return data.expirationDate?.toDate?.() || data.validUntil?.toDate?.() || null;
+}
+
+function isDiscountExpired(data: FirestoreDiscount, now: Date = new Date()): boolean {
+  const expiration = getDiscountExpirationDate(data);
+  return !!(expiration && expiration < now);
+}
+
+async function getApprovedActiveDiscountDocs() {
+  try {
+    const q = query(
+      collection(db, "discounts"),
+      where("approvalStatus", "==", APPROVED),
+      where("status", "==", ACTIVE)
+    );
+    return await getDocs(q);
+  } catch (error) {
+    // Fallback sin índice compuesto: traer todos y filtrar en cliente.
+    const allSnapshot = await getDocs(collection(db, "discounts"));
+    const filteredDocs = allSnapshot.docs.filter((docSnap) => {
+      const data = docSnap.data() as FirestoreDiscount;
+      return data.approvalStatus === APPROVED && data.status === ACTIVE;
+    });
+
+    return {
+      docs: filteredDocs,
+    } as Pick<typeof allSnapshot, "docs">;
+  }
+}
+
 export const getDiscounts = async (): Promise<Discount[]> => {
   try {
     const snapshot = await getDocs(collection(db, "discounts"));
@@ -68,7 +103,7 @@ export const getDiscounts = async (): Promise<Discount[]> => {
         ...data,
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        validUntil: data.validUntil?.toDate?.() || new Date(),
+        expirationDate: getDiscountExpirationDate(data) || new Date(),
       } as Discount;
     });
   } catch (error) {
@@ -85,6 +120,7 @@ interface HomePageDiscount {
   discountAmount?: number;
   points: number;
   distance: string;
+  expiresAt?: Date;
   expiration: string;
   description: string;
   origin: string;
@@ -92,6 +128,8 @@ interface HomePageDiscount {
   isVisible: boolean;
   membershipRequired?: string[];
   bancos?: string[];
+  availableMemberships?: string[];
+  availableCredentials?: UserCredential[];
   location?: {
     latitude: number;
     longitude: number;
@@ -101,13 +139,7 @@ interface HomePageDiscount {
 
 export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
   try {
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "approved"),
-      where("status", "==", "active")
-    );
-
-    const snapshot = await getDocs(q);
+    const snapshot = await getApprovedActiveDiscountDocs();
     return snapshot.docs
       .map((doc) => {
         const data = doc.data() as FirestoreDiscount;
@@ -123,10 +155,7 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           data.image?.trim() ||
           getImageByCategory(data.category);
 
-        const expiration =
-          data.validUntil?.toDate?.() ||
-          data.expirationDate?.toDate?.() ||
-          new Date();
+        const expiration = getDiscountExpirationDate(data) || new Date();
 
         return {
           id: doc.id,
@@ -137,24 +166,25 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
           discountAmount: data.discountAmount,
           points: data.points || 0,
           distance: data.location ? "Calculando..." : "Sin ubicación",
+          expiresAt: expiration,
           expiration: expiration.toLocaleDateString("es-ES"),
           description: data.description || data.descripcion || "",
           origin: data.origin || "Origen no especificado",
           status: data.status || "active",
           isVisible: data.isVisible ?? true,
           membershipRequired: data.membershipRequired,
-          bancos: data.bancos,
+          bancos: data.bancos || data.banks,
+          availableMemberships: data.availableMemberships,
+          availableCredentials: data.availableCredentials,
           location: data.location,
         } as HomePageDiscount;
       })
       .filter((discount) => {
         // Filtrar descuentos activos, visibles y con fecha de validez no expirada
         const now = new Date();
-        const expirationDate = new Date(
-          discount.expiration.split("/").reverse().join("-")
-        );
-        const isNotExpired =
-          expirationDate >= now || isNaN(expirationDate.getTime());
+        const expirationDate = (discount as HomePageDiscount & { expiresAt?: Date })
+          .expiresAt;
+        const isNotExpired = !expirationDate || expirationDate >= now;
         return (
           discount.status === "active" &&
           discount.isVisible !== false &&
@@ -171,18 +201,14 @@ export const getHomePageDiscounts = async (): Promise<HomePageDiscount[]> => {
  * - upVotes del documento del descuento (colección discounts)
  * - favoritesCount del documento del descuento (colección discounts)
  * - Promedio entre ambos valores
+ * Solo incluye descuentos con promedio mayor a 0
  */
 export const getTrendingDiscounts = async (
-  limit: number = 10
+  limit: number = 5
 ): Promise<HomePageDiscount[]> => {
   try {
     // 1. Obtener todos los descuentos aprobados y activos
-    const discountsQuery = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "approved"),
-      where("status", "==", "active")
-    );
-    const discountsSnapshot = await getDocs(discountsQuery);
+    const discountsSnapshot = await getApprovedActiveDiscountDocs();
 
     // 4. Procesar descuentos y calcular promedio
     const discountsWithScore: (HomePageDiscount & { average: number })[] = [];
@@ -192,9 +218,7 @@ export const getTrendingDiscounts = async (
 
       // Filtrar descuentos expirados
       const now = new Date();
-      const expiration =
-        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
-      const isExpired = expiration && expiration < now;
+      const isExpired = isDiscountExpired(data, now);
       if (isExpired) continue;
 
       const title = data.title || data.name || "Sin título";
@@ -208,20 +232,19 @@ export const getTrendingDiscounts = async (
         data.image?.trim() ||
         getImageByCategory(data.category);
 
-      const expirationDate =
-        data.validUntil?.toDate?.() ||
-        data.expirationDate?.toDate?.() ||
-        new Date();
+      const expirationDate = getDiscountExpirationDate(data) || new Date();
 
       // Obtener conteos directamente del documento del descuento
-      const upVotes = data.upVotes || 0;
-      const favorites = data.favoritesCount || 0;
+      // Asegurar que sean números válidos
+      const upVotes = typeof data.upVotes === 'number' ? data.upVotes : 0;
+      const favorites = typeof data.favoritesCount === 'number' ? data.favoritesCount : 0;
 
       // Calcular promedio: (upVotes + favoritos) / 2
       const average = (upVotes + favorites) / 2;
 
-      // Solo incluir descuentos con promedio mayor a 0
-      if (average <= 0) continue;
+      // IMPORTANTE: Solo incluir descuentos con promedio estrictamente mayor a 0
+      // Si el promedio es 0 o menor, saltar este descuento completamente
+      if (average <= 0 || !isFinite(average)) continue;
 
       const discount: HomePageDiscount = {
         id: doc.id,
@@ -238,27 +261,47 @@ export const getTrendingDiscounts = async (
         status: data.status || "active",
         isVisible: data.isVisible ?? true,
         membershipRequired: data.membershipRequired,
-        bancos: data.bancos,
+        bancos: data.bancos || data.banks,
+        availableMemberships: data.availableMemberships,
+        availableCredentials: data.availableCredentials,
         location: data.location,
       };
 
       // Filtrar descuentos activos y visibles
+      // Solo agregar si el promedio es mayor a 0 (doble verificación)
       if (
+        average > 0 &&
         discount.status === "active" &&
         discount.isVisible !== false &&
-        !isNaN(
-          new Date(discount.expiration.split("/").reverse().join("-")).getTime()
-        )
+        !isNaN(expirationDate.getTime())
       ) {
         discountsWithScore.push({ ...discount, average });
       }
     }
 
-    // 5. Ordenar por promedio (descendente) y limitar
-    const sorted = discountsWithScore.sort((a, b) => b.average - a.average);
-    const topDiscounts = sorted.slice(0, limit);
+    // 5. Filtrar nuevamente para asegurar que solo se incluyan con promedio > 0
+    // Esto es una verificación de seguridad adicional
+    const filteredByScore = discountsWithScore.filter((item) => {
+      const avg = item.average;
+      const isValid = typeof avg === 'number' && avg > 0 && isFinite(avg);
+      if (!isValid) {
+        console.log(`[Tendencias] Descartando descuento "${item.title}" con promedio: ${avg}`);
+      }
+      return isValid;
+    });
+    
+    console.log(`[Tendencias] Después del filtro: ${filteredByScore.length} descuentos con promedio > 0`);
+    
+    // 6. Ordenar por promedio (descendente)
+    const sorted = filteredByScore.sort((a, b) => b.average - a.average);
+    
+    // 7. Limitar a máximo 5 descuentos
+    const maxLimit = Math.min(limit, 5);
+    const topDiscounts = sorted.slice(0, maxLimit);
+    
+    console.log(`[Tendencias] Retornando ${topDiscounts.length} descuentos (máximo ${maxLimit})`);
 
-    // 6. Remover el campo average antes de retornar
+    // 8. Remover el campo average antes de retornar
     return topDiscounts.map(({ average, ...discount }) => discount);
   } catch (error) {
     console.error("Error obteniendo descuentos de tendencias:", error);
@@ -270,21 +313,16 @@ export const getDiscountsBySearch = async (
   searchTerm: string
 ): Promise<Discount[]> => {
   try {
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "approved"),
-      where("status", "==", "active")
-    );
-
-    const snapshot = await getDocs(q);
+    const snapshot = await getApprovedActiveDiscountDocs();
     const all = snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreDiscount;
+      const expirationDate = getDiscountExpirationDate(data) || new Date();
       return {
         id: doc.id,
         ...data,
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        validUntil: data.validUntil?.toDate?.() || new Date(),
+        expirationDate,
       } as Discount;
     });
 
@@ -307,8 +345,9 @@ export const getDiscountsBySearch = async (
     const now = new Date();
     return all.filter((d: Discount) => {
       const e = d as ExtendedDiscount;
-      // Filtrar descuentos expirados
-      const isNotExpired = !d.validUntil || d.validUntil >= now;
+      // Filtrar descuentos expirados.
+      const expiration = d.expirationDate;
+      const isNotExpired = !expiration || expiration >= now;
       if (!isNotExpired) return false;
 
       const haystack = [
@@ -373,7 +412,7 @@ export const getPendingDiscounts = async (): Promise<Discount[]> => {
           ...data,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          validUntil: data.validUntil?.toDate?.() || new Date(),
+          expirationDate: getDiscountExpirationDate(data) || new Date(),
           approvalStatus: data.approvalStatus || "pending",
           source: data.source || "scraping",
         } as Discount;
@@ -428,14 +467,7 @@ export const rejectDiscount = async (
 
 export const getApprovedDiscounts = async (): Promise<Discount[]> => {
   try {
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", "approved"),
-      where("status", "==", "active"),
-      orderBy("createdAt", "desc")
-    );
-
-    const snapshot = await getDocs(q);
+    const snapshot = await getApprovedActiveDiscountDocs();
     return snapshot.docs
       .map((doc) => {
         const data = doc.data() as FirestoreDiscount;
@@ -444,10 +476,15 @@ export const getApprovedDiscounts = async (): Promise<Discount[]> => {
           ...data,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          validUntil: data.validUntil?.toDate?.() || new Date(),
+          expirationDate: getDiscountExpirationDate(data) || new Date(),
           approvalStatus: data.approvalStatus || "approved",
           source: data.source || "scraping",
         } as Discount;
+      })
+      .sort((a, b) => {
+        const dateA = a.createdAt?.getTime?.() || 0;
+        const dateB = b.createdAt?.getTime?.() || 0;
+        return dateB - dateA;
       })
       .filter((discount) => {
         return discount.isVisible !== false;
@@ -471,7 +508,7 @@ export const getDiscountById = async (
         ...data,
         createdAt: data.createdAt?.toDate?.() || new Date(),
         updatedAt: data.updatedAt?.toDate?.() || new Date(),
-        validUntil: data.validUntil?.toDate?.() || new Date(),
+        expirationDate: getDiscountExpirationDate(data) || new Date(),
         approvalStatus: data.approvalStatus || "pending",
         source: data.source || "scraping",
       } as Discount;
@@ -497,9 +534,7 @@ export const getNearbyDiscounts = async (
 
       // Verificar si el descuento está expirado
       const now = new Date();
-      const validUntil =
-        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
-      const isExpired = validUntil && validUntil < now;
+      const isExpired = isDiscountExpired(data, now);
 
       if (
         data.approvalStatus !== "approved" ||
@@ -531,10 +566,7 @@ export const getNearbyDiscounts = async (
           ? `${data.discountPercentage}%`
           : "Descuento disponible";
 
-        const expiration =
-          data.validUntil?.toDate?.() ||
-          data.expirationDate?.toDate?.() ||
-          new Date();
+        const expiration = getDiscountExpirationDate(data) || new Date();
 
         nearbyDiscounts.push({
           id,
@@ -586,9 +618,7 @@ export const getNearbyDiscountsProgressive = async (
 
       // Verificar si el descuento está expirado
       const now = new Date();
-      const validUntil =
-        data.validUntil?.toDate?.() || data.expirationDate?.toDate?.();
-      const isExpired = validUntil && validUntil < now;
+      const isExpired = isDiscountExpired(data, now);
 
       if (
         data.approvalStatus === "approved" &&
@@ -628,10 +658,7 @@ export const getNearbyDiscountsProgressive = async (
                 ? `${data.discountPercentage}%`
                 : "Descuento disponible";
 
-              const expiration =
-                data.validUntil?.toDate?.() ||
-                data.expirationDate?.toDate?.() ||
-                new Date();
+              const expiration = getDiscountExpirationDate(data) || new Date();
 
               const discount: HomePageDiscount = {
                 id,

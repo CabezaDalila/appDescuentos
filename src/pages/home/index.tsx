@@ -11,8 +11,9 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { getDiscountsBySearch, getTrendingDiscounts } from "@/lib/discounts";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Discount, HomePageDiscount, type UserCredential } from "@/types/discount";
+import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 // Componentes de la página de inicio
 import { QuickActionsSection } from "@/components/home/categories-section";
@@ -59,7 +60,7 @@ export default function Home() {
     const loadTrending = async () => {
       try {
         setTrendingLoading(true);
-        const trending = await getTrendingDiscounts(3); // Top 3
+        const trending = await getTrendingDiscounts(5); // Máximo 5, solo con promedio > 0
         setTrendingDiscounts(trending);
       } catch (error) {
         console.error("Error cargando tendencias:", error);
@@ -254,6 +255,28 @@ export default function Home() {
   // Usar todas las categorías disponibles
   const selectedCategories = EXPLORE_CATEGORIES;
 
+  const membershipFilteredDiscounts = useMemo(() => {
+    return discounts.filter((discount) =>
+      isUserEligibleForDiscountRestrictions(
+        userMemberships,
+        userCredentials,
+        discount,
+        { requireRestrictions: true, strictPriority: true }
+      )
+    );
+  }, [discounts, userMemberships, userCredentials]);
+
+  const membershipFilteredTrendingDiscounts = useMemo(() => {
+    return trendingDiscounts.filter((discount) =>
+      isUserEligibleForDiscountRestrictions(
+        userMemberships,
+        userCredentials,
+        discount,
+        { requireRestrictions: true, strictPriority: true }
+      )
+    );
+  }, [trendingDiscounts, userMemberships, userCredentials]);
+
   return (
     <div className="w-full max-w-full min-h-screen bg-white overflow-x-hidden pb-24 lg:pb-0">
       {/* Header y Search - Siempre en la parte superior */}
@@ -315,14 +338,14 @@ export default function Home() {
           />
 
           <TrendingSection
-            discounts={trendingDiscounts}
+            discounts={membershipFilteredTrendingDiscounts}
             onOfferClick={handleOfferClick}
             onViewAll={() => router.push("/search")}
             loading={trendingLoading}
           />
 
           <DiscountsSection
-            discounts={discounts}
+            discounts={membershipFilteredDiscounts}
             loading={loading}
             onDiscountClick={handleNavigateToDetail}
             onViewAll={() => router.push("/search")}

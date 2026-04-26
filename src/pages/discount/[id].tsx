@@ -125,7 +125,7 @@ export default function DiscountDetail() {
               countComments={0} // Valor por defecto
               distance={distanceLoading ? "Calculando..." : distance}
               expiration={
-                discountData.validUntil?.toLocaleDateString("es-ES") ||
+                discountData.expirationDate?.toLocaleDateString("es-ES") ||
                 "Sin fecha"
               }
               discountPercentage={

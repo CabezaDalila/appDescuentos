@@ -3,6 +3,7 @@ import {
   addDoc,
   collection,
   db,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -157,14 +158,16 @@ export const createManualDiscount = async (
     }
 
     // Convertir fechas ISO a Timestamps si es necesario
+    const expirationDate = discount.expirationDate
+      ? typeof discount.expirationDate === "string"
+        ? Timestamp.fromDate(new Date(discount.expirationDate))
+        : Timestamp.fromDate(discount.expirationDate)
+      : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+
     const discountData = {
       ...discount,
       isVisible: discount.isVisible ?? true, // Por defecto visible
-      validUntil: discount.validUntil
-        ? typeof discount.validUntil === "string"
-          ? Timestamp.fromDate(new Date(discount.validUntil))
-          : discount.validUntil
-        : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 días por defecto
+      expirationDate,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       status: "active",
@@ -192,13 +195,15 @@ export const createScrapedDiscount = async (
     }
 
     // Convertir fechas ISO a Timestamps si es necesario
+    const expirationDate = discount.expirationDate
+      ? typeof discount.expirationDate === "string"
+        ? Timestamp.fromDate(new Date(discount.expirationDate))
+        : Timestamp.fromDate(discount.expirationDate)
+      : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+
     const discountData = {
       ...discount,
-      validUntil: discount.validUntil
-        ? typeof discount.validUntil === "string"
-          ? Timestamp.fromDate(new Date(discount.validUntil))
-          : discount.validUntil
-        : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)), // 30 días por defecto
+      expirationDate,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
       status: "active",
@@ -239,6 +244,8 @@ export const updateManualDiscount = async (
         typeof updates.expirationDate === "string"
           ? Timestamp.fromDate(new Date(updates.expirationDate))
           : Timestamp.fromDate(updates.expirationDate);
+      // Unificación de schema: dejar un solo campo de expiración.
+      updateData.validUntil = deleteField();
     }
 
     const docRef = doc(db, "discounts", id);
