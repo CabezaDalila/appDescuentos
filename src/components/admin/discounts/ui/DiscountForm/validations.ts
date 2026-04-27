@@ -31,16 +31,18 @@ export const discountFormSchema = yup.object({
       }
     ),
   description: yup
-    .string()
-    .max(500, "La descripción no puede tener más de 500 caracteres"),
+    .string(),
   discountPercentage: yup
     .string()
     .test(
       "discount-validation",
-      "Debe especificar un porcentaje o monto de descuento",
+      "Debe especificar porcentaje, monto o indicar cuotas en la descripción",
       function (value) {
         const discountAmount = this.parent.discountAmount;
-        return !!(value?.trim() || discountAmount?.trim());
+        const description = this.parent.description;
+        const hasInstallmentsOnly =
+          typeof description === "string" && /\b(cuotas|csi)\b/i.test(description);
+        return !!(value?.trim() || discountAmount?.trim() || hasInstallmentsOnly);
       }
     )
     .test(

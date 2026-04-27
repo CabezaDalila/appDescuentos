@@ -11,7 +11,13 @@ export type CardLevel =
 export interface Card {
   id: string;
   type: "Crédito" | "Débito";
-  brand: "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Otro";
+  brand:
+    | "Visa"
+    | "Mastercard"
+    | "American Express"
+    | "Diners Club"
+    | "Cabal"
+    | "Otro";
   level: CardLevel;
   name?: string;
   expiryDate?: string; // Formato MM/YY - Fecha de vencimiento de la tarjeta
@@ -89,6 +95,7 @@ export const BANKS = [
   "Provincia",
   "Ciudad",
   "Macro",
+  "Credicoop",
   "Itaú",
   "HSBC",
   "BBVA",
@@ -198,6 +205,7 @@ export const CARD_BRANDS: { value: Card["brand"]; label: string }[] = [
   { value: "Mastercard", label: "Mastercard" },
   { value: "American Express", label: "American Express" },
   { value: "Diners Club", label: "Diners Club" },
+  { value: "Cabal", label: "Cabal" },
   { value: "Otro", label: "Otro" },
 ];
 

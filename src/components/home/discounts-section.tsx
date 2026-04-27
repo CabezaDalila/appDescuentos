@@ -70,6 +70,7 @@ export function DiscountsSection({
               distance={discount.distance}
               expiration={discount.expiration}
               discountPercentage={discount.discountPercentage}
+              description={discount.description}
               discountLocation={discount.location}
               onNavigateToDetail={(distance) => {
                 const url =

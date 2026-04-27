@@ -14,6 +14,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/Share/select";
+import {
+    BANKS,
+    CARD_BRANDS,
+    CARD_LEVELS,
+    CARD_TYPES,
+} from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import {
     addCardToMembership,
@@ -82,33 +88,13 @@ export default function AddCardPage() {
     loadMembership();
   }, [id, user, loading, router]);
 
-  const banks = [
-    "Galicia",
-    "Santander",
-    "Nación",
-    "Provincia",
-    "Ciudad",
-    "Macro",
-    "Itaú",
-    "HSBC",
-    "BBVA",
-    "Supervielle",
-  ];
+  const banks = [...BANKS];
 
-  const cardTypes = ["Crédito", "Débito"];
+  const cardTypes = CARD_TYPES.map((type) => type.value);
 
-  const brands = ["Visa", "Mastercard", "American Express", "Diners Club"];
+  const brands = CARD_BRANDS.map((brand) => brand.value);
 
-  const levels = [
-    "Classic",
-    "Gold",
-    "Platinum",
-    "Black",
-    "Signature",
-    "Infinite",
-    "Internacional",
-    "Nacional",
-  ];
+  const levels = CARD_LEVELS.map((level) => level.value);
 
   const isBank = membership?.category === "banco";
 

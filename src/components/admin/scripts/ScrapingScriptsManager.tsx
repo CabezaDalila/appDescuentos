@@ -31,9 +31,11 @@ import {
   createScrapingScript,
   deleteScrapingScript,
   getScrapingScripts,
+  runModoScrapingAndSave,
   updateScrapingScript,
 } from "@/lib/admin";
 import { sendNotificationToAll } from "@/lib/onesignal-api";
+import { ModoScrapingRunResult } from "@/lib/admin";
 import { ScrapingFrequency, ScrapingScript } from "@/types/admin";
 import {
   Calendar,
@@ -43,6 +45,7 @@ import {
   Edit,
   Globe,
   Plus,
+  RefreshCcw,
   Save,
   Trash2,
   Upload,
@@ -67,6 +70,9 @@ export function ScrapingScriptsManager() {
   const [jsonData, setJsonData] = useState("");
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
   const [savingJson, setSavingJson] = useState(false);
+  const [runningModoScraping, setRunningModoScraping] = useState(false);
+  const [lastModoResult, setLastModoResult] =
+    useState<ModoScrapingRunResult | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -260,6 +266,50 @@ export function ScrapingScriptsManager() {
     }
   };
 
+  const handleRunModoScraping = async () => {
+    if (runningModoScraping) return;
+
+    try {
+      setRunningModoScraping(true);
+      setLastModoResult(null);
+      const result = await runModoScrapingAndSave(120);
+      setLastModoResult(result);
+
+      if (result.stats.totalSaved > 0) {
+        toast.success(
+          `Scraping completado: ${result.stats.totalSaved} descuentos guardados`
+        );
+
+        try {
+          await sendNotificationToAll(
+            "¡Nuevos descuentos disponibles!",
+            `Se agregaron ${result.stats.totalSaved} descuentos de MODO`,
+            {
+              url: "/search",
+              data: {
+                type: "promocion",
+                timestamp: new Date().toISOString(),
+                source: "scraping_modo_api",
+              },
+            }
+          );
+        } catch (notificationError) {
+          console.error("Error enviando notificación de scraping:", notificationError);
+        }
+      } else {
+        toast("Scraping ejecutado, pero no se guardaron descuentos nuevos");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Error ejecutando scraping de MODO"
+      );
+    } finally {
+      setRunningModoScraping(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       siteName: "",
@@ -296,6 +346,17 @@ export function ScrapingScriptsManager() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            onClick={handleRunModoScraping}
+            disabled={runningModoScraping}
+            variant="outline"
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
+          >
+            <RefreshCcw
+              className={`h-4 w-4 ${runningModoScraping ? "animate-spin" : ""}`}
+            />
+            {runningModoScraping ? "Ejecutando MODO..." : "Ejecutar MODO ahora"}
+          </Button>
+          <Button
             onClick={handlePasteJsonData}
             variant="outline"
             className="flex items-center gap-2 text-gray-700 hover:text-gray-900 border-gray-300 hover:border-gray-400"
@@ -315,6 +376,35 @@ export function ScrapingScriptsManager() {
 
       {/* Scripts List */}
       <div className="grid gap-4">
+        {lastModoResult && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Resultado scraping MODO</CardTitle>
+              <CardDescription>
+                Detectados: {lastModoResult.stats.totalDetected} | Válidos:{" "}
+                {lastModoResult.stats.totalValid} | Guardados:{" "}
+                {lastModoResult.stats.totalSaved} | Fallidos:{" "}
+                {lastModoResult.stats.totalFailed} | Descartados (sin tarjeta/banco):{" "}
+                {lastModoResult.stats.totalDiscardedNoCredential || 0}
+              </CardDescription>
+            </CardHeader>
+            {lastModoResult.warnings.length > 0 && (
+              <CardContent>
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <p className="text-sm font-medium text-amber-800 mb-2">
+                    Advertencias ({lastModoResult.warnings.length})
+                  </p>
+                  <ul className="text-xs text-amber-700 space-y-1 max-h-40 overflow-y-auto">
+                    {lastModoResult.warnings.slice(0, 10).map((warning) => (
+                      <li key={warning}>- {warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         {scripts.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">

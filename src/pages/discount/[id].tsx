@@ -134,6 +134,7 @@ export default function DiscountDetail() {
                   : "Sin descuento"
               }
               discountAmount={discountData.discountAmount}
+              terms={discountData.terms}
               renderVote={
                 <DiscountVote
                   discountId={discountData.id}

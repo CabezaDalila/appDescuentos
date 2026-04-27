@@ -21,6 +21,7 @@ interface CardDiscountCompactProps {
   distance?: string; // Hacer opcional
   expiration: string;
   discountPercentage: string;
+  description?: string;
   discountLocation?: {
     latitude: number;
     longitude: number;
@@ -39,6 +40,7 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
   distance: initialDistance,
   expiration,
   discountPercentage,
+  description,
   discountLocation,
   onClick,
   onNavigateToDetail,
@@ -102,6 +104,25 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
       onClick();
     }
   };
+
+  const compactRawHighlights = (description || "")
+    .split("·")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((line) => line.toLowerCase() !== title.toLowerCase());
+  const compactHighlights: string[] = [];
+  for (let index = 0; index < compactRawHighlights.length; index++) {
+    const line = compactRawHighlights[index];
+    const nextLine = compactRawHighlights[index + 1];
+    if (/^exclusivo con$/i.test(line) && nextLine && /^con\s+/i.test(nextLine)) {
+      compactHighlights.push(`Exclusivo ${nextLine}`);
+      index++;
+      continue;
+    }
+    if (/^exclusivo con$/i.test(line)) continue;
+    compactHighlights.push(line);
+  }
+  const visibleCompactHighlights = compactHighlights.slice(0, 2);
 
   return (
     <div
@@ -170,6 +191,20 @@ const CardDiscountCompact: React.FC<CardDiscountCompactProps> = ({
         <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight break-words">
           {title}
         </h3>
+
+        {/* Resumen corto legible */}
+        {visibleCompactHighlights.length > 0 && (
+          <div className="space-y-0.5">
+            {visibleCompactHighlights.map((line) => (
+              <p
+                key={line}
+                className="text-[10px] sm:text-xs text-gray-600 leading-snug line-clamp-1"
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
 
         {/* Información adicional */}
         <div className="flex items-center justify-between text-[9px] sm:text-xs text-gray-500">

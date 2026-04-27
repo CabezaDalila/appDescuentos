@@ -29,6 +29,7 @@ interface CardDiscountProps {
   expiration: string;
   discountPercentage: string;
   discountAmount?: number;
+  terms?: string;
   renderVote?: React.ReactNode;
 }
 
@@ -46,8 +47,37 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   expiration,
   discountPercentage,
   discountAmount,
+  terms,
   renderVote,
 }) => {
+  const rawHighlights = description
+    ? description
+        .split("·")
+        .map((part) => part.trim())
+        .filter(Boolean)
+    : [];
+  const highlights: string[] = [];
+  for (let index = 0; index < rawHighlights.length; index++) {
+    const line = rawHighlights[index];
+    const nextLine = rawHighlights[index + 1];
+
+    // Evitar bullets huérfanos tipo "Exclusivo con" y unir con "Con <Banco>"
+    if (/^exclusivo con$/i.test(line) && nextLine && /^con\s+/i.test(nextLine)) {
+      highlights.push(`Exclusivo ${nextLine}`);
+      index++;
+      continue;
+    }
+    if (/^exclusivo con$/i.test(line)) {
+      continue;
+    }
+
+    highlights.push(line);
+  }
+  const normalizedTerms = (terms || "").toLowerCase();
+  const hasTopeInHighlights = highlights.some((line) =>
+    /tope|sin tope/i.test(line)
+  );
+
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
@@ -213,23 +243,34 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
           )}
         </div>
 
-        {/* Descripción */}
-        {description && (
+        {/* Resumen de la promo (ficha legible) */}
+        {highlights.length > 0 && (
           <div className="bg-gray-50 p-3 rounded-xl space-y-2">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              {description}
-            </p>
-            {/* Tope de reintegro - integrado de forma sutil */}
-            {discountAmount && discountAmount > 0 && (
+            <ul className="space-y-1.5">
+              {highlights.map((line) => (
+                <li key={line} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            {/* Tope/condición extra si no vino en highlights */}
+            {(((discountAmount && discountAmount > 0) || terms) && !hasTopeInHighlights) ? (
               <div className="pt-2 border-t border-gray-200">
                 <span className="text-xs text-gray-500">
-                  Tope de reintegro:{" "}
-                  <span className="text-gray-700 font-medium">
-                    ${discountAmount.toLocaleString("es-AR")}
-                  </span>
+                  {terms && /tope|sin tope/i.test(normalizedTerms) ? (
+                    <span className="text-gray-700 font-medium">{terms}</span>
+                  ) : (
+                    <>
+                      Tope de reintegro:{" "}
+                      <span className="text-gray-700 font-medium">
+                        ${discountAmount?.toLocaleString("es-AR")}
+                      </span>
+                    </>
+                  )}
                 </span>
               </div>
-            )}
+            ) : null}
           </div>
         )}
 

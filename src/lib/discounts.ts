@@ -62,6 +62,54 @@ interface FirestoreDiscount {
 const APPROVED = "approved";
 const ACTIVE = "active";
 
+function hasRequiredFieldsForAutoPublish(data: FirestoreDiscount): boolean {
+  const title = (data.title || data.name || "").trim();
+  const origin = (data.origin || "").trim();
+  const category = (data.category || "").trim();
+  const description = (data.description || data.descripcion || "").trim();
+  const hasDiscountValue =
+    (typeof data.discountPercentage === "number" && data.discountPercentage > 0) ||
+    (typeof data.discountAmount === "number" && data.discountAmount > 0);
+  const expiration = getDiscountExpirationDate(data);
+  const hasFutureExpiration = !!(expiration && expiration >= new Date());
+
+  return (
+    title.length >= 3 &&
+    origin.length > 0 &&
+    category.length > 0 &&
+    description.length >= 3 &&
+    hasDiscountValue &&
+    hasFutureExpiration
+  );
+}
+
+function hasValidCredentialRequirements(data: FirestoreDiscount): boolean {
+  if (!data.availableCredentials || data.availableCredentials.length === 0) {
+    return false;
+  }
+
+  return data.availableCredentials.some((credential) => {
+    const bank = (credential.bank || "").trim();
+    const type = (credential.type || "").trim();
+    return bank.length > 0 && type.length > 0;
+  });
+}
+
+function isDiscountPublishable(data: FirestoreDiscount): boolean {
+  if (data.status !== ACTIVE) return false;
+  if (data.isVisible === false) return false;
+  if (isDiscountExpired(data, new Date())) return false;
+  if (data.approvalStatus !== APPROVED) return false;
+  if (!hasRequiredFieldsForAutoPublish(data)) return false;
+
+  // Regla para MODO/scraping: si no hay tarjeta/banco en credenciales, no publicar.
+  if (data.type === "scraped" || data.source === "scraping") {
+    return hasValidCredentialRequirements(data);
+  }
+
+  return true;
+}
+
 function getDiscountExpirationDate(data: FirestoreDiscount): Date | null {
   return data.expirationDate?.toDate?.() || data.validUntil?.toDate?.() || null;
 }
@@ -73,23 +121,26 @@ function isDiscountExpired(data: FirestoreDiscount, now: Date = new Date()): boo
 
 async function getApprovedActiveDiscountDocs() {
   try {
-    const q = query(
-      collection(db, "discounts"),
-      where("approvalStatus", "==", APPROVED),
-      where("status", "==", ACTIVE)
-    );
-    return await getDocs(q);
-  } catch (error) {
-    // Fallback sin índice compuesto: traer todos y filtrar en cliente.
+    // Traemos todo y filtramos en cliente para soportar:
+    // - approved + active
+    // - pending scraped con campos obligatorios completos
     const allSnapshot = await getDocs(collection(db, "discounts"));
-    const filteredDocs = allSnapshot.docs.filter((docSnap) => {
-      const data = docSnap.data() as FirestoreDiscount;
-      return data.approvalStatus === APPROVED && data.status === ACTIVE;
-    });
+    const filteredDocs = allSnapshot.docs.filter((docSnap) =>
+      isDiscountPublishable(docSnap.data() as FirestoreDiscount)
+    );
 
     return {
       docs: filteredDocs,
     } as Pick<typeof allSnapshot, "docs">;
+  } catch (error) {
+    const fallbackSnapshot = await getDocs(collection(db, "discounts"));
+    const filteredDocs = fallbackSnapshot.docs.filter((docSnap) =>
+      isDiscountPublishable(docSnap.data() as FirestoreDiscount)
+    );
+
+    return {
+      docs: filteredDocs,
+    } as Pick<typeof fallbackSnapshot, "docs">;
   }
 }
 

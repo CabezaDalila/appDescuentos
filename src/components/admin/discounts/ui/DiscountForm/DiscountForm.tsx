@@ -99,6 +99,19 @@ export function DiscountForm({
   const [credentialError, setCredentialError] = useState<string>("");
   const [membershipError, setMembershipError] = useState<string>("");
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [validationSummary, setValidationSummary] = useState<string[]>([]);
+
+  const FIELD_LABELS: Record<string, string> = {
+    title: "Título",
+    origin: "Origen/Tienda",
+    category: "Categoría",
+    expirationDate: "Fecha de expiración",
+    description: "Descripción",
+    discountPercentage: "Porcentaje/Monto de descuento",
+    discountAmount: "Monto de descuento",
+    imageUrl: "URL de imagen",
+    url: "URL del descuento",
+  };
 
   if (!showForm) return null;
 
@@ -140,23 +153,31 @@ export function DiscountForm({
                 abortEarly: false,
               });
               setFormErrors({});
+              setValidationSummary([]);
               onSubmit(e);
             } catch (error) {
               if (error instanceof yup.ValidationError) {
                 const errors: Record<string, string> = {};
+                const summarySet = new Set<string>();
                 error.inner.forEach((err) => {
                   if (err.path) {
                     errors[err.path] = err.message;
                   }
+                  const label = FIELD_LABELS[err.path || ""] || "Formulario";
+                  if (err.message) {
+                    summarySet.add(`${label}: ${err.message}`);
+                  }
                 });
                 setFormErrors(errors);
+                setValidationSummary(Array.from(summarySet));
                 // Mostrar toast con resumen de errores
                 const errorCount = Object.keys(errors).length;
-                if (errorCount > 0) {
+                if (summarySet.size > 0) {
+                  const [firstError] = Array.from(summarySet);
                   toast.error(
-                    `Por favor corrige ${errorCount} error${
-                      errorCount > 1 ? "es" : ""
-                    } en el formulario`
+                    `Revisá este campo: ${firstError}${
+                      errorCount > 1 ? ` (y ${errorCount - 1} más)` : ""
+                    }`
                   );
                 }
                 // Hacer scroll al primer error
@@ -174,6 +195,18 @@ export function DiscountForm({
           }}
           className="flex flex-col gap-4"
         >
+          {validationSummary.length > 0 && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2">
+              <p className="text-sm font-semibold text-red-700">
+                Corregí estos campos para continuar:
+              </p>
+              <ul className="mt-1 text-sm text-red-700 list-disc pl-5 space-y-1">
+                {validationSummary.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Título del Descuento *</Label>

@@ -13,6 +13,70 @@ export interface ScrapingScript {
 
 export type ScrapingFrequency = "manual" | "hourly" | "daily" | "weekly";
 
+export interface ScrapedDiscountInput {
+  title: string;
+  name?: string;
+  origin: string;
+  category: string;
+  description: string;
+  discountPercentage?: number;
+  discountAmount?: number;
+  installments?: number;
+  terms?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  membershipRequired?: string[];
+  credentialHints?: string[];
+  cardTypeHint?: "Crédito" | "Débito";
+  cardBrandHint?:
+    | "Visa"
+    | "Mastercard"
+    | "American Express"
+    | "Diners Club"
+    | "Cabal"
+    | "Otro";
+  cardLevelHint?:
+    | "Classic"
+    | "Gold"
+    | "Platinum"
+    | "Black"
+    | "Signature"
+    | "Infinite"
+    | "Internacional"
+    | "Nacional";
+  credentialCombos?: Array<{
+    bank: string;
+    type: "Crédito" | "Débito";
+    brand: "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Cabal" | "Otro";
+    level?:
+      | "Classic"
+      | "Gold"
+      | "Platinum"
+      | "Black"
+      | "Signature"
+      | "Infinite"
+      | "Internacional"
+      | "Nacional";
+  }>;
+  expirationDate?: string;
+}
+
+export interface ScrapingStats {
+  totalDetected: number;
+  totalValid: number;
+  totalSaved?: number;
+  totalFailed?: number;
+  totalDiscardedNoCredential?: number;
+}
+
+export interface ScrapingExecutionResult {
+  source: string;
+  stats: ScrapingStats;
+  items: ScrapedDiscountInput[];
+  warnings: string[];
+  errors?: string[];
+}
+
 // ===== TIPOS PARA DESCUENTOS MANUALES =====
 
 export interface ManualDiscount {
@@ -34,6 +98,10 @@ export interface ManualDiscount {
     bank: string;
   }>;
   availableMemberships?: string[];
+  membershipRequired?: string[];
+  bancos?: string[];
+  terms?: string;
+  installments?: number;
   createdAt?: Date;
   updatedAt?: Date;
   location?: {

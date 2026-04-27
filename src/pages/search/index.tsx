@@ -1269,6 +1269,11 @@ export default function Search() {
                               discount as Discount
                             ).discountPercentage?.toString() || "0"
                       }
+                      description={
+                        isHomePageDiscount
+                          ? (discount as HomePageDiscount).description
+                          : (discount as Discount).description
+                      }
                       discountLocation={
                         isHomePageDiscount
                           ? (discount as HomePageDiscount).location

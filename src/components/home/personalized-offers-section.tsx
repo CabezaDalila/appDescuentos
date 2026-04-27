@@ -95,7 +95,7 @@ export function PersonalizedOffersSection({
     const isEligibleByMembership = (discount: HomePageDiscount) =>
       isUserEligibleForDiscountRestrictions(memberships, credentials, discount, {
         requireRestrictions: true,
-        membershipOnly: true,
+        strictPriority: true,
       });
 
     if (!recommendation?.fullDiscounts) {
@@ -203,6 +203,7 @@ export function PersonalizedOffersSection({
               distance={offer.distance}
               expiration={offer.expiration}
               discountPercentage={offer.discountPercentage}
+              description={offer.description}
               discountLocation={
                 offer.location
                   ? {

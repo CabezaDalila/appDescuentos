@@ -150,7 +150,21 @@ export function DiscountApprovalManager({
       const docRef = doc(db, "discounts", editingDiscount.id);
       await updateDoc(docRef, updateData);
 
-      toast.success("Descuento actualizado correctamente");
+      const hasRestriction =
+        formData.availableCredentials.length > 0 ||
+        formData.availableMemberships.length > 0;
+
+      // Si tras completar obligatorios también tiene restricción de elegibilidad,
+      // se aprueba automáticamente y pasa a Activos.
+      if (hasRestriction && user?.uid) {
+        await approveDiscount(editingDiscount.id, user.uid);
+        toast.success("Descuento completado y aprobado automáticamente");
+      } else {
+        toast.success(
+          "Descuento actualizado. Agregá credencial o membresía para aprobarlo automáticamente"
+        );
+      }
+
       setShowForm(false);
       resetForm();
       loadPendingDiscounts();

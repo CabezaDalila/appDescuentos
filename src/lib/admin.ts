@@ -1,4 +1,4 @@
-import { isValidCategory } from "@/constants/categories";
+import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
 import {
   addDoc,
   collection,
@@ -11,7 +11,12 @@ import {
   Timestamp,
   updateDoc,
 } from "@/lib/firebase/firebase";
-import { ManualDiscount, ScrapingScript } from "@/types/admin";
+import {
+  ManualDiscount,
+  ScrapedDiscountInput,
+  ScrapingExecutionResult,
+  ScrapingScript,
+} from "@/types/admin";
 // ===== GESTIÓN DE SCRIPTS DE SCRAPING =====
 
 export const getScrapingScripts = async (): Promise<ScrapingScript[]> => {
@@ -218,6 +223,215 @@ export const createScrapedDiscount = async (
     console.error("Error al crear descuento manual:", error);
     throw error;
   }
+};
+
+const parseExpirationDate = (raw?: string): Date => {
+  if (!raw) {
+    return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  }
+
+  const slashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+  if (slashMatch) {
+    const day = Number.parseInt(slashMatch[1], 10);
+    const month = Number.parseInt(slashMatch[2], 10) - 1;
+    const yearShort = Number.parseInt(slashMatch[3], 10);
+    const year = yearShort < 100 ? 2000 + yearShort : yearShort;
+    const parsed = new Date(year, month, day);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+};
+
+const extractCardBrandsFromHintText = (
+  hintText: string
+): Array<
+  "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Cabal" | "Otro"
+> => {
+  const text = hintText.toLowerCase();
+  const brands: Array<
+    "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Cabal" | "Otro"
+  > = [];
+  if (/\bvisa\b/.test(text)) brands.push("Visa");
+  if (/\bmaster\b|\bmastercard\b/.test(text)) brands.push("Mastercard");
+  if (/\bamex\b|\bamerican express\b/.test(text)) brands.push("American Express");
+  if (/\bdiners\b/.test(text)) brands.push("Diners Club");
+  if (/\bcabal\b/.test(text)) brands.push("Cabal");
+  return brands;
+};
+
+export const normalizeScrapedDiscountInput = (
+  raw: ScrapedDiscountInput
+): Omit<ManualDiscount, "id" | "createdAt" | "updatedAt"> => {
+  const title = (raw.title || raw.name || "Promoción MODO").trim();
+  const description = (raw.description || "Promoción disponible en MODO").trim();
+  const rawCategory = (raw.category || "").trim();
+  const categoryById = rawCategory ? getCategoryById(rawCategory) : undefined;
+  const categoryByName = rawCategory ? getCategoryByName(rawCategory) : undefined;
+  const category = categoryById?.name || categoryByName?.name || "General";
+  const discountPercentage =
+    typeof raw.discountPercentage === "number" &&
+    Number.isFinite(raw.discountPercentage)
+      ? raw.discountPercentage
+      : undefined;
+  const discountAmount =
+    typeof raw.discountAmount === "number" && Number.isFinite(raw.discountAmount)
+      ? raw.discountAmount
+      : undefined;
+
+  const credentialBanks =
+    raw.membershipRequired && raw.membershipRequired.length > 0
+      ? raw.membershipRequired
+      : [];
+
+  const hintsText = (raw.credentialHints || []).join(" ");
+  const brandHintsFromText = extractCardBrandsFromHintText(hintsText);
+  const brandCandidates = Array.from(
+    new Set([
+      ...(raw.cardBrandHint ? [raw.cardBrandHint] : []),
+      ...brandHintsFromText,
+    ])
+  );
+  const resolvedBrands = brandCandidates.length > 0 ? brandCandidates : ["Otro"];
+
+  const credentials = credentialBanks.flatMap((bank) =>
+    resolvedBrands.map((brand) => ({
+      bank,
+      type: raw.cardTypeHint || "Crédito",
+      brand,
+      level: raw.cardLevelHint || "Classic",
+    }))
+  );
+  const mergedCredentials =
+    raw.credentialCombos && raw.credentialCombos.length > 0
+      ? Array.from(
+          new Map(
+            [
+              ...raw.credentialCombos.map((combo) => ({
+                bank: combo.bank,
+                type: combo.type,
+                brand: combo.brand,
+                level: combo.level || raw.cardLevelHint || "Classic",
+              })),
+              ...credentials,
+            ].map((credential) => [
+              `${credential.bank}::${credential.type}::${credential.brand}::${credential.level}`,
+              credential,
+            ])
+          ).values()
+        )
+      : credentials;
+
+  return {
+    title,
+    origin: "Modo",
+    category: isValidCategory(category) ? category : "General",
+    expirationDate: parseExpirationDate(raw.expirationDate),
+    description,
+    discountPercentage,
+    ...(typeof discountAmount === "number" ? { discountAmount } : {}),
+    ...(typeof raw.installments === "number" && Number.isFinite(raw.installments)
+      ? { installments: raw.installments }
+      : {}),
+    ...(raw.terms ? { terms: raw.terms } : {}),
+    imageUrl: raw.imageUrl,
+    url: raw.linkUrl,
+    isVisible: true,
+    availableCredentials: mergedCredentials,
+    // Para MODO (tarjetas), no usar membresías.
+    availableMemberships: [],
+    membershipRequired: [],
+    bancos: credentialBanks,
+  };
+};
+
+export interface ModoScrapingRunResult extends ScrapingExecutionResult {
+  stats: ScrapingExecutionResult["stats"] & {
+    totalSaved: number;
+    totalFailed: number;
+    totalDiscardedNoCredential: number;
+  };
+}
+
+export const runModoScrapingAndSave = async (
+  limit = 40
+): Promise<ModoScrapingRunResult> => {
+  const response = await fetch("/api/scraping/modo", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ limit }),
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      payload?.error || "No se pudo ejecutar scraping de MODO desde la API"
+    );
+  }
+
+  const execution = payload as ScrapingExecutionResult;
+  const dedupeSet = new Set<string>();
+  let totalSaved = 0;
+  let totalFailed = 0;
+  let totalDiscardedNoCredential = 0;
+  const warnings = [...(execution.warnings || [])];
+
+  for (const item of execution.items || []) {
+    const dedupeKey = `${item.origin || "MODO.com.ar"}::${item.title || item.name || ""}::${item.linkUrl || ""}`.toLowerCase();
+    if (dedupeSet.has(dedupeKey)) {
+      warnings.push(`Duplicado omitido: ${item.title || item.name || "sin título"}`);
+      continue;
+    }
+    dedupeSet.add(dedupeKey);
+
+    try {
+      const hasBankOrCardEvidence =
+        (item.membershipRequired && item.membershipRequired.length > 0) ||
+        !!item.cardTypeHint ||
+        !!item.cardBrandHint;
+
+      if (!hasBankOrCardEvidence) {
+        totalDiscardedNoCredential++;
+        warnings.push(
+          `Descartado por falta de datos de tarjeta/banco: "${
+            item.title || item.name || "promoción"
+          }"`
+        );
+        continue;
+      }
+
+      const normalized = normalizeScrapedDiscountInput(item);
+      await createScrapedDiscount(normalized);
+      totalSaved++;
+    } catch (error) {
+      totalFailed++;
+      warnings.push(
+        `No se pudo guardar "${item.title || item.name || "promoción"}": ${
+          error instanceof Error ? error.message : "error desconocido"
+        }`
+      );
+    }
+  }
+
+  return {
+    ...execution,
+    warnings,
+    stats: {
+      ...execution.stats,
+      totalSaved,
+      totalFailed,
+      totalDiscardedNoCredential,
+    },
+  };
 };
 
 export const updateManualDiscount = async (

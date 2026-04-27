@@ -9,6 +9,8 @@
     "lint": "next lint",
     "export": "next build",
     "migrate:expiration-date": "node scripts/migrate-discounts-expiration-field.js",
+    "migrate:modo-normalize": "node scripts/migrate-modo-scraped-normalization.js",
+    "migrate:modo-normalize:dry": "node scripts/migrate-modo-scraped-normalization.js --dry-run",
     "cap:add": "npx cap add android",
     "cap:copy": "npx cap copy",
     "cap:sync": "npx cap sync",
