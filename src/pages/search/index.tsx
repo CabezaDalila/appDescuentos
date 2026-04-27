@@ -413,7 +413,7 @@ export default function Search() {
         try {
           setIsSearching(true);
           const results = await getDiscountsBySearch(next);
-          setSearchResults(results);
+          setSearchResults(results.filter((discount) => isDiscountEligibleForUser(discount)));
         } catch {
           setSearchResults([]);
           setShowSearchResults(false);
@@ -671,7 +671,10 @@ export default function Search() {
                   (discount, index, self) =>
                     index === self.findIndex((d) => d.id === discount.id)
                 );
-                const sorted = unique.sort((a, b) => {
+                const eligibleUnique = unique.filter((discount) =>
+                  isDiscountEligibleForUser(discount)
+                );
+                const sortedEligible = eligibleUnique.sort((a, b) => {
                   const distanceA =
                     "distance" in a && a.distance
                       ? parseFloat(a.distance.replace(/[^\d.]/g, ""))
@@ -683,9 +686,9 @@ export default function Search() {
                   return distanceA - distanceB;
                 });
 
-                setAllDiscounts(sorted);
+                setAllDiscounts(sortedEligible);
                 if (urlCategories.length === 0) {
-                  setFilteredDiscounts(sorted);
+                  setFilteredDiscounts(sortedEligible);
                 }
 
                 setLoading(false);
@@ -699,18 +702,20 @@ export default function Search() {
             5
           );
 
-          data = finalData;
+          data = finalData.filter((discount) =>
+            isDiscountEligibleForUser(discount)
+          );
 
           setLoading(false);
           setLoadingMore(false);
 
-          setAllDiscounts(finalData);
+          setAllDiscounts(data);
           hasInitialLoad.current = true;
 
           if (urlCategories.length > 0) {
-            applyFilters(finalData, urlCategories);
+            applyFilters(data, urlCategories);
           } else {
-            const sortedFinal = [...finalData].sort((a, b) => {
+            const sortedFinal = [...data].sort((a, b) => {
               const distanceA =
                 "distance" in a && a.distance
                   ? parseFloat(a.distance.replace(/[^\d.]/g, ""))

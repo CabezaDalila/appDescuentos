@@ -207,7 +207,15 @@ export default function Home() {
       try {
         setIsSearching(true);
         const results = await getDiscountsBySearch(term);
-        setSearchResults(results);
+        const eligibleResults = results.filter((discount) =>
+          isUserEligibleForDiscountRestrictions(
+            userMemberships,
+            userCredentials,
+            discount,
+            { requireRestrictions: true, strictPriority: true }
+          )
+        );
+        setSearchResults(eligibleResults);
         setShowSearchResults(true);
       } catch (error) {
         console.error("Error al buscar descuentos:", error);
@@ -218,7 +226,7 @@ export default function Home() {
       }
     }, 400);
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, userMemberships, userCredentials]);
 
   const clearSearch = () => {
     setSearchTerm("");
