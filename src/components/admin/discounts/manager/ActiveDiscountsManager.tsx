@@ -6,7 +6,13 @@ import { getApprovedDiscounts } from "@/lib/discounts";
 import { db } from "@/lib/firebase/firebase";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  Timestamp,
+  updateDoc,
+  type DocumentData,
+  type UpdateData,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -77,7 +83,7 @@ export function ActiveDiscountsManager() {
 
     try {
       setSubmitting(true);
-      const updateData: Record<string, unknown> = {
+      const updateData: UpdateData<DocumentData> = {
         title: formData.title.trim(),
         name: formData.title.trim(),
         origin: formData.origin.trim(),
