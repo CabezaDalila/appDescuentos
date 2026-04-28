@@ -11,6 +11,7 @@ import {
   Timestamp,
   updateDoc,
 } from "@/lib/firebase/firebase";
+import { parseDateDdMmYyyy, parseIsoYmdLocal } from "@/lib/date-ar";
 import {
   ManualDiscount,
   ScrapedDiscountInput,
@@ -230,21 +231,17 @@ const parseExpirationDate = (raw?: string): Date => {
     return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   }
 
-  const slashMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
-  if (slashMatch) {
-    const day = Number.parseInt(slashMatch[1], 10);
-    const month = Number.parseInt(slashMatch[2], 10) - 1;
-    const yearShort = Number.parseInt(slashMatch[3], 10);
-    const year = yearShort < 100 ? 2000 + yearShort : yearShort;
-    const parsed = new Date(year, month, day);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
+  const trimmed = raw.trim();
 
-  const parsed = new Date(raw);
+  const fromIsoYmd = parseIsoYmdLocal(trimmed);
+  if (fromIsoYmd) return fromIsoYmd;
+
+  const fromDdMm = parseDateDdMmYyyy(trimmed);
+  if (fromDdMm) return fromDdMm;
+
+  const parsed = new Date(trimmed);
   if (!Number.isNaN(parsed.getTime())) {
-    return parsed;
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
 
   return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -286,10 +283,20 @@ export const normalizeScrapedDiscountInput = (
       ? raw.discountAmount
       : undefined;
 
+  const banksFromCombos =
+    Array.isArray(raw.credentialCombos) && raw.credentialCombos.length > 0
+      ? Array.from(
+          new Set(
+            raw.credentialCombos
+              .map((c) => (typeof c.bank === "string" ? c.bank.trim() : ""))
+              .filter((b) => b.length > 0)
+          )
+        )
+      : [];
   const credentialBanks =
     raw.membershipRequired && raw.membershipRequired.length > 0
       ? raw.membershipRequired
-      : [];
+      : banksFromCombos;
 
   const hintsText = (raw.credentialHints || []).join(" ");
   const brandHintsFromText = extractCardBrandsFromHintText(hintsText);
@@ -360,15 +367,40 @@ export interface ModoScrapingRunResult extends ScrapingExecutionResult {
   };
 }
 
+/** Tope de promos por ejecución desde el panel (evita timeouts en servidor y en el navegador). */
+export const MODO_ADMIN_SCRAPE_MAX_TOTAL = 350;
+
+export type RunModoScrapingOptions = {
+  limit?: number;
+  maxTotal?: number;
+};
+
+function resolveModoScrapeRequest(
+  options: RunModoScrapingOptions | number | undefined
+): { limit: number; maxTotal: number } {
+  if (typeof options === "number") {
+    return { limit: options, maxTotal: MODO_ADMIN_SCRAPE_MAX_TOTAL };
+  }
+  const o = options || {};
+  return {
+    limit: Number.isFinite(o.limit) && (o.limit as number) > 0 ? (o.limit as number) : 120,
+    maxTotal:
+      Number.isFinite(o.maxTotal) && (o.maxTotal as number) > 0
+        ? Math.min(o.maxTotal as number, 20000)
+        : MODO_ADMIN_SCRAPE_MAX_TOTAL,
+  };
+}
+
 export const runModoScrapingAndSave = async (
-  limit = 40
+  options?: RunModoScrapingOptions | number
 ): Promise<ModoScrapingRunResult> => {
-  const response = await fetch("/api/scraping/modo", {
+  const { limit, maxTotal } = resolveModoScrapeRequest(options);
+  const response = await fetch("/api/scraping/modo/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ limit }),
+    body: JSON.stringify({ limit, maxTotal }),
   });
 
   const payload = await response.json();
@@ -396,6 +428,7 @@ export const runModoScrapingAndSave = async (
     try {
       const hasBankOrCardEvidence =
         (item.membershipRequired && item.membershipRequired.length > 0) ||
+        (Array.isArray(item.credentialCombos) && item.credentialCombos.length > 0) ||
         !!item.cardTypeHint ||
         !!item.cardBrandHint;
 

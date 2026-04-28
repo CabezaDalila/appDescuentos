@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/pages/api/scraping/modo.ts": {
+      "maxDuration": 300
+    }
+  }
+}

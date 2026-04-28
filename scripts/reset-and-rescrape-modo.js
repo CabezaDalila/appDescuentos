@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 const admin = require("firebase-admin");
+const http = require("http");
+const https = require("https");
 const path = require("path");
 const fs = require("fs");
 
@@ -18,13 +20,76 @@ function loadLocalEnv() {
   }
 }
 
+function stripEnvQuotes(value) {
+  const v = String(value || "").trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    return v.slice(1, -1);
+  }
+  return v;
+}
+
+/**
+ * Admin SDK no puede usar las NEXT_PUBLIC_* del cliente: hace falta cuenta de servicio.
+ * Opciones (local):
+ * - FIREBASE_SERVICE_ACCOUNT_PATH o GOOGLE_APPLICATION_CREDENTIALS = ruta al JSON descargado desde Firebase Console
+ * - FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY (clave con \n escapados como en Vercel)
+ */
+function resolveAdminCredential(projectId) {
+  const keyPathRaw =
+    stripEnvQuotes(process.env.FIREBASE_SERVICE_ACCOUNT_PATH) ||
+    stripEnvQuotes(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  if (keyPathRaw) {
+    const resolved = path.isAbsolute(keyPathRaw)
+      ? keyPathRaw
+      : path.resolve(process.cwd(), keyPathRaw);
+    if (!fs.existsSync(resolved)) {
+      const dir = path.dirname(resolved);
+      throw new Error(
+        `No existe el archivo de cuenta de servicio:\n  ${resolved}\n\n` +
+          "Pasos:\n" +
+          "  1) Firebase Console → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada.\n" +
+          "  2) Guardá el JSON exactamente en esa ruta (o cambiá FIREBASE_SERVICE_ACCOUNT_PATH en .env.local).\n" +
+          `  3) Si falta la carpeta, creala: ${dir}\n` +
+          "  4) El nombre del archivo tiene que coincidir con el de tu variable de entorno."
+      );
+    }
+    const serviceAccount = JSON.parse(fs.readFileSync(resolved, "utf8"));
+    return admin.credential.cert(serviceAccount);
+  }
+
+  const clientEmail = stripEnvQuotes(process.env.FIREBASE_CLIENT_EMAIL);
+  const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
+  if (clientEmail && privateKeyRaw) {
+    const privateKey = stripEnvQuotes(privateKeyRaw).replace(/\\n/g, "\n");
+    return admin.credential.cert({
+      projectId: projectId || process.env.FIREBASE_PROJECT_ID,
+      clientEmail,
+      privateKey,
+    });
+  }
+
+  throw new Error(
+    "Firebase Admin: no hay credenciales de cuenta de servicio.\n\n" +
+      "La app web usa NEXT_PUBLIC_* en el navegador; los scripts de Node necesitan un JSON de service account.\n\n" +
+      "1) Firebase Console → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada (JSON).\n" +
+      "2) Guardá el archivo fuera del repo o en una carpeta ignorada por git (ej. secrets/).\n" +
+      "3) En .env.local agregá una línea:\n" +
+      "   FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/tu-proyecto-firebase-adminsdk.json\n\n" +
+      "Alternativa: GOOGLE_APPLICATION_CREDENTIALS con la misma ruta, o FIREBASE_CLIENT_EMAIL + FIREBASE_PRIVATE_KEY.\n\n" +
+      "Ver: https://firebase.google.com/docs/admin/setup#initialize-sdk"
+  );
+}
+
 function initAdmin() {
   loadLocalEnv();
   const projectId =
-    process.env.GOOGLE_CLOUD_PROJECT || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+    process.env.FIREBASE_PROJECT_ID;
   if (!admin.apps.length) {
+    const credential = resolveAdminCredential(projectId);
     admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
+      credential,
       ...(projectId ? { projectId } : {}),
     });
   }
@@ -48,8 +113,19 @@ const CATEGORY_ID_TO_NAME = {
 
 function parseExpirationDate(raw) {
   if (!raw) return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const parsed = new Date(raw);
-  if (!Number.isNaN(parsed.getTime())) return parsed;
+  const t = String(raw).trim();
+  const iso = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const y = Number(iso[1]);
+    const m = Number(iso[2]);
+    const d = Number(iso[3]);
+    const parsed = new Date(y, m - 1, d);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const parsed = new Date(t);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
   return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 }
 
@@ -64,20 +140,71 @@ function extractBrands(rawText) {
   return brands;
 }
 
+function getScrapeRequestTarget() {
+  const baseRaw =
+    process.env.SCRAPE_BASE_URL || `http://127.0.0.1:${process.env.PORT || "3000"}`;
+  const base = baseRaw.replace(/\/+$/, "");
+  const full = `${base}/api/scraping/modo/`;
+  return new URL(full);
+}
+
+function fetchModoItemsHttp(maxTotal) {
+  const body = JSON.stringify({ limit: 120, maxTotal });
+  const timeoutMs = 60 * 60 * 1000;
+  const target = getScrapeRequestTarget();
+  const isHttps = target.protocol === "https:";
+  const lib = isHttps ? https : http;
+  const port =
+    target.port || (isHttps ? 443 : 80);
+  const pathWithQuery = `${target.pathname}${target.search || ""}`;
+
+  return new Promise((resolve, reject) => {
+    const req = lib.request(
+      {
+        hostname: target.hostname,
+        port,
+        path: pathWithQuery,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body, "utf8"),
+        },
+        timeout: timeoutMs,
+      },
+      (res) => {
+        let raw = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          raw += chunk;
+        });
+        res.on("end", () => {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`Falló /api/scraping/modo (${res.statusCode}): ${raw.slice(0, 500)}`));
+            return;
+          }
+          try {
+            const payload = JSON.parse(raw);
+            resolve(payload.items || []);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+    );
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Timeout esperando respuesta de /api/scraping/modo (¿Next en :3000?)"));
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
 async function fetchModoItems() {
   const maxTotalArg = Number(process.argv.find((arg) => arg.startsWith("--maxTotal="))?.split("=")[1]);
   const maxTotal = Number.isFinite(maxTotalArg) && maxTotalArg > 0 ? maxTotalArg : 900;
-  const response = await fetch("http://localhost:3000/api/scraping/modo", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ limit: 120, maxTotal }),
-  });
-  if (!response.ok) {
-    const payload = await response.text();
-    throw new Error(`Falló /api/scraping/modo (${response.status}): ${payload}`);
-  }
-  const payload = await response.json();
-  return payload.items || [];
+  return fetchModoItemsHttp(maxTotal);
 }
 
 async function clearDiscountsCollection(db) {
@@ -218,10 +345,15 @@ async function saveScrapedDiscounts(db, items) {
 }
 
 async function run() {
+  const skipDelete = process.argv.includes("--skip-delete");
   const db = initAdmin();
-  console.log("1) Eliminando descuentos actuales...");
-  const deleted = await clearDiscountsCollection(db);
-  console.log(`- Eliminados: ${deleted}`);
+  if (skipDelete) {
+    console.log("1) Omitiendo borrado (--skip-delete).");
+  } else {
+    console.log("1) Eliminando descuentos actuales...");
+    const deleted = await clearDiscountsCollection(db);
+    console.log(`- Eliminados: ${deleted}`);
+  }
 
   console.log("2) Scrapeando MODO con formato nuevo...");
   const items = await fetchModoItems();

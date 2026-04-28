@@ -196,6 +196,121 @@ function stripHtml(raw: string): string {
   return raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Año de 2 dígitos como 20xx (vigencias de promos actuales). */
+function expandTwoDigitYear(y: number): number {
+  if (y >= 100) return y;
+  return 2000 + y;
+}
+
+function buildValidLocalDate(day: number, month: number, year: number): Date | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const d = new Date(year, month - 1, day);
+  if (
+    Number.isNaN(d.getTime()) ||
+    d.getFullYear() !== year ||
+    d.getMonth() !== month - 1 ||
+    d.getDate() !== day
+  ) {
+    return null;
+  }
+  return d;
+}
+
+function parseDayMonthYearParts(day: number, month: number, yearPart: number): Date | null {
+  const year = expandTwoDigitYear(yearPart);
+  return buildValidLocalDate(day, month, year);
+}
+
+/** Patrones con alta confianza (fechas de campaña en UI / TyC estructurado). */
+const VIGENCIA_STRICT_PATTERNS: RegExp[] = [
+  /desde\s+(?:el\s+)?\d{1,2}\/\d{1,2}\s+al\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/gi,
+  /del\s+\d{1,2}\/\d{1,2}\s+al\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/gi,
+  /\bhasta\s+(?:el\s+)?(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/gi,
+  /\bvigente\s+hasta\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/gi,
+];
+
+/** Último recurso: TyC largo puede contener otras fechas; solo si no hubo match estricto. */
+const VIGENCIA_LOOSE_PATTERNS: RegExp[] = [
+  /\bvigencia\b[^.]{0,120}?\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/gi,
+];
+
+function collectVigenciaEndDates(text: string, patterns: RegExp[]): Date[] {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const candidates: Date[] = [];
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(normalized)) !== null) {
+      const day = Number.parseInt(m[1], 10);
+      const month = Number.parseInt(m[2], 10);
+      const yearPart = Number.parseInt(m[3], 10);
+      const d = parseDayMonthYearParts(day, month, yearPart);
+      if (d && !Number.isNaN(d.getTime())) candidates.push(d);
+    }
+  }
+  return candidates;
+}
+
+function latestDateToIso(dates: Date[]): string | undefined {
+  if (dates.length === 0) return undefined;
+  const end = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const y = end.getFullYear();
+  const mo = String(end.getMonth() + 1).padStart(2, "0");
+  const da = String(end.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${da}`;
+}
+
+/**
+ * Fin de vigencia desde texto: primero filas de la promo (UI), luego texto completo con
+ * patrones estrictos; el patrón suelto "vigencia…" solo al final (evita fechas falsas en TyC).
+ */
+function resolveExpirationFromVigenciaText(
+  rowTexts: string[],
+  landingTermsText: string
+): string | undefined {
+  const rowHaystack = rowTexts.filter(Boolean).join(" · ");
+  let dates = collectVigenciaEndDates(rowHaystack, VIGENCIA_STRICT_PATTERNS);
+  let iso = latestDateToIso(dates);
+  if (iso) return iso;
+
+  const fullHaystack = [...rowTexts, landingTermsText].filter(Boolean).join(" · ");
+  dates = collectVigenciaEndDates(fullHaystack, VIGENCIA_STRICT_PATTERNS);
+  iso = latestDateToIso(dates);
+  if (iso) return iso;
+
+  dates = collectVigenciaEndDates(fullHaystack, VIGENCIA_LOOSE_PATTERNS);
+  return latestDateToIso(dates);
+}
+
+/** Normaliza stop_date de la API a YYYY-MM-DD (fecha local de calendario). */
+function normalizeApiStopDateToIso(raw: string): string | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t.slice(0, 10);
+  }
+  const slash = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (slash) {
+    const d = parseDayMonthYearParts(
+      Number.parseInt(slash[1], 10),
+      Number.parseInt(slash[2], 10),
+      Number.parseInt(slash[3], 10)
+    );
+    if (!d) return undefined;
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
+  }
+  const parsed = new Date(t);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  const y = parsed.getFullYear();
+  const mo = String(parsed.getMonth() + 1).padStart(2, "0");
+  const da = String(parsed.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${da}`;
+}
+
 const BRAND_TOKEN_MAP: Record<string, "Visa" | "Mastercard" | "American Express" | "Diners Club" | "Cabal" | "Otro"> = {
   visa: "Visa",
   master: "Mastercard",
@@ -369,7 +484,11 @@ async function toValidItem(card: RewardCard): Promise<ScrapedDiscountInput> {
     landingData?.card?.content?.image?.secondary_image ||
     card.content?.image?.primary_image ||
     card.content?.image?.secondary_image;
-  const expirationDate = landingData?.promotion?.stop_date || card.stop_date || undefined;
+  const fromTextIso = resolveExpirationFromVigenciaText(rowTexts, landingTermsText);
+  const apiRaw = landingData?.promotion?.stop_date ?? card.stop_date;
+  const apiStr = apiRaw == null ? "" : String(apiRaw).trim();
+  const fromApiIso = apiStr ? normalizeApiStopDateToIso(apiStr) : undefined;
+  const expirationDate = fromTextIso || fromApiIso || undefined;
 
   return {
     title,
@@ -410,10 +529,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Método no permitido" });
   }
 
-  const limitRaw = Number(req.body?.limit);
+  const body =
+    req.body && typeof req.body === "object" && !Array.isArray(req.body)
+      ? (req.body as Record<string, unknown>)
+      : {};
+
+  const limitRaw = Number(body.limit);
   const limit =
     Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 200) : DEFAULT_LIMIT;
-  const maxTotalRaw = Number(req.body?.maxTotal);
+  const maxTotalRaw = Number(body.maxTotal);
   const maxTotal =
     Number.isFinite(maxTotalRaw) && maxTotalRaw > 0
       ? Math.min(maxTotalRaw, 20000)

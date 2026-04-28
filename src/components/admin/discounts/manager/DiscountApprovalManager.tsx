@@ -3,15 +3,42 @@ import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm/Disco
 import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEmptyState";
 import { DiscountsSelectAll } from "@/components/admin/discounts/ui/DiscountsSelectAll";
 import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/DiscountsSelectionBar";
+import { Label } from "@/components/Share/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
+import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { approveDiscount, getPendingDiscounts } from "@/lib/discounts";
 import { db } from "@/lib/firebase/firebase";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
 import { doc, Timestamp, updateDoc } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+
+type PendingExpirationFilter = "all" | "active" | "expired" | "unknown";
+
+function matchesExpirationFilter(
+  discount: Discount,
+  filter: PendingExpirationFilter,
+  now: Date
+): boolean {
+  if (filter === "all") return true;
+  const exp = discount.expirationDate;
+  const hasDate =
+    exp instanceof Date && !Number.isNaN(exp.getTime());
+  if (filter === "unknown") return !hasDate;
+  if (!hasDate) return false;
+  const expired = exp.getTime() < now.getTime();
+  if (filter === "expired") return expired;
+  return !expired;
+}
 
 interface DiscountApprovalManagerProps {
   className?: string;
@@ -25,6 +52,8 @@ export function DiscountApprovalManager({
   const [approving, setApproving] = useState(false);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [expirationFilter, setExpirationFilter] =
+    useState<PendingExpirationFilter>("all");
 
   const { user } = useAuth();
 
@@ -45,6 +74,10 @@ export function DiscountApprovalManager({
     loadPendingDiscounts();
   }, []);
 
+  useEffect(() => {
+    setSelectedDiscounts([]);
+  }, [expirationFilter]);
+
   const loadPendingDiscounts = async () => {
     try {
       setLoading(true);
@@ -59,14 +92,13 @@ export function DiscountApprovalManager({
   };
 
   // Convertir Discount a ManualDiscount para usar DiscountCard
-  const convertToManualDiscount = (discount: Discount): ManualDiscount => {
-    return {
+  const convertToManualDiscount = useCallback(
+    (discount: Discount): ManualDiscount => ({
       id: discount.id,
       title: discount.title || discount.name || "",
       origin: discount.origin || "",
       category: discount.category || "",
-      expirationDate:
-        discount.expirationDate || new Date(),
+      expirationDate: discount.expirationDate,
       description: discount.description || discount.descripcion || "",
       discountPercentage: discount.discountPercentage,
       discountAmount: discount.discountAmount,
@@ -81,10 +113,21 @@ export function DiscountApprovalManager({
       })),
       availableMemberships: discount.availableMemberships,
       location: discount.location,
-    };
-  };
+    }),
+    []
+  );
 
-  const manualDiscounts = pendingDiscounts.map(convertToManualDiscount);
+  const filteredPending = useMemo(() => {
+    const now = new Date();
+    return pendingDiscounts.filter((d) =>
+      matchesExpirationFilter(d, expirationFilter, now)
+    );
+  }, [pendingDiscounts, expirationFilter]);
+
+  const manualDiscounts = useMemo(
+    () => filteredPending.map(convertToManualDiscount),
+    [filteredPending, convertToManualDiscount]
+  );
 
   // Handler para el formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,6 +146,13 @@ export function DiscountApprovalManager({
     try {
       setSubmitting(true);
 
+      const expDate = parseAdminExpirationInput(formData.expirationDate);
+      if (!expDate) {
+        toast.error("Revisá la fecha de expiración (dd/mm/aaaa)");
+        setSubmitting(false);
+        return;
+      }
+
       // Preparar los datos de actualización
       const updateData: any = {
         title: formData.title.trim(),
@@ -110,7 +160,7 @@ export function DiscountApprovalManager({
         origin: formData.origin.trim(),
         category: formData.category!,
         description: formData.description.trim(),
-        expirationDate: Timestamp.fromDate(new Date(formData.expirationDate)),
+        expirationDate: Timestamp.fromDate(expDate),
         isVisible: formData.isVisible,
         updatedAt: Timestamp.now(),
       };
@@ -255,37 +305,79 @@ export function DiscountApprovalManager({
           />
         ) : (
           <div className="space-y-4">
-            <DiscountsSelectionBar
-              selectedCount={selectedDiscounts.length}
-              onCancel={() => setSelectedDiscounts([])}
-              onAction={handleApproveSelected}
-              actionLabel={`Aprobar (${selectedDiscounts.length})`}
-              actionLoading={approving}
-              actionVariant="default"
-              actionClassName="bg-green-600 hover:bg-green-700 text-white"
-            />
-
-            <DiscountsSelectAll
-              totalCount={manualDiscounts.length}
-              selectedCount={selectedDiscounts.length}
-              onSelectAll={handleSelectAll}
-            />
-
-            {/* Lista de descuentos */}
-            <div className="grid gap-4">
-              {manualDiscounts.map((discount) => (
-                <DiscountCard
-                  key={discount.id}
-                  discount={discount}
-                  isSelected={selectedDiscounts.includes(discount.id!)}
-                  onSelect={handleSelectDiscount}
-                  onEdit={handleEdit}
-                  onDelete={() => {}} // No permitir eliminar desde aquí
-                  onToggleVisibility={() => {}} // No permitir cambiar visibilidad desde aquí
-                  deleting={false}
-                />
-              ))}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+              <div className="space-y-2 flex-1 max-w-md">
+                <Label htmlFor="pending-expiration-filter" className="text-sm">
+                  Filtrar por vigencia
+                </Label>
+                <Select
+                  value={expirationFilter}
+                  onValueChange={(v) =>
+                    setExpirationFilter(v as PendingExpirationFilter)
+                  }
+                >
+                  <SelectTrigger
+                    id="pending-expiration-filter"
+                    className="bg-white"
+                  >
+                    <SelectValue placeholder="Vigencia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="active">
+                      Solo vigentes (no expirados)
+                    </SelectItem>
+                    <SelectItem value="expired">Solo expirados</SelectItem>
+                    <SelectItem value="unknown">
+                      Sin fecha en base de datos
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-gray-600">
+                Mostrando {filteredPending.length} de {pendingDiscounts.length}
+              </p>
             </div>
+
+            {manualDiscounts.length === 0 ? (
+              <DiscountsEmptyState
+                message="Ningún descuento coincide con el filtro"
+                subtitle="Probá con «Todos» o revisá otra categoría de vigencia"
+              />
+            ) : (
+              <>
+                <DiscountsSelectionBar
+                  selectedCount={selectedDiscounts.length}
+                  onCancel={() => setSelectedDiscounts([])}
+                  onAction={handleApproveSelected}
+                  actionLabel={`Aprobar (${selectedDiscounts.length})`}
+                  actionLoading={approving}
+                  actionVariant="default"
+                  actionClassName="bg-green-600 hover:bg-green-700 text-white"
+                />
+
+                <DiscountsSelectAll
+                  totalCount={manualDiscounts.length}
+                  selectedCount={selectedDiscounts.length}
+                  onSelectAll={handleSelectAll}
+                />
+
+                <div className="grid gap-4">
+                  {manualDiscounts.map((discount) => (
+                    <DiscountCard
+                      key={discount.id}
+                      discount={discount}
+                      isSelected={selectedDiscounts.includes(discount.id!)}
+                      onSelect={handleSelectDiscount}
+                      onEdit={handleEdit}
+                      onDelete={() => {}}
+                      onToggleVisibility={() => {}}
+                      deleting={false}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

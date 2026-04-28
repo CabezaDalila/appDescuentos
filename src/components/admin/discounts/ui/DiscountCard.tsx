@@ -43,7 +43,14 @@ export function DiscountCard({
   onToggleVisibility,
   deleting,
 }: DiscountCardProps) {
-  const getExpirationStatus = (expirationDate: Date) => {
+  const getExpirationStatus = (expirationDate: Date | undefined) => {
+    if (!expirationDate || Number.isNaN(expirationDate.getTime())) {
+      return {
+        status: "unknown",
+        label: "Sin fecha",
+        variant: "outline" as const,
+      };
+    }
     const now = new Date();
     const diffTime = expirationDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -113,7 +120,10 @@ export function DiscountCard({
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {discount.expirationDate.toLocaleDateString()}
+                  {discount.expirationDate &&
+                  !Number.isNaN(discount.expirationDate.getTime())
+                    ? discount.expirationDate.toLocaleDateString()
+                    : "—"}
                 </span>
               </CardDescription>
             </div>

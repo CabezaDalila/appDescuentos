@@ -463,7 +463,8 @@ export const getPendingDiscounts = async (): Promise<Discount[]> => {
           ...data,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          expirationDate: getDiscountExpirationDate(data) || new Date(),
+          expirationDate:
+            getDiscountExpirationDate(data) ?? undefined,
           approvalStatus: data.approvalStatus || "pending",
           source: data.source || "scraping",
         } as Discount;

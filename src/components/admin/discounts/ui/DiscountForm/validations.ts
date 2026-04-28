@@ -1,4 +1,5 @@
 import { getAllCategories } from "@/constants/categories";
+import { isDateOnOrAfterToday, parseAdminExpirationInput } from "@/lib/date-ar";
 import * as yup from "yup";
 
 const CATEGORIES = getAllCategories().map((cat) => cat.name);
@@ -20,14 +21,21 @@ export const discountFormSchema = yup.object({
     .string()
     .required("La fecha de expiración es obligatoria")
     .test(
-      "future-date",
-      "La fecha de expiración debe ser futura",
+      "format-ddmmyyyy",
+      "Usá el formato día/mes/año (dd/mm/aaaa)",
       function (value) {
-        if (!value) return false;
-        const selectedDate = new Date(value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return selectedDate >= today;
+        if (!value?.trim()) return false;
+        return !!parseAdminExpirationInput(value);
+      }
+    )
+    .test(
+      "future-date",
+      "La fecha de expiración debe ser hoy o posterior",
+      function (value) {
+        if (!value?.trim()) return false;
+        const selectedDate = parseAdminExpirationInput(value);
+        if (!selectedDate) return false;
+        return isDateOnOrAfterToday(selectedDate);
       }
     ),
   description: yup

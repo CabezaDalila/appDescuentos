@@ -2,14 +2,22 @@ interface GoogleMapProps {
   latitude: number;
   longitude: number;
   address?: string;
+  /** Mapa más bajo (p. ej. detalle de descuento para menos scroll). */
+  compact?: boolean;
 }
 
-export function GoogleMap({ latitude, longitude, address }: GoogleMapProps) {
+export function GoogleMap({
+  latitude,
+  longitude,
+  address,
+  compact = false,
+}: GoogleMapProps) {
   const mapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&output=embed&z=15`;
+  const frameHeight = compact ? "h-[100px]" : "h-[180px]";
 
   return (
     <div className="w-full rounded-lg overflow-hidden border border-gray-200 relative">
-      <div className="relative h-[180px] overflow-hidden">
+      <div className={`relative overflow-hidden ${frameHeight}`}>
         <div 
           style={{
             position: 'absolute',

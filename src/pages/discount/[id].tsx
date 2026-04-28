@@ -10,7 +10,7 @@ import {
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { useDistance } from "@/hooks/useDistance";
-import { getDiscounts } from "@/lib/discounts";
+import { getDiscountById } from "@/lib/discounts";
 import { db } from "@/lib/firebase/firebase";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Discount } from "@/types/discount";
@@ -37,7 +37,7 @@ export default function DiscountDetail() {
     }>
   >([]);
   const [restrictionsReady, setRestrictionsReady] = useState(false);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const { distance, loading: distanceLoading } = useDistance({
     discountLocation: discountData?.location,
@@ -47,12 +47,19 @@ export default function DiscountDetail() {
 
   useEffect(() => {
     const loadRestrictions = async () => {
+      // Hasta que Firebase Auth resuelva, no asumir "sin usuario":
+      // si no, evaluamos elegibilidad con credenciales vacías y queda "no encontrado".
+      if (authLoading) {
+        setRestrictionsReady(false);
+        return;
+      }
       if (!user) {
         setUserMemberships([]);
         setUserCredentials([]);
         setRestrictionsReady(true);
         return;
       }
+      setRestrictionsReady(false);
       try {
         const memberships = await getActiveMemberships();
         const membershipNames: string[] = [];
@@ -141,12 +148,13 @@ export default function DiscountDetail() {
       }
     };
     loadRestrictions();
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     const loadDiscount = async () => {
       if (
         !router.isReady ||
+        authLoading ||
         !id ||
         typeof id !== "string" ||
         !restrictionsReady
@@ -157,8 +165,7 @@ export default function DiscountDetail() {
       try {
         setLoading(true);
         setNotFound(false);
-        const allDiscounts = await getDiscounts();
-        const discount = allDiscounts.find((d) => d.id === id);
+        const discount = await getDiscountById(id);
 
         if (discount) {
           const isEligible = isUserEligibleForDiscountRestrictions(
@@ -201,14 +208,22 @@ export default function DiscountDetail() {
     };
 
     loadDiscount();
-  }, [id, router.isReady, router, restrictionsReady, userMemberships, userCredentials]);
+  }, [
+    id,
+    router.isReady,
+    router,
+    restrictionsReady,
+    authLoading,
+    userMemberships,
+    userCredentials,
+  ]);
 
   if (!router.isReady) {
     return (
       <div className="min-h-screen with-bottom-nav-pb">
-        <div className="flex items-center px-3 py-4">
+        <div className="flex items-center px-3 py-2 sm:py-3">
           <BackButton className="mr-3" />
-          <h1 className="text-lg font-semibold text-gray-700 leading-none">
+          <h1 className="text-sm sm:text-base font-semibold text-gray-700 leading-none">
             Detalle del Descuento
           </h1>
         </div>
@@ -226,16 +241,16 @@ export default function DiscountDetail() {
     <div className="min-h-screen with-bottom-nav-pb">
       {/* Header con botón de regreso */}
       <div>
-        <div className="flex items-center px-3 py-4">
+        <div className="flex items-center px-3 py-2 sm:py-3">
           <BackButton className="mr-3" />
-          <h1 className="text-lg font-semibold text-gray-700 leading-none">
+          <h1 className="text-sm sm:text-base font-semibold text-gray-700 leading-none">
             Detalle del Descuento
           </h1>
         </div>
       </div>
 
       {/* Contenido principal */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4 space-y-3">
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -279,21 +294,22 @@ export default function DiscountDetail() {
             />
             {/* Mapa de ubicación */}
             {discountData.location && (
-              <div className="mt-4">
-                <h2 className="text-sm font-semibold text-gray-700 mb-2">
+              <section className="rounded-xl border border-gray-200 bg-gray-50/60 p-3 sm:p-4 shadow-sm ring-1 ring-gray-100">
+                <h2 className="text-xs font-semibold text-gray-800 uppercase tracking-wide mb-2">
                   Ubicación
                 </h2>
                 <GoogleMap
+                  compact
                   latitude={discountData.location.latitude}
                   longitude={discountData.location.longitude}
                   address={discountData.location.address}
                 />
                 {discountData.location.address && (
-                  <p className="text-xs text-gray-600 mt-2">
+                  <p className="text-[11px] text-gray-600 mt-2 leading-snug line-clamp-2">
                     {discountData.location.address}
                   </p>
                 )}
-              </div>
+              </section>
             )}
           </>
         ) : null}

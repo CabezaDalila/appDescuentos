@@ -31,6 +31,7 @@ import {
   createScrapingScript,
   deleteScrapingScript,
   getScrapingScripts,
+  MODO_ADMIN_SCRAPE_MAX_TOTAL,
   runModoScrapingAndSave,
   updateScrapingScript,
 } from "@/lib/admin";
@@ -272,7 +273,10 @@ export function ScrapingScriptsManager() {
     try {
       setRunningModoScraping(true);
       setLastModoResult(null);
-      const result = await runModoScrapingAndSave(120);
+      const result = await runModoScrapingAndSave({
+        limit: 120,
+        maxTotal: MODO_ADMIN_SCRAPE_MAX_TOTAL,
+      });
       setLastModoResult(result);
 
       if (result.stats.totalSaved > 0) {
@@ -342,6 +346,15 @@ export function ScrapingScriptsManager() {
           <p className="text-muted-foreground">
             Gestiona los scripts automatizados para extraer descuentos de
             diferentes sitios web
+          </p>
+          <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+            El botón MODO trae hasta {MODO_ADMIN_SCRAPE_MAX_TOTAL} promos por corrida (timeout
+            servidor/navegador). Para cargar el catálogo completo en local, ejecutá{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              node scripts/reset-and-rescrape-modo.js --maxTotal=20000
+            </code>{" "}
+            con <code className="rounded bg-muted px-1 py-0.5 text-xs">npm run dev</code> en
+            marcha.
           </p>
         </div>
         <div className="flex items-center gap-2">

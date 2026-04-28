@@ -1,14 +1,28 @@
 import { useAuth } from "@/hooks/useAuth";
 import { isLocationPermissionEnabled } from "@/hooks/useGeolocation";
 import {
-    getUserInteraction,
-    toggleFavorite as toggleFavoriteInteraction,
+  getUserInteraction,
+  toggleFavorite as toggleFavoriteInteraction,
 } from "@/lib/firebase/interactions";
-import { CreditCard, Users } from "lucide-react";
+import {
+  bankDisplayName,
+  bankInitialsAvatar,
+  resolveBankLogoPath,
+} from "@/utils/bank-logo";
+import { normalizeBankKey } from "@/utils/membership-match";
+import { cn } from "@/utils/css";
+import { CreditCard, Sparkles, Users } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Badge } from "../Share/badge";
+
+interface CredentialRow {
+  bank: string;
+  type: string;
+  brand: string;
+  level: string;
+}
 
 interface CardDiscountProps {
   id?: string;
@@ -16,12 +30,7 @@ interface CardDiscountProps {
   image: string;
   description: string;
   availableMemberships?: string[];
-  availableCredentials?: Array<{
-    bank: string;
-    type: string;
-    brand: string;
-    level: string;
-  }>;
+  availableCredentials?: CredentialRow[];
   category: string;
   points: number;
   countComments: number;
@@ -33,6 +42,18 @@ interface CardDiscountProps {
   renderVote?: React.ReactNode;
 }
 
+function dedupeCredentials(rows: CredentialRow[]): CredentialRow[] {
+  const seen = new Set<string>();
+  const out: CredentialRow[] = [];
+  for (const c of rows) {
+    const k = `${c.type}|${c.brand}|${c.level}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(c);
+  }
+  return out;
+}
+
 const CardDiscount: React.FC<CardDiscountProps> = ({
   id,
   title,
@@ -42,7 +63,7 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
   availableCredentials,
   category,
   points,
-  countComments,
+  countComments: _countComments,
   distance,
   expiration,
   discountPercentage,
@@ -61,7 +82,6 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     const line = rawHighlights[index];
     const nextLine = rawHighlights[index + 1];
 
-    // Evitar bullets huérfanos tipo "Exclusivo con" y unir con "Con <Banco>"
     if (/^exclusivo con$/i.test(line) && nextLine && /^con\s+/i.test(nextLine)) {
       highlights.push(`Exclusivo ${nextLine}`);
       index++;
@@ -78,9 +98,34 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     /tope|sin tope/i.test(line)
   );
 
+  const credentialsByBank = useMemo(() => {
+    const list = availableCredentials ?? [];
+    const map = new Map<string, CredentialRow[]>();
+    for (const c of list) {
+      const key =
+        normalizeBankKey(c.bank) || c.bank.trim().toLowerCase() || c.bank;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+    return [...map.entries()].sort(([a], [b]) =>
+      a.localeCompare(b, "es", { sensitivity: "base" })
+    );
+  }, [availableCredentials]);
+
+  const HIGHLIGHT_PREVIEW = 2;
+  const [highlightsExpanded, setHighlightsExpanded] = useState(false);
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [isSharing, setIsSharing] = useState(false);
   const { user } = useAuth();
+
+  const highlightsToShow =
+    highlightsExpanded || highlights.length <= HIGHLIGHT_PREVIEW
+      ? highlights
+      : highlights.slice(0, HIGHLIGHT_PREVIEW);
+  const highlightsHiddenCount = Math.max(
+    0,
+    highlights.length - HIGHLIGHT_PREVIEW
+  );
 
   useEffect(() => {
     const loadFavorite = async () => {
@@ -135,7 +180,6 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
           url: window.location.href,
         });
       } else {
-        // Fallback: copiar al portapapeles
         const shareText = `${title}\n\n${description}\n\n${window.location.href}`;
         await navigator.clipboard.writeText(shareText);
         toast.success("Enlace copiado al portapapeles");
@@ -143,12 +187,11 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     } catch (error) {
       if (error instanceof Error && error.name !== "AbortError") {
         console.error("Error al compartir:", error);
-        // Fallback: copiar al portapapeles si falla
         try {
           const shareText = `${title}\n\n${description}\n\n${window.location.href}`;
           await navigator.clipboard.writeText(shareText);
           toast.success("Enlace copiado al portapapeles");
-        } catch (clipboardError) {
+        } catch {
           toast.error("No se pudo compartir el descuento");
         }
       }
@@ -157,113 +200,135 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
     }
   };
 
+  const hasMemberships =
+    Array.isArray(availableMemberships) && availableMemberships.length > 0;
+  const hasCredentials =
+    Array.isArray(availableCredentials) && availableCredentials.length > 0;
+  const noRequirements = !hasMemberships && !hasCredentials;
+
+  const multiBankScroll =
+    credentialsByBank.length > 1
+      ? "flex overflow-x-auto snap-x snap-mandatory gap-2 pb-0.5 -mx-1 px-1 sm:flex-wrap sm:overflow-x-visible sm:pb-0"
+      : "flex flex-col gap-2";
+
   return (
-    <div className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm">
-      {/* Imagen con overlay y badges */}
-      <div className="relative h-52 sm:h-64 w-full">
+    <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="relative h-40 w-full shrink-0 sm:h-44">
         <Image
           src={image}
-          alt="Card Discount"
+          alt=""
           fill
           className="object-cover"
           priority={false}
         />
-        
-        {/* Overlay gradiente */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-        
-        {/* Badge de descuento */}
-        {discountPercentage && (
-          <div className="absolute top-3 left-3 z-10">
-            <Badge className="bg-gradient-to-r from-purple-600 to-purple-500 text-white text-sm font-bold px-3 py-1 shadow-lg">
-              {discountPercentage}
-            </Badge>
-          </div>
-        )}
 
-        {/* Botones de acción */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-          <button
-            onClick={handleShare}
-            disabled={isSharing}
-            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors disabled:opacity-50"
-          >
-            <Image src="/share.png" alt="Share" width={18} height={18} />
-          </button>
-          <button
-            onClick={handleLike}
-            className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
-          >
-            <Image
-              src={isLiked ? "/loveRed.png" : "/love.png"}
-              alt="Like"
-              width={18}
-              height={18}
-            />
-          </button>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/35" />
+
+        <div className="absolute left-2 right-2 top-2 z-10 flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            {discountPercentage ? (
+              <Badge className="border-0 bg-gradient-to-r from-purple-600 to-purple-500 px-2 py-0.5 text-xs font-bold text-white shadow-md">
+                {discountPercentage}
+              </Badge>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-white/95 py-0.5 pl-1 pr-0.5 shadow-md ring-1 ring-black/5 backdrop-blur-sm">
+            {renderVote ? (
+              <span className="flex scale-90 items-center">{renderVote}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={isSharing}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100 disabled:opacity-50"
+              aria-label="Compartir"
+            >
+              <Image src="/share.png" alt="" width={16} height={16} />
+            </button>
+            <button
+              type="button"
+              onClick={handleLike}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100"
+              aria-label={isLiked ? "Quitar favorito" : "Guardar favorito"}
+            >
+              <Image
+                src={isLiked ? "/loveRed.png" : "/love.png"}
+                alt=""
+                width={16}
+                height={16}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* Categoría y puntos en la imagen */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">
-            {category}
-          </span>
-          <span className="bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1">
-            <Image src="/star.png" alt="Star" width={12} height={12} />
-            {points}
-          </span>
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-2 pt-10">
+          <h1 className="text-base font-bold leading-tight text-white drop-shadow-sm line-clamp-2 sm:text-lg">
+            {title}
+          </h1>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className="max-w-[72%] truncate rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm sm:text-[11px]">
+              {category}
+            </span>
+            <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white sm:text-[11px]">
+              <Image src="/star.png" alt="" width={10} height={10} />
+              {points}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="p-4 space-y-4">
-        {/* Título */}
-        <h1 className="text-lg font-bold text-gray-900 leading-tight">{title}</h1>
-        
-        {/* Info: distancia, fecha y votos */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isLocationPermissionEnabled() && distance && distance !== "" && (
-              <span className="flex items-center gap-1.5 text-sm text-gray-500">
-                <span className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center">
-                  <Image src="/distance.png" alt="Distance" width={12} height={12} />
-                </span>
-                {distance}
+      <div className="space-y-2.5 p-3 sm:p-3.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-600 sm:text-xs">
+          {isLocationPermissionEnabled() && distance && distance !== "" && (
+            <span className="inline-flex items-center gap-1">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50">
+                <Image src="/distance.png" alt="" width={11} height={11} />
               </span>
-            )}
-            <span className="flex items-center gap-1.5 text-sm text-gray-500">
-              <span className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center">
-                <Image src="/expiration.png" alt="Expiration" width={12} height={12} />
-              </span>
-              {expiration}
+              <span className="max-w-[42vw] truncate sm:max-w-none">{distance}</span>
             </span>
-          </div>
-          {renderVote && (
-            <div className="flex items-center">{renderVote}</div>
           )}
+          <span className="inline-flex items-center gap-1">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-50">
+              <Image src="/expiration.png" alt="" width={11} height={11} />
+            </span>
+            <span>{expiration}</span>
+          </span>
         </div>
 
-        {/* Resumen de la promo (ficha legible) */}
         {highlights.length > 0 && (
-          <div className="bg-gray-50 p-3 rounded-xl space-y-2">
-            <ul className="space-y-1.5">
-              {highlights.map((line) => (
-                <li key={line} className="text-sm text-gray-700 leading-relaxed flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-purple-400 flex-shrink-0" />
+          <div className="rounded-lg border border-gray-200 bg-gray-50/90 p-2.5 shadow-sm">
+            <ul className="space-y-1">
+              {highlightsToShow.map((line, idx) => (
+                <li
+                  key={`${idx}-${line.slice(0, 48)}`}
+                  className="flex gap-2 text-[11px] leading-snug text-gray-800 sm:text-xs"
+                >
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-purple-500" />
                   <span>{line}</span>
                 </li>
               ))}
             </ul>
-            {/* Tope/condición extra si no vino en highlights */}
-            {(((discountAmount && discountAmount > 0) || terms) && !hasTopeInHighlights) ? (
-              <div className="pt-2 border-t border-gray-200">
-                <span className="text-xs text-gray-500">
+            {highlightsHiddenCount > 0 ? (
+              <button
+                type="button"
+                className="mt-1.5 text-left text-[11px] font-semibold text-purple-600 hover:text-purple-700 sm:text-xs"
+                onClick={() => setHighlightsExpanded((v) => !v)}
+              >
+                {highlightsExpanded
+                  ? "Ver menos"
+                  : `+${highlightsHiddenCount} más`}
+              </button>
+            ) : null}
+            {(((discountAmount && discountAmount > 0) || terms) &&
+              !hasTopeInHighlights) ? (
+              <div className="mt-1.5 border-t border-gray-200/80 pt-1.5">
+                <span className="text-[10px] leading-snug text-gray-600 sm:text-[11px]">
                   {terms && /tope|sin tope/i.test(normalizedTerms) ? (
-                    <span className="text-gray-700 font-medium">{terms}</span>
+                    <span className="font-medium text-gray-800">{terms}</span>
                   ) : (
                     <>
-                      Tope de reintegro:{" "}
-                      <span className="text-gray-700 font-medium">
+                      Tope:{" "}
+                      <span className="font-medium text-gray-800">
                         ${discountAmount?.toLocaleString("es-AR")}
                       </span>
                     </>
@@ -274,69 +339,115 @@ const CardDiscount: React.FC<CardDiscountProps> = ({
           </div>
         )}
 
-        {/* Sección Aplican */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-            <span className="w-1 h-4 bg-purple-500 rounded-full"></span>
-            Aplican
+        <section className="space-y-2 rounded-lg border border-gray-200 bg-gray-50/70 p-2.5 sm:p-3">
+          <h2 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-800 sm:text-xs">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-purple-600" />
+            Quién puede usarlo
           </h2>
 
-          {/* Si no tiene requisitos */}
-          {(!availableMemberships || availableMemberships.length === 0) &&
-            (!availableCredentials || availableCredentials.length === 0) && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                <span className="text-sm text-green-700 font-medium">
-                  ✓ Sin requisitos especiales
-                </span>
-              </div>
-            )}
+          {noRequirements && (
+            <div className="rounded-md border border-emerald-200/80 bg-emerald-50/90 px-2 py-1.5">
+              <span className="text-[11px] font-medium text-emerald-800 sm:text-xs">
+                Sin requisitos especiales
+              </span>
+            </div>
+          )}
 
-          {/* Membresías */}
-          {availableMemberships && availableMemberships.length > 0 && (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">
-                  Membresías:
-                </span>
+          {hasMemberships && (
+            <div className="space-y-1">
+              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                <Users className="h-3 w-3" />
+                Membresías
               </div>
-              <div className="flex flex-wrap gap-2">
-                {availableMemberships.map((membership, index) => (
-                  <Badge
+              <div className="flex flex-wrap gap-1">
+                {availableMemberships!.map((membership, index) => (
+                  <span
                     key={index}
-                    variant="outline"
-                    className="bg-white text-blue-700 border-blue-200 text-xs font-medium"
+                    className="inline-flex items-center rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-800 shadow-sm sm:text-[11px]"
                   >
                     {membership}
-                  </Badge>
+                  </span>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Credenciales */}
-          {availableCredentials && availableCredentials.length > 0 && (
-            <div className="bg-violet-50 border border-violet-100 rounded-xl p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-violet-600" />
-                <span className="text-sm font-medium text-violet-900">
-                  Credenciales:
-                </span>
+          {hasCredentials && (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                <CreditCard className="h-3 w-3" />
+                Tarjetas
               </div>
-              <div className="flex flex-wrap gap-2">
-                {availableCredentials.map((credential, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="bg-white text-violet-700 border-violet-200 text-xs font-medium"
-                  >
-                    {credential.bank} - {credential.type} {credential.brand} {credential.level}
-                  </Badge>
-                ))}
+              <div className={multiBankScroll}>
+                {credentialsByBank.map(([groupKey, rows]) => {
+                  const sampleBank = rows[0]?.bank ?? groupKey;
+                  const displayName = bankDisplayName(sampleBank);
+                  const logoSrc = resolveBankLogoPath(sampleBank);
+                  const avatar = bankInitialsAvatar(sampleBank);
+                  const uniqueRows = dedupeCredentials(rows);
+                  const bankCardWide =
+                    credentialsByBank.length > 1
+                      ? "min-w-[min(88vw,18rem)] shrink-0 snap-start sm:min-w-0 sm:max-w-[min(100%,20rem)] sm:flex-1"
+                      : "";
+
+                  return (
+                    <div
+                      key={groupKey}
+                      className={cn(
+                        "flex gap-2 rounded-lg border border-gray-100 bg-white p-2 shadow-sm",
+                        bankCardWide
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg",
+                          logoSrc
+                            ? "bg-white ring-1 ring-gray-100"
+                            : cn("text-[10px] font-bold", avatar.className)
+                        )}
+                      >
+                        {logoSrc ? (
+                          <Image
+                            src={logoSrc}
+                            alt=""
+                            width={40}
+                            height={40}
+                            className="object-contain p-1"
+                          />
+                        ) : (
+                          <span>{avatar.initials}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-xs font-semibold leading-tight text-gray-900">
+                          {displayName}
+                        </p>
+                        <div className="flex flex-col gap-1">
+                          {uniqueRows.map((cred, idx) => (
+                            <div
+                              key={`${groupKey}-${idx}`}
+                              className="flex flex-wrap items-center gap-1"
+                            >
+                              <span className="inline-flex rounded border border-gray-200 bg-gray-50 px-1.5 py-px text-[10px] font-medium text-gray-700">
+                                {cred.type}
+                              </span>
+                              <span className="inline-flex rounded border border-gray-200 bg-white px-1.5 py-px text-[10px] font-medium text-gray-800">
+                                {cred.brand}
+                              </span>
+                              <span className="inline-flex rounded border border-purple-100 bg-purple-50 px-1.5 py-px text-[10px] font-medium text-purple-900">
+                                {cred.level}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

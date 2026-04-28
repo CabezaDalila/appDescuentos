@@ -21,18 +21,46 @@ type LooseCredential = {
   level: string;
 };
 
+function isWildcardCredentialValue(value: unknown): boolean {
+  const normalized = normalizeComparable(typeof value === "string" ? value : "");
+  return (
+    normalized.length === 0 ||
+    normalized === "otro" ||
+    normalized === "otros" ||
+    normalized === "todas" ||
+    normalized === "todos" ||
+    normalized === "cualquiera" ||
+    normalized === "any" ||
+    normalized === "na" ||
+    normalized === "n/a" ||
+    normalized === "sin marca" ||
+    normalized === "sin nivel"
+  );
+}
+
 export function credentialMatches(
   user: UserCredential,
   required: LooseCredential
 ): boolean {
+  const userType = normalizeComparable(String(user.type));
+  const requiredType = normalizeComparable(String(required.type));
+  const userBrand = normalizeComparable(String(user.brand));
+  const requiredBrand = normalizeComparable(String(required.brand));
+  const userLevel = normalizeComparable(String(user.level));
+  const requiredLevel = normalizeComparable(String(required.level));
+
+  const typeMatches =
+    isWildcardCredentialValue(required.type) || userType === requiredType;
+  const brandMatches =
+    isWildcardCredentialValue(required.brand) || userBrand === requiredBrand;
+  const levelMatches =
+    isWildcardCredentialValue(required.level) || userLevel === requiredLevel;
+
   return (
     normalizeBankKey(user.bank) === normalizeBankKey(required.bank) &&
-    normalizeComparable(String(user.type)) ===
-      normalizeComparable(String(required.type)) &&
-    normalizeComparable(String(user.brand)) ===
-      normalizeComparable(String(required.brand)) &&
-    normalizeComparable(String(user.level)) ===
-      normalizeComparable(String(required.level))
+    typeMatches &&
+    brandMatches &&
+    levelMatches
   );
 }
 

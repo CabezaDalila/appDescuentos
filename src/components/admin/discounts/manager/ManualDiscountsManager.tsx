@@ -8,6 +8,7 @@ import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
 import { deleteField } from "@/lib/firebase/firebase";
+import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { ManualDiscount } from "@/types/admin";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -156,11 +157,18 @@ export function ManualDiscountsManager({
         }
       }
 
+      const expDate = parseAdminExpirationInput(formData.expirationDate);
+      if (!expDate) {
+        toast.error("Revisá la fecha de expiración (dd/mm/aaaa)");
+        setSubmitting(false);
+        return;
+      }
+
       const discountData: any = {
         title: formData.title.trim(),
         origin: formData.origin.trim(),
         category: formData.category!,
-        expirationDate: new Date(formData.expirationDate),
+        expirationDate: expDate,
         description: formData.description.trim(),
         isVisible: formData.isVisible,
       };

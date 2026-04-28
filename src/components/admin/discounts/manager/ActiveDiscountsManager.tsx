@@ -2,6 +2,7 @@ import { DiscountCard } from "@/components/admin/discounts/ui/DiscountCard";
 import { DiscountForm } from "@/components/admin/discounts/ui/DiscountForm/DiscountForm";
 import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEmptyState";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
+import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { getApprovedDiscounts } from "@/lib/discounts";
 import { db } from "@/lib/firebase/firebase";
 import { ManualDiscount } from "@/types/admin";
@@ -83,13 +84,19 @@ export function ActiveDiscountsManager() {
 
     try {
       setSubmitting(true);
+      const expDate = parseAdminExpirationInput(formData.expirationDate);
+      if (!expDate) {
+        toast.error("Revisá la fecha de expiración (dd/mm/aaaa)");
+        setSubmitting(false);
+        return;
+      }
       const updateData: UpdateData<DocumentData> = {
         title: formData.title.trim(),
         name: formData.title.trim(),
         origin: formData.origin.trim(),
         category: formData.category!,
         description: formData.description.trim(),
-        expirationDate: Timestamp.fromDate(new Date(formData.expirationDate)),
+        expirationDate: Timestamp.fromDate(expDate),
         isVisible: formData.isVisible,
         updatedAt: Timestamp.now(),
       };

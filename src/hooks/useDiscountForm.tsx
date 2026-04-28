@@ -1,4 +1,5 @@
 import { DiscountFormData } from "@/components/admin/discounts/ui/DiscountForm/DiscountForm";
+import { formatDateDdMmYyyy } from "@/lib/date-ar";
 import { ManualDiscount } from "@/types/admin";
 import { useCallback, useState } from "react";
 
@@ -57,9 +58,12 @@ export function useDiscountForm(): UseDiscountFormReturn {
       title: discount.title,
       origin: discount.origin,
       category: discount.category || "",
-      expirationDate: discount.expirationDate
-        ? new Date(discount.expirationDate).toISOString().split("T")[0]
-        : "",
+      expirationDate: (() => {
+        if (!discount.expirationDate) return "";
+        const dt = new Date(discount.expirationDate);
+        if (Number.isNaN(dt.getTime())) return "";
+        return formatDateDdMmYyyy(dt);
+      })(),
       description: discount.description,
       discountPercentage: discount.discountPercentage?.toString() || "",
       discountAmount: discount.discountAmount?.toString() || "",

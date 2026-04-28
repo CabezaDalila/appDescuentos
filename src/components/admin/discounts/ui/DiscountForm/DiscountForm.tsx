@@ -105,7 +105,7 @@ export function DiscountForm({
     title: "Título",
     origin: "Origen/Tienda",
     category: "Categoría",
-    expirationDate: "Fecha de expiración",
+    expirationDate: "Fecha de expiración (dd/mm/aaaa)",
     description: "Descripción",
     discountPercentage: "Porcentaje/Monto de descuento",
     discountAmount: "Monto de descuento",
@@ -656,10 +656,15 @@ export function DiscountForm({
               )}
             </div>
             <div>
-              <Label htmlFor="expirationDate">Fecha de Expiración *</Label>
+              <Label htmlFor="expirationDate">
+                Fecha de expiración (dd/mm/aaaa) *
+              </Label>
               <Input
                 id="expirationDate"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="dd/mm/aaaa"
                 value={formData.expirationDate}
                 onChange={(e) => {
                   onFormDataChange({
@@ -674,7 +679,6 @@ export function DiscountForm({
                     });
                   }
                 }}
-                min={new Date().toISOString().split("T")[0]}
                 className={formErrors.expirationDate ? "border-red-500" : ""}
               />
               {formErrors.expirationDate && (

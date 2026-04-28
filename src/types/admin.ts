@@ -84,7 +84,8 @@ export interface ManualDiscount {
   title: string;
   origin: string;
   category: string;
-  expirationDate: Date;
+  /** Ausente si el documento no tiene expirationDate/validUntil (ej. scraping incompleto). */
+  expirationDate?: Date;
   description: string;
   discountPercentage?: number;
   discountAmount?: number;
