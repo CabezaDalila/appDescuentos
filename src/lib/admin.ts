@@ -1,4 +1,5 @@
 import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
+import { authHeader } from "@/lib/firebase/auth-header";
 import {
   addDoc,
   collection,
@@ -399,6 +400,7 @@ export const runModoScrapingAndSave = async (
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await authHeader()),
     },
     body: JSON.stringify({ limit, maxTotal }),
   });

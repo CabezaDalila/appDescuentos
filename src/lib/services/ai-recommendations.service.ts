@@ -2,6 +2,7 @@ import type {
   AIRecommendation,
   RecommendationRequest,
 } from "@/types/recommendations";
+import { authHeader } from "@/lib/firebase/auth-header";
 import { canMakeRequest, recordRequest } from "./ai-rate-limiter.service";
 
 /**
@@ -14,6 +15,7 @@ async function callGeminiAPI(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await authHeader()),
     },
     body: JSON.stringify(request),
   });

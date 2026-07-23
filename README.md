@@ -1,6 +1,8 @@
 # App de Descuentos
 
-Este es un proyecto de Next.js diseñado para ser una aplicación de descuentos y fidelización de clientes. Utiliza Firebase para la autenticación y está construido con componentes de shadcn/ui y Tailwind CSS para el diseño.
+Este es un proyecto de Next.js diseñado para ser una aplicación de descuentos y fidelización de clientes. El **login lo maneja Supabase** (con un puente temporal a Firebase para que Firestore siga funcionando) y está construido con componentes de shadcn/ui y Tailwind CSS para el diseño.
+
+> 🚀 **¿Vas a levantar el proyecto o modificar algo? Empezá por [`docs/SETUP.md`](docs/SETUP.md)** — tiene el paso a paso para bajar las variables de entorno desde Vercel, configurar el service account de Firebase, correr en local, y entender cómo funciona la autenticación (Supabase + puente a Firebase).
 
 ## 🚀 Cómo empezar
 

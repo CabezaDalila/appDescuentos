@@ -2,6 +2,7 @@ import type {
   AIRecommendation,
   RecommendationRequest,
 } from "@/types/recommendations";
+import { requireUser } from "@/lib/server/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -170,8 +171,17 @@ export default async function handler(
     return res.status(405).json({ error: "Método no permitido" });
   }
 
+  // Requiere usuario autenticado: consume cuota de Gemini.
+  const auth = await requireUser(req, res);
+  if (!auth) return;
+
   try {
     const request: RecommendationRequest = req.body;
+
+    // Un usuario solo puede pedir recomendaciones para sí mismo.
+    if (request.userId && request.userId !== auth.uid) {
+      return res.status(403).json({ error: "userId no coincide con el usuario autenticado" });
+    }
 
     if (!request.userId) {
       return res.status(400).json({ error: "Usuario no identificado" });

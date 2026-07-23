@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/Share/checkbox";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import { Separator } from "@/components/Share/separator";
-import { auth, db } from "@/lib/firebase/firebase";
+import { auth } from "@/lib/firebase/firebase";
 import {
     login,
     loginWithGoogle,
@@ -20,9 +20,8 @@ import {
     resendEmailVerification,
     resetPassword,
     verifyEmail,
-} from "@/lib/firebase/firebase-auth";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+} from "@/lib/supabase/auth";
+import { signOut } from "firebase/auth";
 import { CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
@@ -270,27 +269,9 @@ export default function AuthForm() {
     clearMessages();
 
     try {
-      // Intentar iniciar sesión temporalmente para obtener el usuario
-      // Firebase permite login aunque el email no esté verificado, pero luego verificamos
-      const result = await signInWithEmailAndPassword(
-        auth,
-        pendingVerificationEmail,
-        formData.password
-      );
-      const user = result.user;
-
-      // Verificar si el email ya está verificado
-      if (user.emailVerified) {
-        // Si el email ya está verificado, simplemente cerrar sesión
-        await auth.signOut();
-        setSuccess("Tu email ya está verificado. Puedes iniciar sesión ahora.");
-        setPendingVerificationEmail(null);
-        return;
-      }
-
-      // Si el email no está verificado, reenviar el email
+      // Supabase reenvía el email de confirmación directamente (sin login previo).
       try {
-        await resendEmailVerification(user);
+        await resendEmailVerification(pendingVerificationEmail);
         // Cerrar sesión después de enviar el email
         await auth.signOut();
         setSuccess(
@@ -467,25 +448,14 @@ export default function AuthForm() {
         } else {
           // Crear displayName completo
           const displayName = `${formData.firstName} ${formData.lastName}`.trim();
-          const result = await register(formData.email, formData.password, displayName);
-
-          // Guardar solo el perfil, NO el onboarding hasta que el email esté verificado
-          // El onboarding se guardará cuando el usuario inicie sesión después de verificar
-          if (result?.user?.uid) {
-            await setDoc(
-              doc(db, "users", result.user.uid),
-              {
-                profile: {
-                  firstName: formData.firstName,
-                  lastName: formData.lastName,
-                  phone: getFullPhoneNumber(),
-                },
-                displayName: displayName, // Guardar también en Firestore
-                // NO guardar onboarding aquí - se guardará después de verificar el email
-              },
-              { merge: true }
-            );
-          }
+          // El perfil (nombre, teléfono) va en user_metadata de Supabase; se
+          // vuelca a Firestore en el primer login confirmado (ver bridge.ts).
+          // No se puede escribir en Firestore acá: el signUp aún no crea sesión.
+          await register(formData.email, formData.password, displayName, {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: getFullPhoneNumber(),
+          });
 
           // Limpiar el formulario
           setFormData({

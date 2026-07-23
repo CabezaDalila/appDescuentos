@@ -1,4 +1,5 @@
 import type { ScrapedDiscountInput, ScrapingExecutionResult } from "@/types/admin";
+import { requireAdmin } from "@/lib/server/auth";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const MODO_BASE_URL = "https://promoshub.modo.com.ar";
@@ -528,6 +529,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
   }
+
+  // Solo admin: esta ruta dispara scraping masivo contra un tercero.
+  const auth = await requireAdmin(req, res);
+  if (!auth) return;
 
   const body =
     req.body && typeof req.body === "object" && !Array.isArray(req.body)

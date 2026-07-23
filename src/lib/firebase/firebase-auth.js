@@ -79,7 +79,7 @@ export const resetPassword = async (email) => {
   return sendPasswordResetEmail(auth, email, actionCodeSettings);
 };
 
-const saveUserToFirestore = async (user) => {
+export const saveUserToFirestore = async (user) => {
   try {
     const userRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userRef);
