@@ -121,7 +121,7 @@ export async function updateUserProfile(userId, profileData) {
 /**
  * Actualiza el displayName del usuario en Firebase Auth y Firestore
  * Actualiza también firstName y lastName en el objeto profile (no duplicados)
- * @param {import('firebase/auth').User} user - Usuario de Firebase Auth
+ * @param {{uid: string}} user - Usuario (solo se usa el uid; la sesión de Firebase se toma de auth.currentUser)
  * @param {string} displayName - Nuevo nombre a mostrar
  */
 export async function updateDisplayName(user, displayName) {
@@ -130,8 +130,10 @@ export async function updateDisplayName(user, displayName) {
         throw new Error("displayName no puede estar vacío");
     }
 
-    // Actualizar en Firebase Auth
-    await updateProfile(user, { displayName: displayName.trim() });
+    // Actualizar en Firebase Auth (sesión espejo del puente).
+    if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { displayName: displayName.trim() });
+    }
 
     // Actualizar en Firestore
     const userRef = doc(db, "users", user.uid);
@@ -226,7 +228,7 @@ export async function uploadProfilePhoto(file, userId) {
 
 /**
  * Actualiza la foto de perfil del usuario en Firebase Auth y Firestore
- * @param {import('firebase/auth').User} user - Usuario de Firebase Auth
+ * @param {{uid: string}} user - Usuario (solo se usa el uid; la sesión de Firebase se toma de auth.currentUser)
  * @param {string} photoURL - URL de la nueva foto
  */
 export async function updatePhotoURL(user, photoURL) {
@@ -235,8 +237,10 @@ export async function updatePhotoURL(user, photoURL) {
         throw new Error("photoURL no puede estar vacío");
     }
 
-    // Actualizar en Firebase Auth
-    await updateProfile(user, { photoURL: photoURL.trim() });
+    // Actualizar en Firebase Auth (sesión espejo del puente).
+    if (auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL: photoURL.trim() });
+    }
 
     // Actualizar en Firestore
     const userRef = doc(db, "users", user.uid);

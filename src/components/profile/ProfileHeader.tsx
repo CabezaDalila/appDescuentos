@@ -1,5 +1,5 @@
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { User } from "firebase/auth";
+import type { AppUser as User } from "@/lib/supabase/auth";
 import Image from "next/image";
 
 interface ProfileHeaderProps {
@@ -28,16 +28,16 @@ function getInitial(user: User) {
 }
 
 function getMemberSince(user: User) {
-  if (user?.metadata?.creationTime) {
-    const year = new Date(user.metadata.creationTime).getFullYear();
+  if (user?.createdAt) {
+    const year = new Date(user.createdAt).getFullYear();
     return year;
   }
   return "";
 }
 
 function getMemberSinceDate(user: User) {
-  if (user?.metadata?.creationTime) {
-    const date = new Date(user.metadata.creationTime);
+  if (user?.createdAt) {
+    const date = new Date(user.createdAt);
     const months = [
       "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
       "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"

@@ -2,6 +2,7 @@
  * Servicio de notificaciones para recomendaciones inteligentes
  */
 
+import { authHeader } from "@/lib/firebase/auth-header";
 import type { AIRecommendation } from "@/types/recommendations";
 
 /**
@@ -26,7 +27,7 @@ export async function sendRecommendationNotification(
 
     const response = await fetch("/api/notifications/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeader()) },
       body: JSON.stringify({
         userId,
         title: "💡 Nueva Recomendación para ti",
@@ -61,7 +62,7 @@ export async function sendReminderNotification(
   try {
     const response = await fetch("/api/notifications/send", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeader()) },
       body: JSON.stringify({
         userId,
         title: "🔔 Recordatorio: Descuento disponible hoy",

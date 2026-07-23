@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebase/firebase";
 import { saveNotificationToFirestore } from "@/lib/notifications";
+import { requireUser } from "@/lib/server/auth";
 import { collection, getDocs } from "firebase/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -27,6 +28,9 @@ export default async function handler(
     return res.status(405).json({ error: "Método no permitido" });
   }
 
+  const auth = await requireUser(req, res);
+  if (!auth) return;
+
   try {
     const {
       userId,
@@ -41,6 +45,19 @@ export default async function handler(
     if (!title || !message) {
       return res.status(400).json({
         error: "El título y el mensaje son requeridos",
+      });
+    }
+
+    // Broadcast (a todos, a player_ids, o a OTRO usuario) es solo-admin.
+    // Un usuario no-admin únicamente puede notificarse a sí mismo.
+    const isBroadcast =
+      send_to_all ||
+      (include_player_ids && include_player_ids.length > 0) ||
+      (!!userId && userId !== auth.uid) ||
+      !userId;
+    if (isBroadcast && !auth.isAdmin) {
+      return res.status(403).json({
+        error: "Solo un administrador puede enviar notificaciones masivas",
       });
     }
 

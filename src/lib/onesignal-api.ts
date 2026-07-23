@@ -1,3 +1,5 @@
+import { authHeader } from "@/lib/firebase/auth-header";
+
 export interface SendNotificationOptions {
   userId?: string;
   oneSignalPlayerIds?: string[];
@@ -23,6 +25,7 @@ export const sendPushNotification = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(await authHeader()),
       },
       body: JSON.stringify({
         userId: options.userId,
