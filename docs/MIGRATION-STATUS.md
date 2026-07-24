@@ -20,7 +20,9 @@ el puente + Firebase.
 - Migraciones aplicadas: **0001** (profiles + trigger + RLS), **0002** (schema
   completo: memberships, cards, discounts, discount_votes, notifications,
   scraping_scripts + RLS + `is_admin()`), **0003** (funciones de voto),
-  **0004** (policies de admin en `profiles`: select/update con `is_admin()`).
+  **0004** (policies de admin en `profiles`: select/update con `is_admin()`),
+  **0005** (notifications: policies insert/delete-own + tabla en la publicación
+  `supabase_realtime`).
 - Dev server: `npm run dev` → **puerto fijo 3007** (coincide con Supabase/Google OAuth).
 - Admin: el rol vive en `public.profiles.role`. `dalilacabeza@gmail.com` ya es admin.
   (El `useAdmin` cachea en memoria: si cambia el rol, hard-reload.)
@@ -52,12 +54,28 @@ el puente + Firebase.
     lo ignora en insert/update, decisión de Fase 3). Si se quiere conservar,
     agregar columna `url` a `discounts` + al `WRITE_MAP`/`rowToData` del shim.
 
+- **Fase 5 (Notificaciones)** — colección `notifications` → tabla Postgres.
+  - `notifications.ts` (SERVIDOR, service role): `saveNotification` +
+    `saveNotificationForAllUsers` (insert masivo). Consumido por
+    `api/notifications/send.ts` (ya no toca Firestore para users/notifs).
+  - `supabase/notifications-client.ts` (BROWSER): `saveOwnNotification`
+    (insert de la propia, RLS `notifications_insert_own`) — lo usa
+    `onesignal-config.ts` al recibir/abrir una push.
+  - `useNotifications.tsx` → Supabase: carga + realtime (canal
+    `postgres_changes` filtrado por `user_id`) + markAsRead/markAllAsRead/
+    delete, con update optimista.
+  - `admin-server.ts`: se exporta `getAdminClient()` (service role) para el
+    insert server-side.
+  - **Ojo prod**: el insert server-side (broadcast / notificar a OTRO usuario)
+    necesita `SUPABASE_SERVICE_ROLE_KEY` en el server. Sin ella cae al anon y
+    RLS bloquea insertar filas de otros. Las propias (browser) y las lecturas
+    andan igual. Verificar la env en Vercel.
+
 ## Pendiente ⏳ (orden sugerido)
-1. **Notificaciones** — `src/lib/notifications.ts` (colección `notifications`) → tabla.
-2. **Storage** — `profileService.uploadProfilePhoto` (fotos) → Supabase Storage.
+1. **Storage** — `profileService.uploadProfilePhoto` (fotos) → Supabase Storage.
    También revisar `routes.ts` (`users/{uid}/dailyRoutes`, usado por
    `useAIRecommendations`) — feature de tracking, sigue en Firestore.
-3. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
+2. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
    `/api/auth/firebase-bridge`, `firebase/admin-server.ts`), quitar deps de
    Firebase, borrar `firebase.js`/config. Recién ahí **mergear a `main`** y deployar.
 

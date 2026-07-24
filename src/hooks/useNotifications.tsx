@@ -1,15 +1,5 @@
-import { db } from "@/lib/firebase/firebase";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "./useAuth";
 
 export interface Notification {
@@ -17,7 +7,7 @@ export interface Notification {
   userId: string;
   title: string;
   message: string;
-  timestamp: any;
+  timestamp: Date;
   read: boolean;
   type:
     | "vencimiento_tarjeta"
@@ -30,113 +20,142 @@ export interface Notification {
     | "error";
 }
 
+interface NotificationRow {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string | null;
+  type: Notification["type"];
+  read: boolean;
+  created_at: string;
+}
+
+/** Fila de public.notifications -> forma que consume la UI. */
+function rowToNotification(row: NotificationRow): Notification {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    message: row.body ?? "",
+    timestamp: new Date(row.created_at),
+    read: row.read,
+    type: row.type,
+  };
+}
+
 export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = user?.uid;
+
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setNotifications([]);
       setLoading(false);
       return;
     }
 
-    // Usar la colección global de notificaciones
-    const notificationsRef = collection(db, "notifications");
-    // Filtrar solo las notificaciones del usuario actual
-    const q = query(
-      notificationsRef,
-      where("userId", "==", user.uid),
-      orderBy("timestamp", "desc")
-    );
+    let active = true;
+    setLoading(true);
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const notificationsData: Notification[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          // Convertir timestamp a Date de manera segura
-          let timestamp: Date;
-          if (data.timestamp?.toDate) {
-            // Timestamp de Firestore
-            timestamp = data.timestamp.toDate();
-          } else if (data.timestamp instanceof Date) {
-            // Ya es un Date
-            timestamp = data.timestamp;
-          } else if (typeof data.timestamp === 'string') {
-            // String de fecha
-            timestamp = new Date(data.timestamp);
-          } else if (data.timestamp && typeof data.timestamp === 'object' && data.timestamp.seconds) {
-            // Timestamp de Firestore como objeto
-            timestamp = new Date(data.timestamp.seconds * 1000);
-          } else {
-            // Fallback: usar fecha actual
-            timestamp = new Date();
-          }
-
-          notificationsData.push({
-            id: doc.id,
-            ...data,
-            timestamp,
-          } as Notification);
-        });
-        setNotifications(notificationsData);
-        setLoading(false);
+    // Carga inicial (RLS ya limita a las del usuario).
+    supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .then(({ data, error: err }) => {
+        if (!active) return;
+        if (err) {
+          console.error("Error obteniendo notificaciones:", err);
+          setError("Error al cargar notificaciones");
+          setLoading(false);
+          return;
+        }
+        setNotifications((data ?? []).map((r) => rowToNotification(r as NotificationRow)));
         setError(null);
-      },
-      (err) => {
-        console.error("Error obteniendo notificaciones:", err);
-        setError("Error al cargar notificaciones");
         setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user]);
-
-  const markAsRead = async (notificationId: string) => {
-    if (!user) return;
-
-    try {
-      const notificationRef = doc(db, `notifications/${notificationId}`);
-      await updateDoc(notificationRef, {
-        read: true,
       });
-    } catch (error) {
-      console.error("Error marcando notificación como leída:", error);
+
+    // Realtime: reemplaza al onSnapshot de Firestore.
+    const channel = supabase
+      .channel(`notifications:${userId}:${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          if (!active) return;
+          setNotifications((prev) => {
+            if (payload.eventType === "INSERT") {
+              const next = rowToNotification(payload.new as NotificationRow);
+              if (prev.some((n) => n.id === next.id)) return prev;
+              return [next, ...prev];
+            }
+            if (payload.eventType === "UPDATE") {
+              const updated = rowToNotification(payload.new as NotificationRow);
+              return prev.map((n) => (n.id === updated.id ? updated : n));
+            }
+            if (payload.eventType === "DELETE") {
+              const removedId = (payload.old as { id: string }).id;
+              return prev.filter((n) => n.id !== removedId);
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  const markAsRead = useCallback(async (notificationId: string) => {
+    // Optimista: evita esperar al roundtrip realtime.
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
+    const { error: err } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", notificationId);
+    if (err) {
+      console.error("Error marcando notificación como leída:", err);
     }
-  };
+  }, []);
 
-  const markAllAsRead = async () => {
-    if (!user) return;
-
-    try {
-      const unreadNotifications = notifications.filter((n) => !n.read);
-      const updatePromises = unreadNotifications.map((notification) =>
-        markAsRead(notification.id)
-      );
-      await Promise.all(updatePromises);
-    } catch (error) {
-      console.error(
-        "Error marcando todas las notificaciones como leídas:",
-        error
-      );
+  const markAllAsRead = useCallback(async () => {
+    if (!userId) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const { error: err } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("user_id", userId)
+      .eq("read", false);
+    if (err) {
+      console.error("Error marcando todas como leídas:", err);
     }
-  };
+  }, [userId]);
 
-  const deleteNotification = async (notificationId: string) => {
-    if (!user) return;
-
-    try {
-      const notificationRef = doc(db, `notifications/${notificationId}`);
-      await deleteDoc(notificationRef);
-    } catch (error) {
-      console.error("Error eliminando notificación:", error);
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    const { error: err } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId);
+    if (err) {
+      console.error("Error eliminando notificación:", err);
     }
-  };
+  }, []);
 
   const getUnreadCount = () => {
     return notifications.filter((n) => !n.read).length;

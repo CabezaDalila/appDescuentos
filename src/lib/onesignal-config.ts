@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { saveNotificationToFirestore } from "./notifications";
+import { saveOwnNotification } from "./supabase/notifications-client";
 
 export const ONESIGNAL_CONFIG = {
   APP_ID: "ab94a58e-b696-4f40-89ef-24597d45fe56",
@@ -59,7 +59,7 @@ const setupNotificationListeners = (firebaseUserId: string) => {
     if (window.OneSignal.on) {
       window.OneSignal.on("notificationDisplay", async (event: any) => {
         try {
-          await saveNotificationToFirestore({
+          await saveOwnNotification({
             userId: firebaseUserId,
             title: event.heading || "Nueva notificación",
             message: event.content || "",
@@ -75,7 +75,7 @@ const setupNotificationListeners = (firebaseUserId: string) => {
                 | "error") || "sistema",
           });
         } catch (error) {
-          console.error("Error guardando notificación en Firestore:", error);
+          console.error("Error guardando notificación in-app:", error);
         }
       });
     }
@@ -85,7 +85,7 @@ const setupNotificationListeners = (firebaseUserId: string) => {
         "addListenerForNotificationOpened",
         async (data: any) => {
           try {
-            await saveNotificationToFirestore({
+            await saveOwnNotification({
               userId: firebaseUserId,
               title: data.heading || "Nueva notificación",
               message: data.content || "",
@@ -101,7 +101,7 @@ const setupNotificationListeners = (firebaseUserId: string) => {
                   | "error") || "sistema",
             });
           } catch (error) {
-            console.error("Error guardando notificación en Firestore:", error);
+            console.error("Error guardando notificación in-app:", error);
           }
         },
       ]);
