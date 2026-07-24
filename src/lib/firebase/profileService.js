@@ -1,12 +1,12 @@
 /**
- * Servicio de perfil — datos en Supabase (public.profiles).
- * Nota: uploadProfilePhoto sigue usando Firebase Storage por ahora (se migra en
- * la Fase 6). El resto (perfil, nombre, foto-URL) ya es Supabase.
+ * Servicio de perfil — datos y fotos en Supabase.
+ * Perfil/nombre/foto-URL en public.profiles; foto de perfil en Supabase
+ * Storage (bucket `profile-photos`).
  */
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage, auth } from "@/lib/firebase/firebase";
 import { supabase } from "@/lib/supabase/client";
 import { getProfile, updateProfileFields } from "@/lib/supabase/profiles";
+
+const PROFILE_PHOTOS_BUCKET = "profile-photos";
 
 /**
  * Obtiene el perfil completo del usuario desde Supabase.
@@ -63,8 +63,9 @@ export async function updateDisplayName(user, displayName) {
 }
 
 /**
- * Sube una foto de perfil a Firebase Storage y retorna la URL.
- * (Se migrará a Supabase Storage en la Fase 6.)
+ * Sube una foto de perfil a Supabase Storage y retorna la URL pública.
+ * El objeto se guarda como `{userId}/{timestamp}.ext` en el bucket
+ * `profile-photos` (RLS: cada usuario escribe solo en su carpeta).
  * @param {File} file
  * @param {string} userId
  * @returns {Promise<string>}
@@ -72,7 +73,9 @@ export async function updateDisplayName(user, displayName) {
 export async function uploadProfilePhoto(file, userId) {
     if (!file) throw new Error("file es requerido");
     if (!userId) throw new Error("userId es requerido");
-    if (!auth.currentUser) {
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
         throw new Error("Usuario no autenticado. Por favor, inicia sesión nuevamente.");
     }
 
@@ -87,26 +90,21 @@ export async function uploadProfilePhoto(file, userId) {
 
     const timestamp = Date.now();
     const fileExtension = file.name.split(".").pop();
-    const storageRef = ref(storage, `profile-photos/${userId}/${timestamp}.${fileExtension}`);
-    const metadata = {
-        contentType: file.type,
-        customMetadata: { uploadedBy: userId, uploadedAt: new Date().toISOString() },
-    };
+    const path = `${userId}/${timestamp}.${fileExtension}`;
 
-    try {
-        const snapshot = await uploadBytes(storageRef, file, metadata);
-        return await getDownloadURL(snapshot.ref);
-    } catch (error) {
+    const { error } = await supabase.storage
+        .from(PROFILE_PHOTOS_BUCKET)
+        .upload(path, file, { contentType: file.type, upsert: false });
+
+    if (error) {
         console.error("Error detallado al subir foto:", error);
-        if (error.code === "storage/unauthorized") {
-            throw new Error("No tienes permisos para subir archivos. Verifica tu sesión.");
-        } else if (error.code === "storage/canceled") {
-            throw new Error("La subida fue cancelada.");
-        } else if (error.code === "storage/unknown") {
-            throw new Error("Error desconocido al subir la imagen. Intenta nuevamente.");
-        }
         throw new Error(error.message || "Error al subir la imagen");
     }
+
+    const { data } = supabase.storage
+        .from(PROFILE_PHOTOS_BUCKET)
+        .getPublicUrl(path);
+    return data.publicUrl;
 }
 
 /**

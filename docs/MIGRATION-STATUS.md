@@ -22,7 +22,8 @@ el puente + Firebase.
   scraping_scripts + RLS + `is_admin()`), **0003** (funciones de voto),
   **0004** (policies de admin en `profiles`: select/update con `is_admin()`),
   **0005** (notifications: policies insert/delete-own + tabla en la publicación
-  `supabase_realtime`).
+  `supabase_realtime`), **0006** (bucket `profile-photos` + policies de
+  `storage.objects`: read público, insert/update/delete scoped a `{uid}/`).
 - Dev server: `npm run dev` → **puerto fijo 3007** (coincide con Supabase/Google OAuth).
 - Admin: el rol vive en `public.profiles.role`. `dalilacabeza@gmail.com` ya es admin.
   (El `useAdmin` cachea en memoria: si cambia el rol, hard-reload.)
@@ -71,10 +72,21 @@ el puente + Firebase.
     RLS bloquea insertar filas de otros. Las propias (browser) y las lecturas
     andan igual. Verificar la env en Vercel.
 
+- **Fase 6 (Storage)** — foto de perfil → Supabase Storage.
+  - `profileService.uploadProfilePhoto` sube a `profile-photos/{uid}/{ts}.ext`
+    y devuelve la URL pública. Sin `firebase/storage`. Chequea sesión con
+    `supabase.auth.getSession()`. Migración 0006 (bucket + RLS), aplicada.
+  - Único `firebase/storage` que queda: `firebase.js` (init/export `storage`),
+    se borra en Fase 7.
+
 ## Pendiente ⏳ (orden sugerido)
-1. **Storage** — `profileService.uploadProfilePhoto` (fotos) → Supabase Storage.
-   También revisar `routes.ts` (`users/{uid}/dailyRoutes`, usado por
-   `useAIRecommendations`) — feature de tracking, sigue en Firestore.
+1. **`dailyRoutes` (tracking + IA)** — NO es storage, es una colección Firestore
+   aparte: `users/{uid}/dailyRoutes` + `routesSummary`, en `firebase/routes.ts`
+   (191 líneas) y leída por `useAIRecommendations.ts` (317) y
+   `personalized-offers-section` / `onboarding`. Migrar como dominio propio:
+   tablas `daily_routes` + `route_summaries` (o jsonb) + RLS por dueño →
+   reescribir `routes.ts` → ajustar los lectores. Es lo último de Firestore
+   antes del cierre.
 2. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
    `/api/auth/firebase-bridge`, `firebase/admin-server.ts`), quitar deps de
    Firebase, borrar `firebase.js`/config. Recién ahí **mergear a `main`** y deployar.
