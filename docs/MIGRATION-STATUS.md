@@ -24,7 +24,9 @@ el puente + Firebase.
   **0005** (notifications: policies insert/delete-own + tabla en la publicación
   `supabase_realtime`), **0006** (bucket `profile-photos` + policies de
   `storage.objects`: read público, insert/update/delete scoped a `{uid}/`),
-  **0007** (tabla `ai_recommendations`: cache por usuario, RLS owner-only).
+  **0007** (tabla `ai_recommendations`: cache por usuario, RLS owner-only),
+  **0008** (tabla `discount_interactions`: favoritos+feedback, RLS owner-only),
+  **0009** (tablas `support_faqs` + `support_terms`: read público, write admin).
 - Dev server: `npm run dev` → **puerto fijo 3007** (coincide con Supabase/Google OAuth).
 - Admin: el rol vive en `public.profiles.role`. `dalilacabeza@gmail.com` ya es admin.
   (El `useAdmin` cachea en memoria: si cambia el rol, hard-reload.)
@@ -95,25 +97,29 @@ el puente + Firebase.
     expone como 0); estos reads quedan en 0, igual que ya pasaba en el híbrido.
   - `firebase/admin.ts` borrado (era código muerto, 0 consumidores).
 
-## Pendiente ⏳ (OJO: el handoff original subestimó esto)
-> Al grepear `firebase/firestore` quedaron dominios Firestore VIVOS que la
-> lista vieja no mencionaba. Faltan (diferidos por el usuario):
+- **Fase 6.7 (favoritos + soporte)** — HECHO. Ya NO queda Firestore de datos:
+  - Favoritos/feedback → `supabase/interactions.ts` sobre
+    `discount_interactions` (upsert por dueño). `firebase/interactions.ts`
+    re-exporta. `getFavoritesCountForDiscount` se eliminó (era dead code).
+  - FAQ/Términos → `supabase/support-content.ts` sobre `support_faqs` +
+    `support_terms`. `firebase/support-content.ts` re-exporta.
 
-1. **Favoritos/feedback** — `firebase/interactions.ts` (colección
-   `user_discount_interactions`: `getUserInteraction`, `toggleFavorite`,
-   `getFavoritesCountForDiscount`, `setFeedback`,
-   `getFavoriteDiscountIdsForUser`). 4 consumidores (cardDiscount,
-   CardDiscountCompact, DiscountVote, search). → tabla + RLS por dueño.
-   OJO: `DiscountVote` todavía importa `setFeedback` de acá (única atadura
-   Firestore que le queda). Además revisar `points`: hoy queda en 0; si se
-   quiere el score real, mapearlo a `upvotes/downvotes`.
-2. **Contenido de soporte** — `firebase/support-content.ts` (FAQ + Términos).
-   3 consumidores (admin/support-content, support/terms, support/faq).
-   → tabla(s) + RLS (lectura pública, escritura admin).
-3. **Cierre (Fase 7)** — recién con todo lo de arriba: eliminar el puente
-   (`bridge.ts`, `/api/auth/firebase-bridge`, `firebase/admin-server.ts`),
-   auth Firestore (`firebase-auth.js` escribe `users/{uid}`), quitar deps de
-   Firebase, borrar `firebase.js`/config. Ahí **mergear a `main`** y deployar.
+## Pendiente ⏳ — solo queda el CIERRE (Fase 7)
+Todos los dominios de DATOS ya están en Supabase. El único `firebase/firestore`
+que queda es el del puente de auth:
+
+- `firebase/firebase-auth.js` — en el login escribe `users/{uid}` en Firestore
+  (nadie lo lee ya). Sacar esa escritura.
+- Puente Firebase↔Supabase: `bridge.ts`, `/api/auth/firebase-bridge`,
+  `firebase/admin-server.ts` (¡no confundir con `supabase/admin-server.ts`!).
+- `firebase.js` (init + exports de db/auth/storage), `firebase/auth-header.ts`,
+  y demás usos de `firebase/firebase`.
+- Sacar deps de Firebase del `package.json` + envs `NEXT_PUBLIC_FIREBASE_*`.
+- Recién ahí: **mergear a `main`** y deployar.
+
+> Antes del cierre conviene revisar cuánto de la auth todavía pasa por el
+> puente: si el login ya es 100% Supabase, `firebase-auth.js`/`bridge` se
+> pueden borrar; si no, primero terminar de mover el login.
 
 ## Patrón de la migración (importante)
 - Cada dominio: crear/confirmar tabla + RLS → capa `src/lib/supabase/<dominio>.ts`
