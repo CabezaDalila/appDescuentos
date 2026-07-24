@@ -1,5 +1,6 @@
 import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
 import { authHeader } from "@/lib/firebase/auth-header";
+import { getRole } from "@/lib/supabase/profiles";
 import {
   addDoc,
   collection,
@@ -566,15 +567,8 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
 
 export const checkAdminRole = async (userId: string): Promise<boolean> => {
   try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      return false;
-    }
-
-    const userData = userSnap.data();
-    return userData.role === "admin";
+    const role = await getRole(userId);
+    return role === "admin";
   } catch (error) {
     console.error("Error verificando rol de admin:", error);
     return false;

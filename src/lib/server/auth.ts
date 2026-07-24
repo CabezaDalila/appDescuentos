@@ -11,7 +11,7 @@
  *   if (!admin) return;           // ya respondió 401/403
  */
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getUserRole, verifyIdToken } from "@/lib/firebase/admin-server";
+import { getUserRole, verifyAccessToken } from "@/lib/supabase/admin-server";
 
 export interface AuthContext {
   uid: string;
@@ -37,18 +37,15 @@ export async function getAuthContext(
   const token = extractBearer(req);
   if (!token) return null;
 
-  try {
-    const decoded = await verifyIdToken(token);
-    const role = await getUserRole(decoded.uid);
-    return {
-      uid: decoded.uid,
-      email: decoded.email,
-      role,
-      isAdmin: role === "admin",
-    };
-  } catch {
-    return null;
-  }
+  const user = await verifyAccessToken(token);
+  if (!user) return null;
+  const role = await getUserRole(user.uid);
+  return {
+    uid: user.uid,
+    email: user.email,
+    role,
+    isAdmin: role === "admin",
+  };
 }
 
 /** Requiere un usuario autenticado. Responde 401 y devuelve null si falla. */

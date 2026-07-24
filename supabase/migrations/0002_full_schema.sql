@@ -23,6 +23,8 @@ alter table public.profiles
   add column if not exists first_name           text,
   add column if not exists last_name            text,
   add column if not exists phone                text,
+  add column if not exists birth_date           text,
+  add column if not exists gender               text,
   add column if not exists onboarding_completed boolean not null default false,
   add column if not exists spending_categories  text[]  not null default '{}',
   add column if not exists main_goal            text,

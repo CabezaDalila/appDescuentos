@@ -62,7 +62,7 @@ export default function EditProfilePage() {
       // Para fecha de nacimiento, usar birthDate del perfil
       // Si existe dateOfBirth (deprecated), migrarlo a birthDate
       const birthDate = String(
-        profile.profile?.birthDate || profile.profile?.dateOfBirth || ""
+        profile.profile?.birthDate || ""
       );
 
       // Convertir null a string vacío para gender también
@@ -95,7 +95,7 @@ export default function EditProfilePage() {
         ""
     );
     const currentBirthDate = String(
-      profile.profile?.birthDate || profile.profile?.dateOfBirth || ""
+      profile.profile?.birthDate || ""
     );
     const currentGender = String(profile.profile?.gender || "");
 

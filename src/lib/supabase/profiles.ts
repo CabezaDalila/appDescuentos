@@ -16,6 +16,8 @@ export interface ProfileRow {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
+  birth_date: string | null;
+  gender: string | null;
   onboarding_completed: boolean;
   spending_categories: string[];
   main_goal: string | null;
@@ -49,6 +51,8 @@ export interface UserProfile {
     firstName: string | null;
     lastName: string | null;
     phone: string | null;
+    birthDate: string | null;
+    gender: string | null;
   };
   preferences: Record<string, unknown>;
 }
@@ -73,6 +77,8 @@ export function mapProfile(row: ProfileRow): UserProfile {
       firstName: row.first_name,
       lastName: row.last_name,
       phone: row.phone,
+      birthDate: row.birth_date,
+      gender: row.gender,
     },
     preferences: row.preferences ?? {},
   };
@@ -112,6 +118,8 @@ export async function updateProfileFields(
     first_name: string;
     last_name: string;
     phone: string;
+    birth_date: string | null;
+    gender: string | null;
     preferences: Record<string, unknown>;
   }>
 ): Promise<void> {
