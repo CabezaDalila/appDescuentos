@@ -8,6 +8,7 @@ import {
   ensureFirebaseSession,
 } from "@/lib/supabase/bridge";
 import { supabase } from "@/lib/supabase/client";
+import { cache } from "@/lib/cache";
 import { useEffect, useState } from "react";
 
 interface UseAuthResult {
@@ -56,6 +57,8 @@ export function useAuth(): UseAuthResult {
         );
       } else {
         clearFirebaseSession().catch(() => {});
+        // Cubre logout por expiración de sesión (no solo el botón).
+        cache.clear();
       }
     });
 
@@ -71,6 +74,9 @@ export function useAuth(): UseAuthResult {
       setLoggingOut(true);
       await supabase.auth.signOut();
       await clearFirebaseSession();
+      // Limpiar cache persistente (membresías, tarjetas, descuentos) para que el
+      // próximo usuario en este dispositivo no vea datos del anterior.
+      cache.clear();
       // La redirección la maneja _app.tsx al detectar user = null.
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
