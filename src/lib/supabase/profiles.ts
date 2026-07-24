@@ -98,6 +98,46 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
   return data ? mapProfile(data as ProfileRow) : null;
 }
 
+/**
+ * Forma reducida de un perfil para el panel de admin (listado de usuarios).
+ * Solo accesible para admins (RLS: profiles_select_admin).
+ */
+export interface AdminProfile {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  role: "user" | "admin";
+  createdAt: string; // ISO
+}
+
+/** Lista TODOS los perfiles (solo admin; ordenados por alta desc). */
+export async function listAllProfiles(): Promise<AdminProfile[]> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, role, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    email: (r.email as string | null) ?? null,
+    displayName: (r.full_name as string | null) ?? null,
+    role: (r.role as "user" | "admin") ?? "user",
+    createdAt: r.created_at as string,
+  }));
+}
+
+/** Cambia el rol de un usuario (solo admin; RLS: profiles_update_admin). */
+export async function setUserRole(
+  userId: string,
+  role: "user" | "admin"
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ role, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) throw error;
+}
+
 /** Lee solo el rol (para checks de admin). */
 export async function getRole(userId: string): Promise<"user" | "admin" | null> {
   const { data, error } = await supabase

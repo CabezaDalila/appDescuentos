@@ -19,7 +19,8 @@ el puente + Firebase.
   `PGPASSWORD=... psql "host=... user=... dbname=postgres" -f supabase/migrations/000X.sql`
 - Migraciones aplicadas: **0001** (profiles + trigger + RLS), **0002** (schema
   completo: memberships, cards, discounts, discount_votes, notifications,
-  scraping_scripts + RLS + `is_admin()`), **0003** (funciones de voto).
+  scraping_scripts + RLS + `is_admin()`), **0003** (funciones de voto),
+  **0004** (policies de admin en `profiles`: select/update con `is_admin()`).
 - Dev server: `npm run dev` → **puerto fijo 3007** (coincide con Supabase/Google OAuth).
 - Admin: el rol vive en `public.profiles.role`. `dalilacabeza@gmail.com` ya es admin.
   (El `useAdmin` cachea en memoria: si cambia el rol, hard-reload.)
@@ -37,23 +38,26 @@ el puente + Firebase.
   - Votos: RPC Postgres `vote_discount` / `remove_vote` (SECURITY DEFINER),
     `firebase/discount-votes.ts` reescrito.
 - Fix seguridad: `cache.clear()` en logout (no filtrar datos entre usuarios).
+- **Fase 4 (Admin)** — CRUD de discounts + scraping + dashboard + users → Supabase.
+  - `src/lib/admin.ts`: scraping scripts (`getScrapingScripts`/create/update/
+    delete/execute) → tabla `scraping_scripts`; discounts (createManual/
+    createScraped/updateManual/getManual) → shim `discounts-data.ts`. Sin Firebase.
+  - Shim `discounts-data.ts`: + `deleteDiscountRow` / `deleteDiscountRows`.
+  - `discount-utils.ts` (delete simple + múltiple) → shim.
+  - Escrituras inline migradas: `ActiveDiscountsManager` y
+    `DiscountApprovalManager` (`updateDoc` → `updateDiscountRow`).
+  - `profiles.ts`: + `listAllProfiles` / `setUserRole` (admin).
+  - `AdminDashboard.tsx` y `UsersManager.tsx` → `profiles` (0004 habilita RLS admin).
+  - **Ojo**: el campo `url` de un discount NO tiene columna en Postgres (el shim
+    lo ignora en insert/update, decisión de Fase 3). Si se quiere conservar,
+    agregar columna `url` a `discounts` + al `WRITE_MAP`/`rowToData` del shim.
 
 ## Pendiente ⏳ (orden sugerido)
-1. **Admin** (desbloquea ver/crear discounts):
-   - `src/lib/admin.ts` — CRUD de discounts (createManualDiscount,
-     createScrapedDiscount, updateManualDiscount, getManualDiscounts) → Supabase
-     (reusar el shim `discounts-data.ts`).
-   - Scraping scripts (`getScrapingScripts`, etc.) → tabla `scraping_scripts`.
-   - `components/admin/dashboard/AdminDashboard.tsx` y
-     `components/admin/users/UsersManager.tsx` — leen/escriben `users` en Firestore
-     → migrar a `profiles`. **Necesita policy RLS de admin en `profiles`** (hoy un
-     admin no puede leer TODOS los perfiles; agregar
-     `create policy ... using (public.is_admin())`).
-2. **Notificaciones** — `src/lib/notifications.ts` (colección `notifications`) → tabla.
-3. **Storage** — `profileService.uploadProfilePhoto` (fotos) → Supabase Storage.
+1. **Notificaciones** — `src/lib/notifications.ts` (colección `notifications`) → tabla.
+2. **Storage** — `profileService.uploadProfilePhoto` (fotos) → Supabase Storage.
    También revisar `routes.ts` (`users/{uid}/dailyRoutes`, usado por
    `useAIRecommendations`) — feature de tracking, sigue en Firestore.
-4. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
+3. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
    `/api/auth/firebase-bridge`, `firebase/admin-server.ts`), quitar deps de
    Firebase, borrar `firebase.js`/config. Recién ahí **mergear a `main`** y deployar.
 

@@ -3,27 +3,18 @@ import { Badge } from "@/components/Share/badge";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
-import { db } from "@/lib/firebase/firebase";
+import { listAllProfiles, setUserRole } from "@/lib/supabase/profiles";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  query,
-  updateDoc,
-} from "firebase/firestore";
 import { Calendar, Mail, Search, Shield, User, Users } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface User {
   id: string;
   email: string;
-  displayName?: string;
+  displayName?: string | null;
   role: "admin" | "user";
-  createdAt: any;
-  lastLoginAt?: any;
-  isActive: boolean;
+  createdAt: string | null;
 }
 
 export function UsersManager() {
@@ -33,58 +24,40 @@ export function UsersManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<"all" | "admin" | "user">("all");
 
-  useEffect(() => {
-    const q = query(collection(db, "users"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const usersData = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            email: data.email || "Sin email",
-            displayName: data.displayName || null,
-            role: data.role || "user",
-            createdAt: data.createdAt || null,
-            lastLoginAt: data.lastLoginAt || null,
-            isActive: data.isActive !== false,
-          };
-        }) as User[];
-        usersData.sort((a, b) => {
-          if (!a.createdAt && !b.createdAt) return 0;
-          if (!a.createdAt) return 1;
-          if (!b.createdAt) return -1;
-
-          const dateA = a.createdAt.toDate
-            ? a.createdAt.toDate()
-            : new Date(a.createdAt);
-          const dateB = b.createdAt.toDate
-            ? b.createdAt.toDate()
-            : new Date(b.createdAt);
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        setUsers(usersData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error fetching users:", error);
-        setError("Error al cargar los usuarios: " + error.message);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const profiles = await listAllProfiles();
+      setUsers(
+        profiles.map((p) => ({
+          id: p.id,
+          email: p.email || "Sin email",
+          displayName: p.displayName,
+          role: p.role,
+          createdAt: p.createdAt,
+        }))
+      );
+      setError("");
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError(
+        "Error al cargar los usuarios: " +
+          (err instanceof Error ? err.message : "desconocido")
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const toggleUserRole = async (userId: string, currentRole: string) => {
     try {
       const newRole = currentRole === "admin" ? "user" : "admin";
-      await updateDoc(doc(db, "users", userId), {
-        role: newRole,
-        updatedAt: new Date(),
-      });
+      await setUserRole(userId, newRole);
+      await loadUsers();
     } catch (error) {
       console.error("Error updating user role:", error);
       setError("Error al actualizar el rol del usuario");
@@ -209,12 +182,10 @@ export function UsersManager() {
                       <div className="flex items-center text-sm text-gray-600">
                         <Calendar className="h-4 w-4 mr-1" />
                         Registrado:{" "}
-                        {user.createdAt && user.createdAt.toDate
-                          ? format(user.createdAt.toDate(), "dd/MM/yyyy", {
+                        {user.createdAt
+                          ? format(new Date(user.createdAt), "dd/MM/yyyy", {
                               locale: es,
                             })
-                          : user.createdAt
-                          ? new Date(user.createdAt).toLocaleDateString("es-ES")
                           : "N/A"}
                       </div>
                     </div>

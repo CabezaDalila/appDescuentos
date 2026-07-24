@@ -156,3 +156,16 @@ export async function updateDiscountRow(
     .eq("id", id);
   if (error) throw error;
 }
+
+/** Borra un descuento por id. */
+export async function deleteDiscountRow(id: string) {
+  const { error } = await supabase.from("discounts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Borra varios descuentos por id (equivale al writeBatch de Firestore). */
+export async function deleteDiscountRows(ids: string[]) {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from("discounts").delete().in("id", ids);
+  if (error) throw error;
+}

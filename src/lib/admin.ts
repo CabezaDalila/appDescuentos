@@ -1,18 +1,12 @@
 import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
 import { authHeader } from "@/lib/firebase/auth-header";
 import { getRole } from "@/lib/supabase/profiles";
+import { supabase } from "@/lib/supabase/client";
 import {
-  addDoc,
-  collection,
-  db,
-  deleteField,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  Timestamp,
-  updateDoc,
-} from "@/lib/firebase/firebase";
+  fetchAllDiscountDocs,
+  insertDiscount,
+  updateDiscountRow,
+} from "@/lib/supabase/discounts-data";
 import { parseDateDdMmYyyy, parseIsoYmdLocal } from "@/lib/date-ar";
 import {
   ManualDiscount,
@@ -20,64 +14,92 @@ import {
   ScrapingExecutionResult,
   ScrapingScript,
 } from "@/types/admin";
-// ===== GESTIÓN DE SCRIPTS DE SCRAPING =====
+
+// ===== GESTIÓN DE SCRIPTS DE SCRAPING (Supabase: public.scraping_scripts) =====
+
+type ScrapingScriptRow = {
+  id: string;
+  site_name: string;
+  script: string | null;
+  frequency: ScrapingScript["frequency"];
+  is_active: boolean;
+  last_executed: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+const rowToScrapingScript = (row: ScrapingScriptRow): ScrapingScript => ({
+  id: row.id,
+  siteName: row.site_name,
+  script: row.script ?? "",
+  frequency: row.frequency,
+  isActive: row.is_active,
+  lastExecuted: row.last_executed ? new Date(row.last_executed) : undefined,
+  createdAt: new Date(row.created_at),
+  updatedAt: new Date(row.updated_at),
+});
+
+/** camelCase parcial -> columnas snake_case de scraping_scripts. */
+const scriptToRow = (
+  s: Partial<Omit<ScrapingScript, "id" | "createdAt" | "updatedAt">>
+): Record<string, unknown> => {
+  const row: Record<string, unknown> = {};
+  if (s.siteName !== undefined) row.site_name = s.siteName;
+  if (s.script !== undefined) row.script = s.script;
+  if (s.frequency !== undefined) row.frequency = s.frequency;
+  if (s.isActive !== undefined) row.is_active = s.isActive;
+  if (s.lastExecuted !== undefined)
+    row.last_executed = s.lastExecuted ? s.lastExecuted.toISOString() : null;
+  return row;
+};
 
 export const getScrapingScripts = async (): Promise<ScrapingScript[]> => {
-  try {
-    const snapshot = await getDocs(collection(db, "scrapingScripts"));
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        lastExecuted: data.lastExecuted?.toDate(),
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-      } as ScrapingScript;
-    });
-  } catch (error) {
+  const { data, error } = await supabase
+    .from("scraping_scripts")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) {
     console.error("Error al obtener scripts de scraping:", error);
     throw error;
   }
+  return (data ?? []).map((r) => rowToScrapingScript(r as ScrapingScriptRow));
 };
 
 export const createScrapingScript = async (
   script: Omit<ScrapingScript, "id" | "createdAt" | "updatedAt">
 ): Promise<string> => {
-  try {
-    const docRef = await addDoc(collection(db, "scrapingScripts"), {
-      ...script,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-    return docRef.id;
-  } catch (error) {
+  const { data, error } = await supabase
+    .from("scraping_scripts")
+    .insert(scriptToRow(script))
+    .select("id")
+    .single();
+  if (error) {
     console.error("Error al crear script de scraping:", error);
     throw error;
   }
+  return data.id as string;
 };
 
 export const updateScrapingScript = async (
   id: string,
   updates: Partial<ScrapingScript>
 ): Promise<void> => {
-  try {
-    const docRef = doc(db, "scrapingScripts", id);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: Timestamp.now(),
-    });
-  } catch (error) {
+  const { error } = await supabase
+    .from("scraping_scripts")
+    .update({ ...scriptToRow(updates), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
     console.error("Error al actualizar script de scraping:", error);
     throw error;
   }
 };
 
 export const deleteScrapingScript = async (id: string): Promise<void> => {
-  try {
-    const docRef = doc(db, "scrapingScripts", id);
-    await deleteDoc(docRef);
-  } catch (error) {
+  const { error } = await supabase
+    .from("scraping_scripts")
+    .delete()
+    .eq("id", id);
+  if (error) {
     console.error("Error al eliminar script de scraping:", error);
     throw error;
   }
@@ -86,13 +108,17 @@ export const deleteScrapingScript = async (id: string): Promise<void> => {
 export const executeScrapingScript = async (id: string): Promise<void> => {
   try {
     // Obtener el script
-    const scriptDoc = await getDoc(doc(db, "scrapingScripts", id));
-    if (!scriptDoc.exists()) {
+    const { data: scriptRow, error: readError } = await supabase
+      .from("scraping_scripts")
+      .select("script")
+      .eq("id", id)
+      .maybeSingle();
+    if (readError) throw readError;
+    if (!scriptRow) {
       throw new Error("Script no encontrado");
     }
 
-    const scriptData = scriptDoc.data();
-    const scriptCode = scriptData.script;
+    const scriptCode = scriptRow.script;
 
     // Ejecutar el script en el contexto del navegador
     let result;
@@ -109,7 +135,7 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
       throw new Error(`Error en el script: ${errorMessage}`);
     }
 
-    // Si el script retorna descuentos, guardarlos en Firebase
+    // Si el script retorna descuentos, guardarlos como pendientes de aprobación
     if (result && Array.isArray(result)) {
       for (const discountData of result) {
         try {
@@ -124,11 +150,8 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
             discountData.category = "general";
           }
 
-          // Guardar el descuento en Firebase como pendiente de aprobación
-          await addDoc(collection(db, "discounts"), {
+          await insertDiscount({
             ...discountData,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
             status: "active",
             type: "scraped",
             approvalStatus: "pending",
@@ -141,11 +164,7 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
     }
 
     // Actualizar la fecha de última ejecución
-    const docRef = doc(db, "scrapingScripts", id);
-    await updateDoc(docRef, {
-      lastExecuted: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
+    await updateScrapingScript(id, { lastExecuted: new Date() });
   } catch (error) {
     console.error("Error al ejecutar script de scraping:", error);
     throw error;
@@ -153,6 +172,16 @@ export const executeScrapingScript = async (id: string): Promise<void> => {
 };
 
 // ===== GESTIÓN DE DESCUENTOS MANUALES =====
+
+/** Fecha de expiración por defecto: 30 días desde ahora. */
+const defaultExpiration = () =>
+  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+/** Normaliza expirationDate (string ISO | Date | ausente) a Date. */
+const resolveExpiration = (raw?: string | Date): Date => {
+  if (!raw) return defaultExpiration();
+  return typeof raw === "string" ? new Date(raw) : raw;
+};
 
 export const createManualDiscount = async (
   discount: Omit<ManualDiscount, "id" | "createdAt" | "updatedAt">
@@ -165,26 +194,14 @@ export const createManualDiscount = async (
       );
     }
 
-    // Convertir fechas ISO a Timestamps si es necesario
-    const expirationDate = discount.expirationDate
-      ? typeof discount.expirationDate === "string"
-        ? Timestamp.fromDate(new Date(discount.expirationDate))
-        : Timestamp.fromDate(discount.expirationDate)
-      : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
-    const discountData = {
+    return await insertDiscount({
       ...discount,
       isVisible: discount.isVisible ?? true, // Por defecto visible
-      expirationDate,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      expirationDate: resolveExpiration(discount.expirationDate),
       status: "active",
       type: "manual",
       approvalStatus: "approved", // Los descuentos manuales se aprueban automáticamente
-    };
-
-    const docRef = await addDoc(collection(db, "discounts"), discountData);
-    return docRef.id;
+    });
   } catch (error) {
     console.error("Error al crear descuento manual:", error);
     throw error;
@@ -202,28 +219,16 @@ export const createScrapedDiscount = async (
       );
     }
 
-    // Convertir fechas ISO a Timestamps si es necesario
-    const expirationDate = discount.expirationDate
-      ? typeof discount.expirationDate === "string"
-        ? Timestamp.fromDate(new Date(discount.expirationDate))
-        : Timestamp.fromDate(discount.expirationDate)
-      : Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
-    const discountData = {
+    return await insertDiscount({
       ...discount,
-      expirationDate,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      expirationDate: resolveExpiration(discount.expirationDate),
       status: "active",
       type: "scraped",
       approvalStatus: "pending", // Los descuentos de scraping deben estar pendientes de aprobación
       source: "scraping",
-    };
-
-    const docRef = await addDoc(collection(db, "discounts"), discountData);
-    return docRef.id;
+    });
   } catch (error) {
-    console.error("Error al crear descuento manual:", error);
+    console.error("Error al crear descuento scrapeado:", error);
     throw error;
   }
 };
@@ -483,23 +488,16 @@ export const updateManualDiscount = async (
     }
 
     // Preparar los datos de actualización
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...updates,
-      updatedAt: Timestamp.now(),
+      updatedAt: new Date(),
     };
 
-    // Convertir fechas ISO a Timestamps si es necesario
     if (updates.expirationDate) {
-      updateData.expirationDate =
-        typeof updates.expirationDate === "string"
-          ? Timestamp.fromDate(new Date(updates.expirationDate))
-          : Timestamp.fromDate(updates.expirationDate);
-      // Unificación de schema: dejar un solo campo de expiración.
-      updateData.validUntil = deleteField();
+      updateData.expirationDate = resolveExpiration(updates.expirationDate);
     }
 
-    const docRef = doc(db, "discounts", id);
-    await updateDoc(docRef, updateData);
+    await updateDiscountRow(id, updateData);
   } catch (error) {
     console.error("Error al actualizar descuento manual:", error);
     throw error;
@@ -508,21 +506,21 @@ export const updateManualDiscount = async (
 
 export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
   try {
-    // Obtener todos los descuentos para mostrar
-    const allSnapshot = await getDocs(collection(db, "discounts"));
+    // Obtener todos los descuentos para mostrar (RLS deja al admin ver todo)
+    const allSnapshot = await fetchAllDiscountDocs();
     const allDiscounts = allSnapshot.docs
       .filter((doc) => {
         const data = doc.data();
         const type = data.type;
         const approvalStatus = data.approvalStatus;
-        
+
         // Solo incluir descuentos manuales aprobados
         // Excluir descuentos de scraping (type === "scraped") que estén pendientes
         // Incluir descuentos con type === "manual" o sin type pero aprobados
         if (type === "scraped" && approvalStatus === "pending") {
           return false; // Excluir descuentos de scraping pendientes
         }
-        
+
         // Incluir descuentos manuales o descuentos aprobados
         return type === "manual" || approvalStatus === "approved";
       })
@@ -533,13 +531,8 @@ export const getManualDiscounts = async (): Promise<ManualDiscount[]> => {
           title: data.title || data.name || "Sin título",
           origin: data.origin || "Origen no especificado",
           category: data.category || "Sin categoría",
-          expirationDate:
-            data.expirationDate?.toDate?.() ||
-            data.validUntil?.toDate?.() ||
-            (data.expirationDate ? new Date(data.expirationDate) : null) ||
-            (data.validUntil ? new Date(data.validUntil) : null) ||
-            new Date(),
-          description: data.description || data.descripcion || "Sin descripción",
+          expirationDate: data.expirationDate?.toDate?.() || new Date(),
+          description: data.description || "Sin descripción",
           discountPercentage: data.discountPercentage,
           discountAmount: data.discountAmount,
           imageUrl: data.imageUrl,

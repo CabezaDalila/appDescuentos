@@ -4,16 +4,9 @@ import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEm
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { getApprovedDiscounts } from "@/lib/discounts";
-import { db } from "@/lib/firebase/firebase";
+import { updateDiscountRow } from "@/lib/supabase/discounts-data";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
-import {
-  doc,
-  Timestamp,
-  updateDoc,
-  type DocumentData,
-  type UpdateData,
-} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -90,15 +83,15 @@ export function ActiveDiscountsManager() {
         setSubmitting(false);
         return;
       }
-      const updateData: UpdateData<DocumentData> = {
+      const updateData: Record<string, unknown> = {
         title: formData.title.trim(),
         name: formData.title.trim(),
         origin: formData.origin.trim(),
         category: formData.category!,
         description: formData.description.trim(),
-        expirationDate: Timestamp.fromDate(expDate),
+        expirationDate: expDate,
         isVisible: formData.isVisible,
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date(),
       };
 
       if (formData.discountPercentage?.trim()) {
@@ -128,7 +121,7 @@ export function ActiveDiscountsManager() {
         };
       }
 
-      await updateDoc(doc(db, "discounts", editingDiscount.id), updateData);
+      await updateDiscountRow(editingDiscount.id, updateData);
       toast.success("Descuento activo actualizado correctamente");
       setShowForm(false);
       resetForm();
@@ -143,9 +136,9 @@ export function ActiveDiscountsManager() {
 
   const handleToggleVisibility = async (id: string, currentVisibility: boolean) => {
     try {
-      await updateDoc(doc(db, "discounts", id), {
+      await updateDiscountRow(id, {
         isVisible: !currentVisibility,
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date(),
       });
       toast.success(
         `Descuento ${!currentVisibility ? "mostrado" : "ocultado"} correctamente`
