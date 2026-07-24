@@ -102,6 +102,16 @@ El `useAuth().user` tiene forma tipo-Firebase (`uid`, `email`, `displayName`,
 cambiar. Se construye desde el usuario de Supabase (ver `adaptUser` en
 `src/lib/supabase/auth.ts`).
 
+## 5.1 Hacer admin a un usuario
+
+El rol vive en **Firestore** (`users/{uid}.role`), no en Supabase. Para hacer admin
+a alguien, después de que se logueó al menos una vez (para que exista su doc):
+
+- Firebase Console → **Firestore** → colección `users` → doc del usuario → campo
+  `role` = `admin`.
+
+Los guards (`requireAdmin`) y el `useAdmin()` del cliente leen ese campo.
+
 ## 6. Config externa del login con Google (referencia)
 
 Si hay que tocar el OAuth de Google, estos son los 3 lugares que deben coincidir:
@@ -115,6 +125,23 @@ Si hay que tocar el OAuth de Google, estos son los 3 lugares que deben coincidir
 3. **Google Cloud Console** (proyecto `app-descuentos-9b546`, cliente Web `531405194203-shv95...`)
    - Orígenes JS autorizados: `http://localhost:3007`
    - URIs de redireccionamiento: `https://jhkkvldybkohejhpsbuc.supabase.co/auth/v1/callback`
+
+### Login nativo en la APK (Capacitor)
+
+El flujo web usa `signInWithOAuth` (redirect). En la APK, el plugin
+`@codetrix-studio/capacitor-google-auth` devuelve un **idToken** de Google que se
+le pasa a Supabase con `signInWithIdToken` (ver `loginWithGoogleNative` en
+`src/lib/supabase/auth.ts`). Para que Supabase lo acepte:
+
+- En **Supabase → Auth → Providers → Google → "Client IDs"** tiene que estar el
+  **Web Client ID** (ya está: `531405194203-shv95...`).
+- El `serverClientId` que usa el plugin debe ser ese **Web Client ID** (no el de
+  Android).
+- El **Android client** (`com.tesis.descuentos.test`) debe existir en el mismo
+  proyecto de Google Cloud con el SHA-1 del keystore de la app.
+
+> ⚠️ El login nativo **todavía no fue probado end-to-end en un dispositivo/APK** —
+> solo el flujo web. Validar antes de publicar la app.
 
 ## 7. Deploy a producción (Vercel)
 
