@@ -11,12 +11,11 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useDistance } from "@/hooks/useDistance";
 import { getDiscountById } from "@/lib/discounts";
-import { db } from "@/lib/firebase/firebase";
+import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
 import { getActiveMemberships } from "@/lib/firebase/memberships";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
-import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -189,10 +188,9 @@ export default function DiscountDetail() {
           });
 
           if (id) {
-            const discountRef = doc(db, "discounts", id);
-            const discountDoc = await getDoc(discountRef);
+            const discountDoc = await fetchDiscountDoc(String(id));
             if (discountDoc.exists()) {
-              const data = discountDoc.data();
+              const data = discountDoc.data() as { points?: number };
               setPoints(data.points || 0);
             }
           }

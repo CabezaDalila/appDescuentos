@@ -7,9 +7,8 @@ import {
     voteDiscount,
     type VoteType,
 } from "@/lib/firebase/discount-votes";
-import { db } from "@/lib/firebase/firebase";
 import { setFeedback } from "@/lib/firebase/interactions";
-import { doc, getDoc } from "firebase/firestore";
+import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -132,10 +131,9 @@ export function DiscountVote({
         }
 
         // Sincronizar puntos reales en segundo plano
-        const discountRef = doc(db, "discounts", discountId);
-        getDoc(discountRef).then((discountDoc) => {
+        fetchDiscountDoc(discountId).then((discountDoc) => {
           if (discountDoc.exists()) {
-            const data = discountDoc.data();
+            const data = discountDoc.data() as { points?: number };
             setPoints(data.points || 0);
             onPointsUpdate?.(data.points || 0);
           }

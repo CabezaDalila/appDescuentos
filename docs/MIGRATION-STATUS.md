@@ -86,27 +86,31 @@ el puente + Firebase.
   (`dailyRoutes`/`routesSummary`/`hasLocationTrackingEnabled`) eran **código
   muerto (0 consumidores)** → eliminadas sin tabla.
 
+- **Fase 6.6 (rápidos)** — HECHO:
+  - Preferencias: `firebase/user.js` → `profiles.preferences`
+    (`updateProfileFields`/`getProfile`). Consumidor UserSettingsModal intacto.
+  - Writes/reads inline de discounts: `DiscountVote.tsx` y
+    `pages/discount/[id].tsx` usan `fetchDiscountDoc` del shim (ya no
+    `doc(db,"discounts")`). Nota: `points` no existe en Postgres (el shim lo
+    expone como 0); estos reads quedan en 0, igual que ya pasaba en el híbrido.
+  - `firebase/admin.ts` borrado (era código muerto, 0 consumidores).
+
 ## Pendiente ⏳ (OJO: el handoff original subestimó esto)
 > Al grepear `firebase/firestore` quedaron dominios Firestore VIVOS que la
-> lista vieja no mencionaba. Todos deben migrar antes del cierre:
+> lista vieja no mencionaba. Faltan (diferidos por el usuario):
 
 1. **Favoritos/feedback** — `firebase/interactions.ts` (colección
    `user_discount_interactions`: `getUserInteraction`, `toggleFavorite`,
    `getFavoritesCountForDiscount`, `setFeedback`,
    `getFavoriteDiscountIdsForUser`). 4 consumidores (cardDiscount,
    CardDiscountCompact, DiscountVote, search). → tabla + RLS por dueño.
+   OJO: `DiscountVote` todavía importa `setFeedback` de acá (única atadura
+   Firestore que le queda). Además revisar `points`: hoy queda en 0; si se
+   quiere el score real, mapearlo a `upvotes/downvotes`.
 2. **Contenido de soporte** — `firebase/support-content.ts` (FAQ + Términos).
    3 consumidores (admin/support-content, support/terms, support/faq).
    → tabla(s) + RLS (lectura pública, escritura admin).
-3. **Preferencias de usuario** — `firebase/user.js` (`users/{uid}.preferences`
-   setDoc/getDoc). 1 consumidor (UserSettingsModal). → `profiles.preferences`
-   (la columna ya existe).
-4. **Escrituras/lecturas inline de discounts** — `DiscountVote.tsx` (getDoc
-   `discounts/{id}` para sync de puntos) y `pages/discount/[id].tsx` (línea
-   ~192). Pasar al shim `discounts-data`.
-5. **Código muerto** — `firebase/admin.ts` (0 consumidores, duplicado viejo del
-   admin) se puede borrar directamente.
-6. **Cierre (Fase 7)** — recién con todo lo de arriba: eliminar el puente
+3. **Cierre (Fase 7)** — recién con todo lo de arriba: eliminar el puente
    (`bridge.ts`, `/api/auth/firebase-bridge`, `firebase/admin-server.ts`),
    auth Firestore (`firebase-auth.js` escribe `users/{uid}`), quitar deps de
    Firebase, borrar `firebase.js`/config. Ahí **mergear a `main`** y deployar.
