@@ -1,20 +1,16 @@
-import { db } from "@/lib/firebase/firebase";
 import type { UserCredential } from "@/types/credentials";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { getRealDistance } from "@/utils/real-distance";
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+  fetchAllDiscountDocs,
+  fetchDiscountDoc,
+  insertDiscount,
+  updateDiscountRow,
+} from "@/lib/supabase/discounts-data";
+
+/** Timestamp-like expuesto por la capa de datos (equivale al de Firestore). */
+type FsTimestamp = { toDate: () => Date };
 
 export const MAX_DISTANCE_KM = 2;
 
@@ -24,23 +20,23 @@ interface FirestoreDiscount {
   category?: string;
   discountPercentage?: number;
   discountAmount?: number;
-  validFrom?: Timestamp;
-  validUntil?: Timestamp;
+  validFrom?: FsTimestamp;
+  validUntil?: FsTimestamp;
   membershipRequired?: string[];
   terms?: string;
   imageUrl?: string;
   image?: string;
-  createdAt?: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt?: FsTimestamp;
+  updatedAt?: FsTimestamp;
   status?: "active" | "inactive" | "expired";
   title?: string;
   origin?: string;
   type?: string;
-  expirationDate?: Timestamp;
+  expirationDate?: FsTimestamp;
   descripcion?: string;
   approvalStatus?: "pending" | "approved" | "rejected";
   reviewedBy?: string;
-  reviewedAt?: Timestamp;
+  reviewedAt?: FsTimestamp;
   rejectionReason?: string;
   source?: "manual" | "scraping";
   isVisible?: boolean;
@@ -124,7 +120,7 @@ async function getApprovedActiveDiscountDocs() {
     // Traemos todo y filtramos en cliente para soportar:
     // - approved + active
     // - pending scraped con campos obligatorios completos
-    const allSnapshot = await getDocs(collection(db, "discounts"));
+    const allSnapshot = await fetchAllDiscountDocs();
     const filteredDocs = allSnapshot.docs.filter((docSnap) =>
       isDiscountPublishable(docSnap.data() as FirestoreDiscount)
     );
@@ -133,7 +129,7 @@ async function getApprovedActiveDiscountDocs() {
       docs: filteredDocs,
     } as Pick<typeof allSnapshot, "docs">;
   } catch (error) {
-    const fallbackSnapshot = await getDocs(collection(db, "discounts"));
+    const fallbackSnapshot = await fetchAllDiscountDocs();
     const filteredDocs = fallbackSnapshot.docs.filter((docSnap) =>
       isDiscountPublishable(docSnap.data() as FirestoreDiscount)
     );
@@ -146,7 +142,7 @@ async function getApprovedActiveDiscountDocs() {
 
 export const getDiscounts = async (): Promise<Discount[]> => {
   try {
-    const snapshot = await getDocs(collection(db, "discounts"));
+    const snapshot = await fetchAllDiscountDocs();
     return snapshot.docs.map((doc) => {
       const data = doc.data() as FirestoreDiscount;
       return {
@@ -425,15 +421,12 @@ export const createScrapedDiscount = async (
   discountData: Partial<Discount>
 ) => {
   try {
-    const docRef = await addDoc(collection(db, "discounts"), {
+    return await insertDiscount({
       ...discountData,
       approvalStatus: "pending",
       source: "scraping",
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
       status: "active",
     });
-    return docRef.id;
   } catch (error) {
     throw error;
   }
@@ -441,7 +434,7 @@ export const createScrapedDiscount = async (
 
 export const getPendingDiscounts = async (): Promise<Discount[]> => {
   try {
-    const allSnapshot = await getDocs(collection(db, "discounts"));
+    const allSnapshot = await fetchAllDiscountDocs();
 
     const statusCounts: Record<string, number> = {};
     allSnapshot.docs.forEach((doc) => {
@@ -486,12 +479,11 @@ export const approveDiscount = async (
   reviewedBy: string
 ): Promise<void> => {
   try {
-    const docRef = doc(db, "discounts", discountId);
-    await updateDoc(docRef, {
+    await updateDiscountRow(discountId, {
       approvalStatus: "approved",
       reviewedBy,
-      reviewedAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
     });
   } catch (error) {
     throw error;
@@ -504,13 +496,12 @@ export const rejectDiscount = async (
   rejectionReason: string
 ): Promise<void> => {
   try {
-    const docRef = doc(db, "discounts", discountId);
-    await updateDoc(docRef, {
+    await updateDiscountRow(discountId, {
       approvalStatus: "rejected",
       reviewedBy,
-      reviewedAt: Timestamp.now(),
+      reviewedAt: new Date(),
       rejectionReason,
-      updatedAt: Timestamp.now(),
+      updatedAt: new Date(),
     });
   } catch (error) {
     throw error;
@@ -550,8 +541,7 @@ export const getDiscountById = async (
   discountId: string
 ): Promise<Discount | null> => {
   try {
-    const docRef = doc(db, "discounts", discountId);
-    const docSnap = await getDoc(docRef);
+    const docSnap = await fetchDiscountDoc(discountId);
 
     if (docSnap.exists()) {
       const data = docSnap.data() as FirestoreDiscount;
@@ -577,7 +567,7 @@ export const getNearbyDiscounts = async (
   maxDistanceKm: number = MAX_DISTANCE_KM
 ): Promise<HomePageDiscount[]> => {
   try {
-    const snapshot = await getDocs(collection(db, "discounts"));
+    const snapshot = await fetchAllDiscountDocs();
     const nearbyDiscounts: HomePageDiscount[] = [];
 
     for (const doc of snapshot.docs) {
@@ -656,7 +646,7 @@ export const getNearbyDiscountsProgressive = async (
   batchSize: number = 5
 ): Promise<HomePageDiscount[]> => {
   try {
-    const snapshot = await getDocs(collection(db, "discounts"));
+    const snapshot = await fetchAllDiscountDocs();
     const allNearbyDiscounts: HomePageDiscount[] = [];
     const validDocs: Array<{
       doc: unknown;
