@@ -3,10 +3,6 @@ import {
   resetPassword as supabaseResetPassword,
   type AppUser,
 } from "@/lib/supabase/auth";
-import {
-  clearFirebaseSession,
-  ensureFirebaseSession,
-} from "@/lib/supabase/bridge";
 import { supabase } from "@/lib/supabase/client";
 import { cache } from "@/lib/cache";
 import { useEffect, useState } from "react";
@@ -20,8 +16,7 @@ interface UseAuthResult {
 }
 
 /**
- * Fuente de verdad de la sesión: Supabase. Tras cada sign-in puenteamos a
- * Firebase (ensureFirebaseSession) para que Firestore siga funcionando.
+ * Fuente de verdad de la sesión: Supabase.
  * Devuelve un usuario adaptado con la misma forma que usaba el resto de la app
  * (uid, email, displayName, photoURL, emailVerified).
  */
@@ -38,11 +33,6 @@ export function useAuth(): UseAuthResult {
       if (!mounted) return;
       setUser(adaptUser(session?.user ?? null));
       setLoading(false);
-      if (session) {
-        ensureFirebaseSession().catch((e) =>
-          console.error("Error puenteando sesión a Firebase:", e)
-        );
-      }
     });
 
     // Cambios de sesión (login, logout, refresh, retorno de OAuth web).
@@ -51,12 +41,7 @@ export function useAuth(): UseAuthResult {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(adaptUser(session?.user ?? null));
       setLoading(false);
-      if (session) {
-        ensureFirebaseSession().catch((e) =>
-          console.error("Error puenteando sesión a Firebase:", e)
-        );
-      } else {
-        clearFirebaseSession().catch(() => {});
+      if (!session) {
         // Cubre logout por expiración de sesión (no solo el botón).
         cache.clear();
       }
@@ -73,7 +58,6 @@ export function useAuth(): UseAuthResult {
     try {
       setLoggingOut(true);
       await supabase.auth.signOut();
-      await clearFirebaseSession();
       // Limpiar cache persistente (membresías, tarjetas, descuentos) para que el
       // próximo usuario en este dispositivo no vea datos del anterior.
       cache.clear();

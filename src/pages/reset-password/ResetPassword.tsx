@@ -7,12 +7,7 @@ import {
 } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
-import { auth } from "@/lib/firebase/firebase";
-import {
-  confirmPasswordReset,
-  signInWithEmailAndPassword,
-  verifyPasswordResetCode,
-} from "firebase/auth";
+import { supabase } from "@/lib/supabase/client";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -21,7 +16,6 @@ import { passwordSchema } from "@/components/pages/reset-password/validations";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [oobCode, setOobCode] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -48,75 +42,48 @@ export default function ResetPasswordPage() {
     password === confirmPassword && confirmPassword.length > 0;
 
   useEffect(() => {
-    // Obtener el código de restablecimiento de la URL
-    const { oobCode: code, mode: urlMode } = router.query;
+    let active = true;
 
-    // Firebase puede enviar el código como query param o en el hash
-    if (code && typeof code === "string") {
-      setOobCode(code);
-      validateResetCode(code);
-    } else if (urlMode === "resetPassword" && !code) {
-      // Si hay modo pero no código, puede estar en el hash de la URL
-      // Intentar obtenerlo del hash
-      if (typeof window !== "undefined" && window.location.hash) {
-        const hashParams = new URLSearchParams(
-          window.location.hash.substring(1)
-        );
-        const hashCode = hashParams.get("oobCode");
-        if (hashCode) {
-          setOobCode(hashCode);
-          validateResetCode(hashCode);
-          return;
-        }
+    // Supabase procesa el token del enlace (detectSessionInUrl) y deja una
+    // sesión de RECUPERACIÓN. Chequeamos si ya existe y además escuchamos el
+    // evento PASSWORD_RECOVERY por si llega asincrónicamente.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (session?.user) {
+        setEmail(session.user.email ?? "");
+        setIsValidating(false);
       }
-      // Si no hay código, mostrar error
-      setIsValidating(false);
-      setError("No se encontró un código de restablecimiento válido en la URL");
-    } else if (!code && !urlMode) {
-      // Si no hay código ni modo, el usuario llegó directamente sin enlace
-      setIsValidating(false);
-      setError(
-        "No se encontró un código de restablecimiento válido. Por favor, usa el enlace que recibiste por email."
-      );
-    }
-  }, [router.query]);
+    });
 
-  const validateResetCode = async (code: string) => {
-    if (!code || code.trim() === "") {
-      setError("No se encontró un código de restablecimiento válido");
-      setIsValidating(false);
-      return;
-    }
-
-    try {
-      const email = await verifyPasswordResetCode(auth, code);
-      setEmail(email);
-      setIsValidating(false);
-    } catch (error: unknown) {
-      console.error("Error validando código de restablecimiento:", error);
-      setIsValidating(false);
-
-      if (error && typeof error === "object" && "code" in error) {
-        const firebaseError = error as { code: string; message?: string };
-        switch (firebaseError.code) {
-          case "auth/expired-action-code":
-            setError(
-              "El enlace de restablecimiento ha expirado. Por favor, solicita un nuevo email de restablecimiento."
-            );
-            break;
-          case "auth/invalid-action-code":
-            setError("El enlace de restablecimiento no es válido.");
-            break;
-          default:
-            setError(
-              "El enlace de restablecimiento no es válido o ha expirado"
-            );
-        }
-      } else {
-        setError("El enlace de restablecimiento no es válido o ha expirado");
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+        setEmail(session?.user?.email ?? "");
+        setIsValidating(false);
       }
-    }
-  };
+    });
+
+    // Si tras unos segundos no hubo sesión de recuperación, el enlace no sirve.
+    const timeout = setTimeout(() => {
+      if (!active) return;
+      setIsValidating((validating) => {
+        if (validating) {
+          setError(
+            "El enlace de restablecimiento no es válido o ha expirado. Solicitá uno nuevo desde el login."
+          );
+        }
+        return false;
+      });
+    }, 5000);
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,53 +99,34 @@ export default function ResetPasswordPage() {
         { abortEarly: false }
       );
 
-      // Verificar que tenemos el código antes de intentar restablecer
-      if (!oobCode || oobCode.trim() === "") {
-        setError(
-          "No se encontró un código de restablecimiento válido. Por favor, usa el enlace que recibiste por email."
-        );
-        setIsLoading(false);
-        return;
-      }
+      // La sesión de recuperación (del enlace) autoriza cambiar la contraseña.
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
 
-      // Verificar que la nueva contraseña no sea la misma que la anterior
-      // Intentamos hacer login con la nueva contraseña antes de cambiarla
-      try {
-        const loginResult = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-        // Si el login funciona, significa que la contraseña es la misma que la anterior
-        // Cerramos sesión inmediatamente para evitar redirecciones
-        if (loginResult.user) {
-          await auth.signOut();
+      if (updateError) {
+        const msg = updateError.message || "";
+        if (/should be different|different from the old/i.test(msg)) {
+          setError(
+            "La nueva contraseña no puede ser la misma que la anterior. Elegí una diferente."
+          );
+          setPassword("");
+          setConfirmPassword("");
+        } else if (/session|expired|invalid|not authenticated|missing/i.test(msg)) {
+          setError(
+            "El enlace de restablecimiento expiró o no es válido. Solicitá uno nuevo desde el login."
+          );
+        } else {
+          setError("Error al restablecer la contraseña. Intentá nuevamente.");
         }
-        setError(
-          "La nueva contraseña no puede ser la misma que la anterior. Por favor, elige una contraseña diferente."
-        );
-        setIsLoading(false);
-        // Limpiar los campos de contraseña para que el usuario pueda ingresar una nueva
-        setPassword("");
-        setConfirmPassword("");
         return;
-      } catch (loginError: unknown) {
-        // Si el login falla, significa que la contraseña es diferente (lo cual es bueno)
-        // Continuamos con el cambio de contraseña
-        // Ignoramos el error porque esperamos que falle si la contraseña es diferente
       }
 
-      // Restablecer la contraseña
-      await confirmPasswordReset(auth, oobCode, password);
-
-      // Limpiar la URL después de restablecer la contraseña (por seguridad)
+      // Éxito: cerramos la sesión de recuperación y mandamos al login.
+      await supabase.auth.signOut();
       router.replace("/reset-password", undefined, { shallow: true });
-
-      // Redirigir al login con mensaje de éxito
       router.push("/login?passwordReset=true");
     } catch (error: unknown) {
-      console.error("Error restableciendo contraseña:", error);
-
       // Si es un error de validación de Yup
       if (error instanceof yup.ValidationError) {
         const errors: Record<string, string> = {};
@@ -190,30 +138,8 @@ export default function ResetPasswordPage() {
         setValidationErrors(errors);
         return;
       }
-
-      // Manejar errores de Firebase
-      if (error && typeof error === "object" && "code" in error) {
-        const firebaseError = error as { code: string; message?: string };
-        switch (firebaseError.code) {
-          case "auth/expired-action-code":
-            setError(
-              "El enlace de restablecimiento ha expirado. Solicita uno nuevo."
-            );
-            break;
-          case "auth/invalid-action-code":
-            setError("El enlace de restablecimiento no es válido.");
-            break;
-          case "auth/weak-password":
-            setError(
-              "La contraseña es muy débil. Usa al menos 8 caracteres con mayúsculas, minúsculas y números."
-            );
-            break;
-          default:
-            setError("Error al restablecer la contraseña. Intenta nuevamente.");
-        }
-      } else {
-        setError("Error al restablecer la contraseña. Intenta nuevamente.");
-      }
+      console.error("Error restableciendo contraseña:", error);
+      setError("Error al restablecer la contraseña. Intentá nuevamente.");
     } finally {
       setIsLoading(false);
     }

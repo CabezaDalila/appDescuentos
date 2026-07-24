@@ -11,7 +11,6 @@ import { Checkbox } from "@/components/Share/checkbox";
 import { Input } from "@/components/Share/input";
 import { Label } from "@/components/Share/label";
 import { Separator } from "@/components/Share/separator";
-import { auth } from "@/lib/firebase/firebase";
 import {
     login,
     loginWithGoogle,
@@ -21,7 +20,7 @@ import {
     resetPassword,
     verifyEmail,
 } from "@/lib/supabase/auth";
-import { signOut } from "firebase/auth";
+import { supabase } from "@/lib/supabase/client";
 import { CheckCircle, Eye, EyeOff, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/router";
 import type React from "react";
@@ -118,7 +117,7 @@ export default function AuthForm() {
           await verifyEmail(oobCode);
 
           // Cerrar sesión después de verificar para que el usuario tenga que iniciar sesión manualmente
-          await signOut(auth);
+          await supabase.auth.signOut();
 
           setSuccess(
             "¡Email verificado exitosamente! Ahora puedes iniciar sesión con tu cuenta."
@@ -273,14 +272,14 @@ export default function AuthForm() {
       try {
         await resendEmailVerification(pendingVerificationEmail);
         // Cerrar sesión después de enviar el email
-        await auth.signOut();
+        await supabase.auth.signOut();
         setSuccess(
           "¡Email de verificación reenviado! Revisa tu bandeja de entrada."
         );
         setPendingVerificationEmail(null);
       } catch (resendError: unknown) {
         // Cerrar sesión incluso si falla el reenvío
-        await auth.signOut();
+        await supabase.auth.signOut();
 
         if (
           resendError &&

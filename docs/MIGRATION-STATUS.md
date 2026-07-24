@@ -1,8 +1,9 @@
 # Estado de la migración Firebase → Supabase (handoff)
 
 > Rama de trabajo: **`feat/full-supabase-migration`** (NO mergeada a `main`).
-> No mergear a `main` hasta terminar la Fase 7 (si no, prod queda a medias:
-> discounts vacíos + crear-descuento del admin roto).
+> ✅ **Firebase ELIMINADO por completo** (datos + auth + deps). Antes de mergear
+> a `main`: **probar en vivo los flujos de auth** (ver "Fase 7" abajo) — no se
+> pudieron probar en el entorno de dev sin credenciales/mails reales.
 
 ## Objetivo
 Sacar Firebase por completo, migrando todos los datos a Supabase/Postgres.
@@ -104,22 +105,40 @@ el puente + Firebase.
   - FAQ/Términos → `supabase/support-content.ts` sobre `support_faqs` +
     `support_terms`. `firebase/support-content.ts` re-exporta.
 
-## Pendiente ⏳ — solo queda el CIERRE (Fase 7)
-Todos los dominios de DATOS ya están en Supabase. El único `firebase/firestore`
-que queda es el del puente de auth:
+- **Fase 7 (CIERRE — Firebase eliminado)** — HECHO en código:
+  - Puente borrado: `supabase/bridge.ts`, `/api/auth/firebase-bridge.ts`,
+    `firebase/firebase-auth.js`, `firebase/firebase.js`, `firebase/admin-server.ts`.
+  - `useAuth` y `supabase/auth.ts` ya no llaman al puente.
+  - **Auth migrado a Supabase nativo**:
+    - `AuthForm`: `signOut` de Firebase → `supabase.auth.signOut()`.
+    - `ResetPassword`: usa la sesión de RECUPERACIÓN de Supabase
+      (`onAuthStateChange`/`PASSWORD_RECOVERY` + `updateUser({password})`) en vez
+      del `oobCode`/`confirmPasswordReset` de Firebase.
+    - `verify-email`: `verifyOtp({token_hash,type})` + fallback de sesión, en vez
+      de `applyActionCode`.
+  - `firebase` y `firebase-admin` sacados del `package.json` (`npm install`
+    removió 168 paquetes). Ningún import de `firebase*` queda en `src`.
+  - Typecheck OK. Smoke: /login /reset-password /verify-email /home /admin 200,
+    build sin firebase en node_modules.
 
-- `firebase/firebase-auth.js` — en el login escribe `users/{uid}` en Firestore
-  (nadie lo lee ya). Sacar esa escritura.
-- Puente Firebase↔Supabase: `bridge.ts`, `/api/auth/firebase-bridge`,
-  `firebase/admin-server.ts` (¡no confundir con `supabase/admin-server.ts`!).
-- `firebase.js` (init + exports de db/auth/storage), `firebase/auth-header.ts`,
-  y demás usos de `firebase/firebase`.
-- Sacar deps de Firebase del `package.json` + envs `NEXT_PUBLIC_FIREBASE_*`.
-- Recién ahí: **mergear a `main`** y deployar.
+## Pendiente ⏳ — PROBAR EN VIVO antes de mergear a `main`
+No se pudo probar auth de punta a punta en dev (sin mails/credenciales reales).
+Verificar en un entorno con la config de Supabase Auth real:
+1. **Login** email/password (incluye el caso "email no confirmado").
+2. **Registro** → llega el mail de confirmación (Supabase) → el link confirma y
+   cae en `/login`. Confirmar que el template/redirect de Supabase apunta bien.
+3. **Reset password**: pedir reset → mail → link a `/reset-password` → setear
+   nueva clave. Confirmar redirect URL permitida en Supabase (Auth → URL config).
+4. **Verify-email** con `token_hash` (si el template usa esa variante).
+5. **Google OAuth** (web y nativo Capacitor).
 
-> Antes del cierre conviene revisar cuánto de la auth todavía pasa por el
-> puente: si el login ya es 100% Supabase, `firebase-auth.js`/`bridge` se
-> pueden borrar; si no, primero terminar de mover el login.
+### Limpieza cosmética (opcional, no bloquea)
+- La carpeta `src/lib/firebase/` quedó con módulos que YA son Supabase
+  (`auth-header.ts`, `interactions.ts`, `support-content.ts`, `routes.ts`,
+  `user.js`, `memberships.js`, `profileService.js`, `onboarding.ts`,
+  `discount-votes.ts`). Renombrarla a `src/lib/` o `src/lib/data/` es puro
+  cosmético (toca muchos imports); no afecta funcionalidad.
+- Envs `NEXT_PUBLIC_FIREBASE_*` ya no se usan: se pueden borrar de Vercel/.env.
 
 ## Patrón de la migración (importante)
 - Cada dominio: crear/confirmar tabla + RLS → capa `src/lib/supabase/<dominio>.ts`
