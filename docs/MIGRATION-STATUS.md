@@ -23,7 +23,8 @@ el puente + Firebase.
   **0004** (policies de admin en `profiles`: select/update con `is_admin()`),
   **0005** (notifications: policies insert/delete-own + tabla en la publicación
   `supabase_realtime`), **0006** (bucket `profile-photos` + policies de
-  `storage.objects`: read público, insert/update/delete scoped a `{uid}/`).
+  `storage.objects`: read público, insert/update/delete scoped a `{uid}/`),
+  **0007** (tabla `ai_recommendations`: cache por usuario, RLS owner-only).
 - Dev server: `npm run dev` → **puerto fijo 3007** (coincide con Supabase/Google OAuth).
 - Admin: el rol vive en `public.profiles.role`. `dalilacabeza@gmail.com` ya es admin.
   (El `useAdmin` cachea en memoria: si cambia el rol, hard-reload.)
@@ -79,17 +80,36 @@ el puente + Firebase.
   - Único `firebase/storage` que queda: `firebase.js` (init/export `storage`),
     se borra en Fase 7.
 
-## Pendiente ⏳ (orden sugerido)
-1. **`dailyRoutes` (tracking + IA)** — NO es storage, es una colección Firestore
-   aparte: `users/{uid}/dailyRoutes` + `routesSummary`, en `firebase/routes.ts`
-   (191 líneas) y leída por `useAIRecommendations.ts` (317) y
-   `personalized-offers-section` / `onboarding`. Migrar como dominio propio:
-   tablas `daily_routes` + `route_summaries` (o jsonb) + RLS por dueño →
-   reescribir `routes.ts` → ajustar los lectores. Es lo último de Firestore
-   antes del cierre.
-2. **Cierre (Fase 7)** — eliminar el puente (`bridge.ts`,
-   `/api/auth/firebase-bridge`, `firebase/admin-server.ts`), quitar deps de
-   Firebase, borrar `firebase.js`/config. Recién ahí **mergear a `main`** y deployar.
+- **Fase 6.5 (IA/rutas)** — `aiRecommendations` (cache) → tabla
+  `ai_recommendations` (upsert + TTL 24h en `supabase/recommendations.ts`).
+  `firebase/routes.ts` ahora solo re-exporta. Las funciones de tracking
+  (`dailyRoutes`/`routesSummary`/`hasLocationTrackingEnabled`) eran **código
+  muerto (0 consumidores)** → eliminadas sin tabla.
+
+## Pendiente ⏳ (OJO: el handoff original subestimó esto)
+> Al grepear `firebase/firestore` quedaron dominios Firestore VIVOS que la
+> lista vieja no mencionaba. Todos deben migrar antes del cierre:
+
+1. **Favoritos/feedback** — `firebase/interactions.ts` (colección
+   `user_discount_interactions`: `getUserInteraction`, `toggleFavorite`,
+   `getFavoritesCountForDiscount`, `setFeedback`,
+   `getFavoriteDiscountIdsForUser`). 4 consumidores (cardDiscount,
+   CardDiscountCompact, DiscountVote, search). → tabla + RLS por dueño.
+2. **Contenido de soporte** — `firebase/support-content.ts` (FAQ + Términos).
+   3 consumidores (admin/support-content, support/terms, support/faq).
+   → tabla(s) + RLS (lectura pública, escritura admin).
+3. **Preferencias de usuario** — `firebase/user.js` (`users/{uid}.preferences`
+   setDoc/getDoc). 1 consumidor (UserSettingsModal). → `profiles.preferences`
+   (la columna ya existe).
+4. **Escrituras/lecturas inline de discounts** — `DiscountVote.tsx` (getDoc
+   `discounts/{id}` para sync de puntos) y `pages/discount/[id].tsx` (línea
+   ~192). Pasar al shim `discounts-data`.
+5. **Código muerto** — `firebase/admin.ts` (0 consumidores, duplicado viejo del
+   admin) se puede borrar directamente.
+6. **Cierre (Fase 7)** — recién con todo lo de arriba: eliminar el puente
+   (`bridge.ts`, `/api/auth/firebase-bridge`, `firebase/admin-server.ts`),
+   auth Firestore (`firebase-auth.js` escribe `users/{uid}`), quitar deps de
+   Firebase, borrar `firebase.js`/config. Ahí **mergear a `main`** y deployar.
 
 ## Patrón de la migración (importante)
 - Cada dominio: crear/confirmar tabla + RLS → capa `src/lib/supabase/<dominio>.ts`
