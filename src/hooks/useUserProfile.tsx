@@ -46,8 +46,10 @@ export function useUserProfile(userId?: string | null): UseUserProfileResult {
         setLoading(false);
       });
 
+    // Nombre único por suscripción: evita reusar un canal ya suscripto (el
+    // doble-montaje de StrictMode en dev hacía explotar el .on() posterior).
     const channel = supabase
-      .channel(`profile:${userId}`)
+      .channel(`profile:${userId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
