@@ -1,7 +1,7 @@
 /**
  * Membresías — migradas a Supabase. Este archivo se mantiene solo como
  * re-export para no tocar los imports de los consumidores
- * (`@/lib/firebase/memberships`). La implementación vive en
+ * (`@/lib/data/memberships`). La implementación vive en
  * `@/lib/supabase/memberships`.
  */
 export {

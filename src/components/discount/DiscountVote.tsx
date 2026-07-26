@@ -6,8 +6,8 @@ import {
     removeVote,
     voteDiscount,
     type VoteType,
-} from "@/lib/firebase/discount-votes";
-import { setFeedback } from "@/lib/firebase/interactions";
+} from "@/lib/data/discount-votes";
+import { setFeedback } from "@/lib/data/interactions";
 import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

@@ -1,4 +1,4 @@
-import { authHeader } from "@/lib/firebase/auth-header";
+import { authHeader } from "@/lib/data/auth-header";
 
 export interface SendNotificationOptions {
   userId?: string;

@@ -7,7 +7,7 @@ import { Button } from "@/components/Share/button";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { getUserMemberships } from "@/lib/firebase/memberships";
+import { getUserMemberships } from "@/lib/data/memberships";
 import { Shield } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

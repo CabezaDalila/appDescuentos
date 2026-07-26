@@ -8,7 +8,7 @@ import {
     getMembershipById,
     updateCardInMembership,
     updateMembership,
-} from "@/lib/firebase/memberships";
+} from "@/lib/data/memberships";
 import { ArrowLeft, Eye, Pencil, Trash2, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

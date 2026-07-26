@@ -24,8 +24,8 @@ import {
   getNearbyDiscountsProgressive,
   MAX_DISTANCE_KM,
 } from "@/lib/discounts";
-import { getFavoriteDiscountIdsForUser } from "@/lib/firebase/interactions";
-import { getActiveMemberships } from "@/lib/firebase/memberships";
+import { getFavoriteDiscountIdsForUser } from "@/lib/data/interactions";
+import { getActiveMemberships } from "@/lib/data/memberships";
 import { Discount, UserCredential } from "@/types/discount";
 import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
 import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";

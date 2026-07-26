@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDistance } from "@/hooks/useDistance";
 import { getDiscountById } from "@/lib/discounts";
 import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
-import { getActiveMemberships } from "@/lib/firebase/memberships";
+import { getActiveMemberships } from "@/lib/data/memberships";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";
 import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";

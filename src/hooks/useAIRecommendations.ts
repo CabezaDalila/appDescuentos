@@ -4,11 +4,11 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { getHomePageDiscounts } from "@/lib/discounts";
-import { getOnboardingAnswers } from "@/lib/firebase/onboarding";
+import { getOnboardingAnswers } from "@/lib/data/onboarding";
 import {
   getLatestAIRecommendation,
   saveAIRecommendation,
-} from "@/lib/firebase/routes";
+} from "@/lib/data/routes";
 import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import { sendRecommendationNotification } from "@/lib/services/notification.service";
 import type {

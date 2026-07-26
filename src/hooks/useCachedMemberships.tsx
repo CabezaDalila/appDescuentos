@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
-import { getActiveMemberships, getInactiveMemberships } from "@/lib/firebase/memberships";
+import { getActiveMemberships, getInactiveMemberships } from "@/lib/data/memberships";
 import type { MembershipItem } from "@/types/membership";
 import { useAuth } from "./useAuth";
 

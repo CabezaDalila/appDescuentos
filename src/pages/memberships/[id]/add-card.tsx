@@ -24,7 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
     addCardToMembership,
     getMembershipById,
-} from "@/lib/firebase/memberships";
+} from "@/lib/data/memberships";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

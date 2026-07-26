@@ -1,7 +1,7 @@
 /**
  * Preferencias de usuario — ahora sobre Supabase (public.profiles.preferences).
  * Reemplaza el doc Firestore users/{uid}. Se mantiene el path de import
- * (@/lib/firebase/user) para no tocar a los consumidores.
+ * (@/lib/data/user) para no tocar a los consumidores.
  */
 import { getProfile, updateProfileFields } from "@/lib/supabase/profiles";
 

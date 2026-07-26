@@ -1,5 +1,5 @@
 import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
-import { authHeader } from "@/lib/firebase/auth-header";
+import { authHeader } from "@/lib/data/auth-header";
 import { getRole } from "@/lib/supabase/profiles";
 import { supabase } from "@/lib/supabase/client";
 import {
