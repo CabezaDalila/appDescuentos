@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { cache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getHomePageDiscounts } from "@/lib/discounts";
-import { getActiveMemberships, getInactiveMemberships } from "@/lib/firebase/memberships";
+import { getActiveMemberships, getInactiveMemberships } from "@/lib/data/memberships";
 import { useAuth } from "./useAuth";
 
 interface PreloadStatus {

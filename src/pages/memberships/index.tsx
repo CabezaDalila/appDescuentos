@@ -7,7 +7,7 @@ import { useCachedMemberships } from "@/hooks/useCachedMemberships";
 import {
   deleteCardFromMembership,
   deleteMembership,
-} from "@/lib/firebase/memberships";
+} from "@/lib/data/memberships";
 import type { MembershipItem } from "@/types/membership";
 
 import { Plus } from "lucide-react";

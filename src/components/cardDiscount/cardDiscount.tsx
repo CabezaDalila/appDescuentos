@@ -3,7 +3,7 @@ import { isLocationPermissionEnabled } from "@/hooks/useGeolocation";
 import {
   getUserInteraction,
   toggleFavorite as toggleFavoriteInteraction,
-} from "@/lib/firebase/interactions";
+} from "@/lib/data/interactions";
 import {
   bankDisplayName,
   bankInitialsAvatar,

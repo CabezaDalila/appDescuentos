@@ -2,20 +2,20 @@ import { Button } from "@/components/Share/button";
 import { Switch } from "@/components/Share/switch";
 import { Card, Membership } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
-import { db } from "@/lib/firebase/firebase";
 import {
     deleteCardFromMembership,
     deleteMembership,
     getMembershipById,
-} from "@/lib/firebase/memberships";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+    updateCardInMembership,
+    updateMembership,
+} from "@/lib/data/memberships";
 import { ArrowLeft, Eye, Pencil, Trash2, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 export default function MembershipDetailsPage() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const router = useRouter();
   const { id } = router.query;
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -160,21 +160,15 @@ export default function MembershipDetailsPage() {
     newStatus: Membership["status"],
     cards?: Card[]
   ) => {
-    const membershipRef = doc(
-      db,
-      `users/${user?.uid}/memberships/${membershipId}`
-    );
-
-    const updateData: any = {
-      status: newStatus,
-      updatedAt: serverTimestamp(),
-    };
-
+    await updateMembership(membershipId, { status: newStatus });
     if (cards) {
-      updateData.cards = cards;
+      // Persistir el estado de cada tarjeta (tabla cards en Supabase).
+      await Promise.all(
+        cards.map((card) =>
+          updateCardInMembership(membershipId, card.id, { status: card.status })
+        )
+      );
     }
-
-    await updateDoc(membershipRef, updateData);
   };
 
   const handleMembershipStatusToggle = async () => {

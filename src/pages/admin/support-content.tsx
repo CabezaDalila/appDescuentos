@@ -17,7 +17,7 @@ import {
   saveTermsContent,
   type FAQItem,
   type TermsContent,
-} from "@/lib/firebase/support-content";
+} from "@/lib/data/support-content";
 import { FileText, HelpCircle, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";

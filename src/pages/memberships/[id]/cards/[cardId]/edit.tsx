@@ -24,7 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
     getMembershipById,
     updateCardInMembership,
-} from "@/lib/firebase/memberships";
+} from "@/lib/data/memberships";
 import { validateAndFormatExpiryInput } from "@/lib/utils/expiryUtils";
 import { ArrowLeft, CreditCard, Save } from "lucide-react";
 import { useRouter } from "next/router";

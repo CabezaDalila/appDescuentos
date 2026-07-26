@@ -22,7 +22,7 @@ import {
     MEMBERSHIP_CATEGORIES,
 } from "@/constants/membership";
 import { useAuth } from "@/hooks/useAuth";
-import { createMembership } from "@/lib/firebase/memberships";
+import { createMembership } from "@/lib/data/memberships";
 import { ArrowLeft, ArrowRight, CreditCard, Wifi } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";

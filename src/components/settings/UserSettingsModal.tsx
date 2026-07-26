@@ -24,7 +24,7 @@ import {
   setLocationPermission,
 } from "@/hooks/useGeolocation";
 import { useLocation } from "@/hooks/useLocation";
-import { getUserPreferences, updateUserPreferences } from "@/lib/firebase/user";
+import { getUserPreferences, updateUserPreferences } from "@/lib/data/user";
 import { UserPreferences } from "@/types/user";
 import { Globe } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";

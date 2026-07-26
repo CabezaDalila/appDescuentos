@@ -15,7 +15,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import {
     OnboardingAnswers,
     saveOnboardingAnswers,
-} from "@/lib/firebase/onboarding";
+} from "@/lib/data/onboarding";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 

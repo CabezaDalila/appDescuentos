@@ -1,18 +1,12 @@
-import { db } from "@/lib/firebase/firebase";
 import {
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  query,
-  where,
-  writeBatch,
-} from "firebase/firestore";
+  deleteDiscountRow,
+  deleteDiscountRows,
+} from "@/lib/supabase/discounts-data";
 
 // Eliminar un descuento específico por ID
 export const deleteDiscount = async (discountId: string): Promise<void> => {
   try {
-    await deleteDoc(doc(db, "discounts", discountId));
+    await deleteDiscountRow(discountId);
   } catch (error) {
     console.error("Error al eliminar descuento:", error);
     throw error;
@@ -24,16 +18,9 @@ export const deleteMultipleDiscounts = async (
   discountIds: string[]
 ): Promise<void> => {
   try {
-    const batch = writeBatch(db);
-
-    discountIds.forEach((id) => {
-      batch.delete(doc(db, "discounts", id));
-    });
-
-    await batch.commit();
+    await deleteDiscountRows(discountIds);
   } catch (error) {
     console.error("Error al eliminar descuentos:", error);
     throw error;
   }
 };
-

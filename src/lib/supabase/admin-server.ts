@@ -7,11 +7,15 @@
  * Reemplaza a la antigua verificación con firebase-admin. Los guards de
  * src/lib/server/auth.ts consumen estas dos funciones.
  */
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-let cached: ReturnType<typeof createClient> | null = null;
+let cached: SupabaseClient | null = null;
 
-function getAdminClient() {
+/**
+ * Cliente admin (service role si está disponible; si no, anon como fallback en
+ * local). Bypassa RLS cuando corre con la service role key. Solo servidor.
+ */
+export function getAdminClient() {
   if (cached) return cached;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

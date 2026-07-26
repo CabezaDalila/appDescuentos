@@ -2,7 +2,7 @@
  * Servicio de notificaciones para recomendaciones inteligentes
  */
 
-import { authHeader } from "@/lib/firebase/auth-header";
+import { authHeader } from "@/lib/data/auth-header";
 import type { AIRecommendation } from "@/types/recommendations";
 
 /**

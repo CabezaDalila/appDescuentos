@@ -7,7 +7,6 @@ import { DiscountsSelectionBar } from "@/components/admin/discounts/ui/Discounts
 import { useConfirmation } from "@/hooks/useConfirmation";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { useDiscounts } from "@/hooks/useDiscounts";
-import { deleteField } from "@/lib/firebase/firebase";
 import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { ManualDiscount } from "@/types/admin";
 import { useState } from "react";
@@ -174,56 +173,47 @@ export function ManualDiscountsManager({
       };
 
       if (editingDiscount) {
-        if (formData.availableCredentials.length > 0) {
-          discountData.availableCredentials = formData.availableCredentials;
-        } else {
-          discountData.availableCredentials = deleteField();
-        }
+        // Al editar, "vaciar" un campo = setear el valor vacío/null en Postgres
+        // (antes se usaba deleteField() de Firestore). Las columnas de arrays son
+        // NOT NULL → van a []/{}; las nullables van a null.
+        discountData.availableCredentials =
+          formData.availableCredentials.length > 0
+            ? formData.availableCredentials
+            : [];
 
-        if (formData.availableMemberships.length > 0) {
-          discountData.availableMemberships = formData.availableMemberships;
-        } else {
-          discountData.availableMemberships = deleteField();
-        }
+        discountData.availableMemberships =
+          formData.availableMemberships.length > 0
+            ? formData.availableMemberships
+            : [];
 
-        if (
-          formData.discountPercentage &&
-          formData.discountPercentage.trim() !== ""
-        ) {
-          discountData.discountPercentage = parseFloat(
-            formData.discountPercentage
-          );
-        } else {
-          discountData.discountPercentage = deleteField();
-        }
+        discountData.discountPercentage =
+          formData.discountPercentage && formData.discountPercentage.trim() !== ""
+            ? parseFloat(formData.discountPercentage)
+            : null;
 
-        if (formData.discountAmount && formData.discountAmount.trim() !== "") {
-          discountData.discountAmount = parseFloat(formData.discountAmount);
-        } else {
-          discountData.discountAmount = deleteField();
-        }
+        discountData.discountAmount =
+          formData.discountAmount && formData.discountAmount.trim() !== ""
+            ? parseFloat(formData.discountAmount)
+            : null;
 
-        if (formData.imageUrl && formData.imageUrl.trim() !== "") {
-          discountData.imageUrl = formData.imageUrl.trim();
-        } else {
-          discountData.imageUrl = deleteField();
-        }
+        discountData.imageUrl =
+          formData.imageUrl && formData.imageUrl.trim() !== ""
+            ? formData.imageUrl.trim()
+            : null;
 
-        if (formData.url && formData.url.trim() !== "") {
-          discountData.url = formData.url.trim();
-        } else {
-          discountData.url = deleteField();
-        }
+        discountData.url =
+          formData.url && formData.url.trim() !== ""
+            ? formData.url.trim()
+            : null;
 
-        if (formData.locationAddress && formData.locationCoordinates) {
-          discountData.location = {
-            latitude: formData.locationCoordinates.lat,
-            longitude: formData.locationCoordinates.lng,
-            address: formData.locationAddress,
-          };
-        } else {
-          discountData.location = deleteField();
-        }
+        discountData.location =
+          formData.locationAddress && formData.locationCoordinates
+            ? {
+                latitude: formData.locationCoordinates.lat,
+                longitude: formData.locationCoordinates.lng,
+                address: formData.locationAddress,
+              }
+            : null;
       } else {
         if (formData.availableCredentials.length > 0) {
           discountData.availableCredentials = formData.availableCredentials;

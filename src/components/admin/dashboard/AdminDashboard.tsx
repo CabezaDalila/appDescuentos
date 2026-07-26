@@ -4,10 +4,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/Share/card";
-import { db } from "@/lib/firebase/firebase";
+import { getScrapingScripts } from "@/lib/admin";
+import { fetchAllDiscountDocs } from "@/lib/supabase/discounts-data";
+import { listAllProfiles } from "@/lib/supabase/profiles";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { collection, getDocs } from "firebase/firestore";
 import {
   Activity,
   Calendar,
@@ -65,23 +66,21 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Obtener estadísticas de usuarios
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const totalUsers = usersSnapshot.size;
+        // Obtener estadísticas de usuarios (perfiles; RLS deja al admin ver todo)
+        const profiles = await listAllProfiles();
+        const totalUsers = profiles.length;
 
         // Usuarios recientes (últimos 7 días)
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        const recentUsers = usersSnapshot.docs.filter((doc) => {
-          const userData = doc.data();
-          const createdAt =
-            userData.createdAt?.toDate?.() || new Date(userData.createdAt);
-          return createdAt >= weekAgo;
-        }).length;
+        const recentProfiles = profiles.filter(
+          (p) => new Date(p.createdAt) >= weekAgo
+        );
+        const recentUsers = recentProfiles.length;
 
         // Obtener estadísticas de descuentos
-        const discountsSnapshot = await getDocs(collection(db, "discounts"));
-        const totalDiscounts = discountsSnapshot.size;
+        const discountsSnapshot = await fetchAllDiscountDocs();
+        const totalDiscounts = discountsSnapshot.docs.length;
 
         // Analizar descuentos por estado
         const activeDiscounts = discountsSnapshot.docs.filter((doc) => {
@@ -116,16 +115,13 @@ export function AdminDashboard() {
         // Descuentos recientes (últimos 7 días)
         const recentDiscounts = discountsSnapshot.docs.filter((doc) => {
           const data = doc.data();
-          const createdAt =
-            data.createdAt?.toDate?.() || new Date(data.createdAt);
+          const createdAt = data.createdAt?.toDate?.() || new Date(0);
           return createdAt >= weekAgo;
         }).length;
 
         // Obtener estadísticas de scripts
-        const scriptsSnapshot = await getDocs(
-          collection(db, "scrapingScripts")
-        );
-        const totalScripts = scriptsSnapshot.size;
+        const scripts = await getScrapingScripts();
+        const totalScripts = scripts.length;
 
         setStats({
           totalUsers,
@@ -147,32 +143,21 @@ export function AdminDashboard() {
         const activity: RecentActivity[] = [];
 
         // Agregar usuarios recientes
-        usersSnapshot.docs
-          .filter((doc) => {
-            const userData = doc.data();
-            const createdAt =
-              userData.createdAt?.toDate?.() || new Date(userData.createdAt);
-            return createdAt >= weekAgo;
-          })
-          .slice(0, 3)
-          .forEach((doc) => {
-            const userData = doc.data();
-            activity.push({
-              id: doc.id,
-              type: "user",
-              title: userData.displayName || userData.email,
-              date:
-                userData.createdAt?.toDate?.() || new Date(userData.createdAt),
-              description: "Nuevo usuario registrado",
-            });
+        recentProfiles.slice(0, 3).forEach((p) => {
+          activity.push({
+            id: p.id,
+            type: "user",
+            title: p.displayName || p.email || "Usuario",
+            date: new Date(p.createdAt),
+            description: "Nuevo usuario registrado",
           });
+        });
 
         // Agregar descuentos recientes
         discountsSnapshot.docs
           .filter((doc) => {
             const data = doc.data();
-            const createdAt =
-              data.createdAt?.toDate?.() || new Date(data.createdAt);
+            const createdAt = data.createdAt?.toDate?.() || new Date(0);
             return createdAt >= weekAgo;
           })
           .slice(0, 3)
@@ -182,7 +167,7 @@ export function AdminDashboard() {
               id: doc.id,
               type: "discount",
               title: data.title || data.name || "Descuento sin título",
-              date: data.createdAt?.toDate?.() || new Date(data.createdAt),
+              date: data.createdAt?.toDate?.() || new Date(0),
               description: `Descuento en ${data.category || "Sin categoría"}`,
             });
           });

@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/Share/page-header";
-import { getTermsContent } from "@/lib/firebase/support-content";
+import { getTermsContent } from "@/lib/data/support-content";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 

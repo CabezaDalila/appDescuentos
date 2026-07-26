@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCachedDiscounts } from "@/hooks/useCachedDiscounts";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getDiscountsBySearch, getTrendingDiscounts } from "@/lib/discounts";
-import { getActiveMemberships } from "@/lib/firebase/memberships";
+import { getActiveMemberships } from "@/lib/data/memberships";
 import { Discount, HomePageDiscount, type UserCredential } from "@/types/discount";
 import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
 import { useRouter } from "next/router";

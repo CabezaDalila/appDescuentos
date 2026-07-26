@@ -28,7 +28,7 @@ export default function HelpPage() {
   // Pre-llenar campos con datos del usuario
   useEffect(() => {
     if (user) {
-      const profileName = profile?.name;
+      const profileName = profile?.displayName;
       const nameValue =
         (typeof profileName === "string" ? profileName : null) ||
         user.displayName ||

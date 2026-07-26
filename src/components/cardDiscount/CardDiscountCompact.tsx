@@ -4,7 +4,7 @@ import { isLocationPermissionEnabled } from "@/hooks/useGeolocation";
 import {
     getUserInteraction,
     toggleFavorite as toggleFavoriteInteraction,
-} from "@/lib/firebase/interactions";
+} from "@/lib/data/interactions";
 import { getImageByCategory } from "@/utils/category-mapping";
 import Image from "next/image";
 import { useEffect, useState } from "react";

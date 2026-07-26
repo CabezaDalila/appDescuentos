@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/Share/page-header";
-import { getFAQs, type FAQItem } from "@/lib/firebase/support-content";
+import { getFAQs, type FAQItem } from "@/lib/data/support-content";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";

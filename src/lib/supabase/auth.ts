@@ -1,12 +1,8 @@
 /**
- * Capa de autenticación sobre Supabase (reemplaza a firebase-auth.js como
- * fuente de verdad del LOGIN). Tras cada login exitoso puenteamos a Firebase
- * (ver bridge.ts) para que Firestore siga funcionando sin cambios.
- *
+ * Capa de autenticación sobre Supabase (fuente de verdad del LOGIN).
  * Mantiene firmas compatibles con las que usaba el AuthForm para minimizar
  * cambios en la UI.
  */
-import { ensureFirebaseSession } from "./bridge";
 import { supabase } from "./client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -53,7 +49,6 @@ export async function login(email: string, password: string) {
     }
     throw error;
   }
-  await ensureFirebaseSession();
   return { user: adaptUser(data.user) };
 }
 
@@ -104,7 +99,6 @@ export async function loginWithGoogleNative() {
     token: idToken,
   });
   if (error) throw error;
-  await ensureFirebaseSession();
   return { user: adaptUser(data.user) };
 }
 

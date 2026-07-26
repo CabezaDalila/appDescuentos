@@ -15,10 +15,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { approveDiscount, getPendingDiscounts } from "@/lib/discounts";
-import { db } from "@/lib/firebase/firebase";
+import { updateDiscountRow } from "@/lib/supabase/discounts-data";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -154,15 +153,15 @@ export function DiscountApprovalManager({
       }
 
       // Preparar los datos de actualización
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         title: formData.title.trim(),
         name: formData.title.trim(), // Mantener compatibilidad
         origin: formData.origin.trim(),
         category: formData.category!,
         description: formData.description.trim(),
-        expirationDate: Timestamp.fromDate(expDate),
+        expirationDate: expDate,
         isVisible: formData.isVisible,
-        updatedAt: Timestamp.now(),
+        updatedAt: new Date(),
       };
 
       // Agregar campos opcionales si existen
@@ -197,8 +196,7 @@ export function DiscountApprovalManager({
       }
 
       // Actualizar el descuento
-      const docRef = doc(db, "discounts", editingDiscount.id);
-      await updateDoc(docRef, updateData);
+      await updateDiscountRow(editingDiscount.id, updateData);
 
       const hasRestriction =
         formData.availableCredentials.length > 0 ||

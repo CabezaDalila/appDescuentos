@@ -20,7 +20,7 @@ import {
     deleteCardFromMembership,
     getMembershipById,
     updateMembership,
-} from "@/lib/firebase/memberships";
+} from "@/lib/data/memberships";
 import {
     getCardStatus,
     getCardStatusColor,

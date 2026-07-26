@@ -2,7 +2,7 @@ import type {
   AIRecommendation,
   RecommendationRequest,
 } from "@/types/recommendations";
-import { authHeader } from "@/lib/firebase/auth-header";
+import { authHeader } from "@/lib/data/auth-header";
 import { canMakeRequest, recordRequest } from "./ai-rate-limiter.service";
 
 /**
