@@ -1,5 +1,16 @@
 // Tipos para descuentos
-import type { Card, CardLevel } from "@/constants/membership";
+import type { UserCredential } from "@/types/credentials";
+
+// Re-export para compatibilidad: algunos módulos importan UserCredential
+// desde @/types/discount. La definición canónica vive en @/types/credentials.
+export type { UserCredential };
+
+// Ubicación geográfica de un descuento (comercio físico).
+export interface DiscountLocation {
+  latitude: number;
+  longitude: number;
+  address: string;
+}
 
 export interface Discount {
   id: string;
@@ -30,11 +41,7 @@ export interface Discount {
   bancos?: string[];
   availableMemberships?: string[];
   availableCredentials?: UserCredential[];
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
+  location?: DiscountLocation;
 }
 
 export interface HomePageDiscount {
@@ -55,18 +62,5 @@ export interface HomePageDiscount {
   bancos?: string[];
   availableMemberships?: string[];
   availableCredentials?: UserCredential[];
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-}
-
-// Representa una credencial de tarjeta del usuario y también
-// el formato usado en availableCredentials de los descuentos.
-export interface UserCredential {
-  bank: string; // Debe provenir del selector (e.g., "Banco Galicia")
-  type: Card["type"]; // "Crédito" | "Débito"
-  brand: Card["brand"]; // "Visa" | "Mastercard" | ...
-  level: CardLevel; // "Gold" | "Platinum" | ...
+  location?: DiscountLocation;
 }
