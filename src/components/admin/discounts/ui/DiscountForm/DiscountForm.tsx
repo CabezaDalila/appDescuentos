@@ -31,7 +31,7 @@ import { Edit, Gift, Save, X } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 import * as yup from "yup";
-import { AddressSearch } from "../addressSearch";
+import { AddressSearch } from "../AddressSearch";
 import { discountFormSchema } from "./validations";
 
 export interface DiscountFormData {

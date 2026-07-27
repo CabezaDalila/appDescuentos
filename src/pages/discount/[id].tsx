@@ -1,4 +1,4 @@
-import CardDiscount from "@/components/cardDiscount/cardDiscount";
+import CardDiscount from "@/components/cardDiscount/CardDiscount";
 import { DiscountVote } from "@/components/discount/DiscountVote";
 import { BackButton } from "@/components/Share/back-button";
 import { GoogleMap } from "@/components/Share/google-map";
