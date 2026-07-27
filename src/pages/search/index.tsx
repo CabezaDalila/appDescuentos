@@ -1,6 +1,7 @@
 import CardDiscountCompact from "@/components/cardDiscount/CardDiscountCompact";
 import { EmptyState } from "@/components/home/empty-state";
 import { SearchSection } from "@/components/home/search-section";
+import { SearchFiltersModal } from "@/components/search/SearchFiltersModal";
 import { PageHeader } from "@/components/Share/page-header";
 import {
   DISCOUNT_CATEGORIES,
@@ -21,7 +22,8 @@ import {
 } from "@/lib/discounts";
 import { getFavoriteDiscountIdsForUser } from "@/lib/data/interactions";
 import { Discount, UserCredential } from "@/types/discount";
-import { getImageByCategory, matchesCategory } from "@/utils/category-mapping";
+import { getImageByCategory } from "@/utils/category-mapping";
+import { filterDiscountsByCategories } from "@/utils/discount-search";
 import { isUserEligibleForDiscountRestrictions } from "@/utils/membership-match";
 import { Heart, MapPin, X } from "lucide-react";
 import { useRouter } from "next/router";
@@ -201,59 +203,9 @@ export default function Search() {
 
   const applyFiltersLocal = useCallback(
     (discounts: SearchDiscount[], categoryIds: string[]) => {
-      let filtered = discounts;
-
-      if (categoryIds && categoryIds.length > 0) {
-        const includeFavorites = categoryIds.includes("favoritos");
-        const categoryIdsOnly = categoryIds.filter(
-          (categoryId) => categoryId !== "favoritos"
-        );
-
-        if (discounts.length > 0) {
-          const favSet = includeFavorites ? favoriteIdSet : null;
-
-          if ("name" in discounts[0]) {
-            const fullDiscounts = discounts as Discount[];
-            filtered = fullDiscounts.filter((discountItem) => {
-              const isFavorite = includeFavorites
-                ? favSet!.has(discountItem.id)
-                : false;
-              const matchesCat =
-                categoryIdsOnly.length === 0
-                  ? false
-                  : categoryIdsOnly.some((categoryId) =>
-                      matchesCategory(discountItem.category, categoryId)
-                    );
-              return (
-                isFavorite ||
-                matchesCat ||
-                (!includeFavorites && categoryIdsOnly.length === 0)
-              );
-            }) as SearchDiscount[];
-          } else {
-            filtered = (discounts as HomePageDiscount[]).filter(
-              (discountItem) => {
-                const isFavorite = includeFavorites
-                  ? favSet!.has(discountItem.id)
-                  : false;
-                const matchesCat =
-                  categoryIdsOnly.length === 0
-                    ? false
-                    : categoryIdsOnly.some((categoryId) =>
-                        matchesCategory(discountItem.category || "", categoryId)
-                      );
-                return (
-                  isFavorite ||
-                  matchesCat ||
-                  (!includeFavorites && categoryIdsOnly.length === 0)
-                );
-              }
-            ) as SearchDiscount[];
-          }
-        }
-      }
-
-      setFilteredDiscounts(filtered);
+      setFilteredDiscounts(
+        filterDiscountsByCategories(discounts, categoryIds, favoriteIdSet)
+      );
     },
     [favoriteIdSet]
   );
@@ -415,62 +367,19 @@ export default function Search() {
     allDiscounts: SearchDiscount[],
     selectedCategoryIds?: string[]
   ) => {
-    let filtered = allDiscounts;
-
     if (selectedCategoryIds && selectedCategoryIds.length > 0) {
-      const includeFavorites = selectedCategoryIds.includes("favoritos");
-      const categoryIdsOnly = selectedCategoryIds.filter(
-        (categoryId) => categoryId !== "favoritos"
-      );
       setSelectedCategories(selectedCategoryIds);
-
-      if (allDiscounts.length > 0) {
-        const favSet = includeFavorites ? favoriteIdSet : null;
-
-        if ("name" in allDiscounts[0]) {
-          const fullDiscounts = allDiscounts as Discount[];
-          filtered = fullDiscounts.filter((discountItem) => {
-            const isFavorite = includeFavorites
-              ? favSet!.has(discountItem.id)
-              : false;
-            const matchesCat =
-              categoryIdsOnly.length === 0
-                ? false
-                : categoryIdsOnly.some((categoryId) =>
-                    matchesCategory(discountItem.category, categoryId)
-                  );
-            return (
-              isFavorite ||
-              matchesCat ||
-              (!includeFavorites && categoryIdsOnly.length === 0)
-            );
-          }) as SearchDiscount[];
-        } else {
-          filtered = (allDiscounts as HomePageDiscount[]).filter(
-            (discountItem) => {
-              const isFavorite = includeFavorites
-                ? favSet!.has(discountItem.id)
-                : false;
-              const matchesCat =
-                categoryIdsOnly.length === 0
-                  ? false
-                  : categoryIdsOnly.some((categoryId) =>
-                      matchesCategory(discountItem.category || "", categoryId)
-                    );
-              return (
-                isFavorite ||
-                matchesCat ||
-                (!includeFavorites && categoryIdsOnly.length === 0)
-              );
-            }
-          ) as SearchDiscount[];
-        }
-      }
+      setFilteredDiscounts(
+        filterDiscountsByCategories(
+          allDiscounts,
+          selectedCategoryIds,
+          favoriteIdSet
+        )
+      );
     } else {
       setSelectedCategories([]);
+      setFilteredDiscounts(allDiscounts);
     }
-
-    setFilteredDiscounts(filtered);
   };
 
   useEffect(() => {
@@ -846,155 +755,19 @@ export default function Search() {
             />
 
             {showFilters && (
-              <>
-                <div
-                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in transition-opacity duration-200"
-                  style={{
-                    opacity: dragY > 0 ? 0.6 - dragY / 500 : undefined,
-                  }}
-                  onClick={applyFiltersAndClose}
-                />
-                <div
-                  ref={modalRef}
-                  className="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[75vh] md:max-h-[80vh] lg:bottom-auto lg:top-1/2 lg:left-1/2 lg:right-auto lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:max-w-3xl lg:w-full lg:max-h-[90vh] xl:max-w-4xl transition-transform duration-200 ease-out"
-                  style={{
-                    transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
-                    opacity: dragY > 0 ? 1 - dragY / 300 : undefined,
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onTouchStart={handleTouchStart}
-                  onTouchMove={handleTouchMove}
-                  onTouchEnd={handleTouchEnd}
-                >
-                  <div
-                    className="flex justify-center pt-2 pb-1.5 sm:pt-3 sm:pb-2 md:pt-4 md:pb-3 lg:hidden cursor-grab active:cursor-grabbing"
-                    onTouchStart={handleTouchStart}
-                  >
-                    <div className="w-12 h-1.5 sm:w-14 sm:h-1.5 bg-gray-300 rounded-full" />
-                  </div>
-
-                  <div
-                    ref={contentRef}
-                    className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 pb-24 lg:pb-6"
-                    style={{ touchAction: dragY > 0 ? "none" : "pan-y" }}
-                  >
-                    <div className="pt-4 pb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 sm:mb-5 lg:mb-6">
-                        Filtros
-                      </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {EXPLORE_CATEGORIES.map((categoryDef) => (
-                          <label
-                            key={categoryDef.id}
-                            className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
-                              draftCategories.includes(categoryDef.id)
-                                ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
-                                : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={draftCategories.includes(categoryDef.id)}
-                              onChange={(e) => {
-                                setDraftCategories((prev) =>
-                                  e.target.checked
-                                    ? Array.from(
-                                        new Set([...prev, categoryDef.id])
-                                      )
-                                    : prev.filter(
-                                        (categoryId) =>
-                                          categoryId !== categoryDef.id
-                                      )
-                                );
-                              }}
-                              className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
-                            />
-                            <span
-                              className={`text-sm sm:text-base ${
-                                draftCategories.includes(categoryDef.id)
-                                  ? "text-purple-700 font-semibold"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {categoryDef.label}
-                            </span>
-                          </label>
-                        ))}
-                        <label
-                          className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
-                            draftCategories.includes("favoritos")
-                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
-                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={draftCategories.includes("favoritos")}
-                            onChange={(e) => {
-                              setDraftCategories((prev) =>
-                                e.target.checked
-                                  ? Array.from(new Set([...prev, "favoritos"]))
-                                  : prev.filter((x) => x !== "favoritos")
-                              );
-                            }}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
-                          />
-                          <span
-                            className={`text-sm sm:text-base ${
-                              draftCategories.includes("favoritos")
-                                ? "text-purple-700 font-semibold"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            Favoritos
-                          </span>
-                        </label>
-                        <label
-                          className={`flex items-center gap-2 sm:gap-2.5 p-3 sm:p-3.5 rounded-lg cursor-pointer transition-all ${
-                            draftNearby
-                              ? "bg-purple-50 border-2 border-purple-300 shadow-sm"
-                              : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 active:scale-95"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={draftNearby}
-                            onChange={(e) => setDraftNearby(e.target.checked)}
-                            className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 flex-shrink-0"
-                          />
-                          <span
-                            className={`text-sm sm:text-base ${
-                              draftNearby
-                                ? "text-purple-700 font-semibold"
-                                : "text-gray-700"
-                            }`}
-                          >
-                            Cerca de ti
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border-t border-gray-100 px-4 sm:px-6 lg:px-8 py-4 hidden lg:flex justify-end gap-3">
-                    <button
-                      className="px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg transition-colors"
-                      onClick={() => {
-                        setDraftCategories([]);
-                        setDraftNearby(false);
-                      }}
-                    >
-                      Limpiar
-                    </button>
-                    <button
-                      className="px-6 py-2.5 sm:px-8 sm:py-3 text-sm sm:text-base font-medium text-white bg-purple-600 hover:bg-purple-700 active:bg-purple-800 rounded-lg transition-colors"
-                      onClick={applyFiltersAndClose}
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
-              </>
+              <SearchFiltersModal
+                dragY={dragY}
+                modalRef={modalRef}
+                contentRef={contentRef}
+                draftCategories={draftCategories}
+                setDraftCategories={setDraftCategories}
+                draftNearby={draftNearby}
+                setDraftNearby={setDraftNearby}
+                onClose={applyFiltersAndClose}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              />
             )}
           </div>
 
