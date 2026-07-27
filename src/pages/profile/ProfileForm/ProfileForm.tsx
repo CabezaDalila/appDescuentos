@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from "@/components/Share/select";
 import { useAuth } from "@/hooks/useAuth";
+import { getErrorMessage } from "@/utils/error";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import {
     updateDisplayName,
@@ -208,9 +209,9 @@ export default function EditProfilePage() {
           newPhotoURL = await uploadProfilePhoto(selectedPhotoFile, user.uid);
           await updatePhotoURL(user, newPhotoURL);
           toast.success("Foto de perfil actualizada");
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("Error al subir foto:", error);
-          toast.error(error.message || "Error al subir la foto");
+          toast.error(getErrorMessage(error) || "Error al subir la foto");
           setSaving(false);
           setUploadingPhoto(false);
           return; // Salir si hay error al subir la foto
@@ -262,9 +263,9 @@ export default function EditProfilePage() {
 
       // Redirigir a la página del perfil
       router.push("/profile");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al actualizar el perfil:", error);
-      toast.error(error.message || "Error al actualizar el perfil");
+      toast.error(getErrorMessage(error) || "Error al actualizar el perfil");
       setSaving(false);
     }
   };

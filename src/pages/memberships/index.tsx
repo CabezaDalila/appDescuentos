@@ -504,7 +504,9 @@ function MembershipListItem({
                     ? `${normalizeBankName(
                         membership.membershipName || "",
                         membership.membershipCategory as Membership["category"]
-                      )} - ${membership.card.brand} ${membership.card.level}`
+                      )} - ${membership.card?.brand ?? ""} ${
+                        membership.card?.level ?? ""
+                      }`
                     : normalizeBankName(
                         membership.name || "",
                         membership.category as Membership["category"]

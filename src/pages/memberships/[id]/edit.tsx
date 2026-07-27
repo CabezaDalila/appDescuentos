@@ -15,6 +15,7 @@ import {
     SelectValue,
 } from "@/components/Share/select";
 import { CARD_BRANDS, CARD_LEVELS, Membership } from "@/constants/membership";
+import { getErrorMessage } from "@/utils/error";
 import { useAuth } from "@/hooks/useAuth";
 import {
     deleteCardFromMembership,
@@ -79,7 +80,7 @@ export default function EditMembershipPage() {
       } as Membership;
 
       setMembership(updatedMembership);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al cargar membresía:", error);
       toast.error("Error al cargar la membresía");
     } finally {
@@ -243,11 +244,11 @@ export default function EditMembershipPage() {
         // Solo se eliminó la tarjeta, actualizar la vista
         await loadMembership(membership.id);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al eliminar tarjeta:", error);
       toast.error(
         "Error al eliminar la tarjeta: " +
-          (error.message || "Error desconocido")
+          (getErrorMessage(error) || "Error desconocido")
       );
     } finally {
       setSaving(false);

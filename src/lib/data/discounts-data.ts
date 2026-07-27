@@ -114,11 +114,16 @@ const DATE_COLS = new Set([
   "updated_at",
 ]);
 
-function toIso(v: any) {
+function toIso(v: unknown): unknown {
   if (v == null) return v;
-  if (typeof v === "object" && typeof v.toDate === "function")
-    return v.toDate().toISOString();
   if (v instanceof Date) return v.toISOString();
+  if (
+    typeof v === "object" &&
+    "toDate" in v &&
+    typeof (v as { toDate: unknown }).toDate === "function"
+  ) {
+    return (v as { toDate: () => Date }).toDate().toISOString();
+  }
   return v; // string ISO/fecha
 }
 

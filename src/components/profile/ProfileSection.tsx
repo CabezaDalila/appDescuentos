@@ -7,6 +7,7 @@ import {
     Pencil,
     Shield,
 } from "lucide-react";
+import type { NextRouter } from "next/router";
 
 interface ProfileSectionProps {
   title: string;
@@ -85,7 +86,7 @@ export default function ProfileSection({ title, items }: ProfileSectionProps) {
 
 // Función helper para crear las secciones del perfil
 export function createProfileSections(
-  router: any,
+  router: NextRouter,
   onLogout: () => void,
   onSettings: () => void,
   membershipsCount: number = 0,
