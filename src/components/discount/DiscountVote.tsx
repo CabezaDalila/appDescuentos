@@ -8,7 +8,7 @@ import {
     type VoteType,
 } from "@/lib/data/discount-votes";
 import { setFeedback } from "@/lib/data/interactions";
-import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
+import { fetchDiscountDoc } from "@/lib/data/discounts-data";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";

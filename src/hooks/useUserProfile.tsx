@@ -4,7 +4,7 @@ import {
   mapProfile,
   type ProfileRow,
   type UserProfile,
-} from "@/lib/supabase/profiles";
+} from "@/lib/data/profiles";
 import { useEffect, useState } from "react";
 
 interface UseUserProfileResult {

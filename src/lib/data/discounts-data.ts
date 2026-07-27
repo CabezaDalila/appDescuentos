@@ -7,7 +7,7 @@
  *
  * RLS: lectura pública de aprobados+visibles (admin ve todo); writes solo admin.
  */
-import { supabase } from "./client";
+import { supabase } from "@/lib/supabase/client";
 
 type Row = Record<string, any>;
 

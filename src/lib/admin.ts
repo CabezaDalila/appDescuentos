@@ -1,12 +1,12 @@
 import { getCategoryById, getCategoryByName, isValidCategory } from "@/constants/categories";
 import { authHeader } from "@/lib/data/auth-header";
-import { getRole } from "@/lib/supabase/profiles";
+import { getRole } from "@/lib/data/profiles";
 import { supabase } from "@/lib/supabase/client";
 import {
   fetchAllDiscountDocs,
   insertDiscount,
   updateDiscountRow,
-} from "@/lib/supabase/discounts-data";
+} from "@/lib/data/discounts-data";
 import { parseDateDdMmYyyy, parseIsoYmdLocal } from "@/lib/date-ar";
 import {
   ManualDiscount,

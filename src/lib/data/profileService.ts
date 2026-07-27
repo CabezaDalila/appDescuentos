@@ -8,7 +8,7 @@ import {
   getProfile,
   updateProfileFields,
   type UserProfile,
-} from "@/lib/supabase/profiles";
+} from "@/lib/data/profiles";
 
 const PROFILE_PHOTOS_BUCKET = "profile-photos";
 

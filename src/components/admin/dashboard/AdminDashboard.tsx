@@ -5,8 +5,8 @@ import {
   CardTitle,
 } from "@/components/Share/card";
 import { getScrapingScripts } from "@/lib/admin";
-import { fetchAllDiscountDocs } from "@/lib/supabase/discounts-data";
-import { listAllProfiles } from "@/lib/supabase/profiles";
+import { fetchAllDiscountDocs } from "@/lib/data/discounts-data";
+import { listAllProfiles } from "@/lib/data/profiles";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {

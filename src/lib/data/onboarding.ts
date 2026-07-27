@@ -5,7 +5,7 @@
 import {
   getOnboarding,
   saveOnboarding,
-} from "@/lib/supabase/profiles";
+} from "@/lib/data/profiles";
 
 export interface OnboardingAnswers {
   spendingCategories: string[]; // Reemplaza interests

@@ -4,7 +4,7 @@
  * (@/lib/data/user) para no tocar a los consumidores.
  */
 import type { UserPreferences } from "@/lib/data/types/profile.types";
-import { getProfile, updateProfileFields } from "@/lib/supabase/profiles";
+import { getProfile, updateProfileFields } from "@/lib/data/profiles";
 
 /**
  * Actualiza las preferencias del usuario en profiles.preferences.

@@ -6,7 +6,7 @@
  * push recibida como notificación in-app. El broadcast a otros usuarios va por
  * el servidor (src/lib/notifications.ts, service role).
  */
-import { supabase } from "./client";
+import { supabase } from "@/lib/supabase/client";
 
 export type NotificationType =
   | "vencimiento_tarjeta"

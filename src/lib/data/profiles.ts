@@ -4,7 +4,7 @@
  * La tabla public.profiles tiene una fila por usuario (id = auth.users.id),
  * creada por el trigger on_auth_user_created. RLS: cada uno ve/edita la suya.
  */
-import { supabase } from "./client";
+import { supabase } from "@/lib/supabase/client";
 
 /** Fila cruda de la tabla profiles. */
 export interface ProfileRow {
