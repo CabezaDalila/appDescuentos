@@ -153,11 +153,11 @@ export async function getRole(userId: string): Promise<"user" | "admin" | null> 
 export async function updateProfileFields(
   userId: string,
   fields: Partial<{
-    full_name: string;
-    photo_url: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
+    full_name: string | null;
+    photo_url: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    phone: string | null;
     birth_date: string | null;
     gender: string | null;
     preferences: Record<string, unknown>;
