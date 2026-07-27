@@ -1,4 +1,5 @@
 import { authHeader } from "@/lib/data/auth-header";
+import { getErrorMessage } from "@/utils/error";
 
 export interface SendNotificationOptions {
   userId?: string;
@@ -52,11 +53,11 @@ export const sendPushNotification = async (
       notificationId: result.notificationId,
       recipients: result.recipients,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error enviando notificación push:", error);
     return {
       success: false,
-      error: error.message || "Error desconocido",
+      error: getErrorMessage(error) || "Error desconocido",
     };
   }
 };

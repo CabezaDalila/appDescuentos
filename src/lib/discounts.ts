@@ -7,7 +7,7 @@ import {
   fetchDiscountDoc,
   insertDiscount,
   updateDiscountRow,
-} from "@/lib/supabase/discounts-data";
+} from "@/lib/data/discounts-data";
 
 /** Timestamp-like expuesto por la capa de datos (equivale al de Firestore). */
 type FsTimestamp = { toDate: () => Date };

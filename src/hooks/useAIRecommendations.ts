@@ -8,7 +8,7 @@ import { getOnboardingAnswers } from "@/lib/data/onboarding";
 import {
   getLatestAIRecommendation,
   saveAIRecommendation,
-} from "@/lib/data/routes";
+} from "@/lib/data/recommendations";
 import { getSmartRecommendations } from "@/lib/services/ai-recommendations.service";
 import { sendRecommendationNotification } from "@/lib/services/notification.service";
 import type {

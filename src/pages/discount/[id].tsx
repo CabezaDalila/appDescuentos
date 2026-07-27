@@ -1,4 +1,4 @@
-import CardDiscount from "@/components/cardDiscount/cardDiscount";
+import CardDiscount from "@/components/cardDiscount/CardDiscount";
 import { DiscountVote } from "@/components/discount/DiscountVote";
 import { BackButton } from "@/components/Share/back-button";
 import { GoogleMap } from "@/components/Share/google-map";
@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useDistance } from "@/hooks/useDistance";
 import { getDiscountById } from "@/lib/discounts";
-import { fetchDiscountDoc } from "@/lib/supabase/discounts-data";
+import { fetchDiscountDoc } from "@/lib/data/discounts-data";
 import { getActiveMemberships } from "@/lib/data/memberships";
 import { Discount } from "@/types/discount";
 import { getImageByCategory } from "@/utils/category-mapping";

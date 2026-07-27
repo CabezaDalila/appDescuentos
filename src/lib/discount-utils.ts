@@ -1,7 +1,7 @@
 import {
   deleteDiscountRow,
   deleteDiscountRows,
-} from "@/lib/supabase/discounts-data";
+} from "@/lib/data/discounts-data";
 
 // Eliminar un descuento específico por ID
 export const deleteDiscount = async (discountId: string): Promise<void> => {

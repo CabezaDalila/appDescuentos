@@ -6,6 +6,11 @@ export type MembershipItem = Membership & {
   membershipId?: string;
   membershipName?: string;
   membershipCategory?: string;
-  card?: any;
+  card?: {
+    type?: string;
+    brand?: string;
+    level?: string;
+    [key: string]: unknown;
+  };
 };
 

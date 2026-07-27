@@ -4,7 +4,7 @@ import { DiscountsEmptyState } from "@/components/admin/discounts/ui/DiscountsEm
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { getApprovedDiscounts } from "@/lib/discounts";
-import { updateDiscountRow } from "@/lib/supabase/discounts-data";
+import { updateDiscountRow } from "@/lib/data/discounts-data";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
 import { useEffect, useState } from "react";

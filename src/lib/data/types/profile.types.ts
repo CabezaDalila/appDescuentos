@@ -2,6 +2,12 @@
  * Tipos e interfaces para el perfil de usuario
  */
 
+export interface UserPreferences {
+  language: "es" | "en";
+  region: string;
+  useLocation: boolean;
+}
+
 export interface UserProfileData {
   firstName: string | null;
   lastName: string | null;

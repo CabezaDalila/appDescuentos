@@ -1,3 +1,6 @@
+import type { CredentialCombo } from "@/types/credentials";
+import type { DiscountLocation } from "@/types/discount";
+
 // ===== TIPOS PARA SCRAPING SCRIPTS =====
 
 export interface ScrapingScript {
@@ -92,12 +95,7 @@ export interface ManualDiscount {
   imageUrl?: string;
   url?: string;
   isVisible: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
+  availableCredentials?: CredentialCombo[];
   availableMemberships?: string[];
   membershipRequired?: string[];
   bancos?: string[];
@@ -105,11 +103,7 @@ export interface ManualDiscount {
   installments?: number;
   createdAt?: Date;
   updatedAt?: Date;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
+  location?: DiscountLocation;
 }
 
 export interface CreateManualDiscountData {
@@ -123,12 +117,7 @@ export interface CreateManualDiscountData {
   imageUrl?: string;
   url?: string;
   isVisible: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
+  availableCredentials?: CredentialCombo[];
   availableMemberships?: string[];
 }
 
@@ -143,12 +132,7 @@ export interface UpdateManualDiscountData {
   imageUrl?: string;
   url?: string;
   isVisible?: boolean;
-  availableCredentials?: Array<{
-    brand: string;
-    level: string;
-    type: string;
-    bank: string;
-  }>;
+  availableCredentials?: CredentialCombo[];
   availableMemberships?: string[];
 }
 

@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDiscountForm } from "@/hooks/useDiscountForm";
 import { parseAdminExpirationInput } from "@/lib/date-ar";
 import { approveDiscount, getPendingDiscounts } from "@/lib/discounts";
-import { updateDiscountRow } from "@/lib/supabase/discounts-data";
+import { updateDiscountRow } from "@/lib/data/discounts-data";
 import { ManualDiscount } from "@/types/admin";
 import { Discount } from "@/types/discount";
 import { useCallback, useEffect, useMemo, useState } from "react";

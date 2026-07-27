@@ -5,7 +5,7 @@
  *
  * RLS scopea todo al usuario autenticado; para inserts seteamos user_id.
  */
-import { supabase } from "./client";
+import { supabase } from "@/lib/supabase/client";
 import type { Card, Membership } from "@/constants/membership";
 
 interface CardRow {

@@ -3,7 +3,7 @@
  * (public.ai_recommendations). Reemplaza el doc Firestore
  * users/{uid}/aiRecommendations/latest. TTL de 24h aplicado en lectura.
  */
-import { supabase } from "./client";
+import { supabase } from "@/lib/supabase/client";
 import type { HomePageDiscount } from "@/types/discount";
 import type {
   AIRecommendation,

@@ -3,7 +3,7 @@ import { Badge } from "@/components/Share/badge";
 import { Button } from "@/components/Share/button";
 import { Card, CardContent } from "@/components/Share/card";
 import { Input } from "@/components/Share/input";
-import { listAllProfiles, setUserRole } from "@/lib/supabase/profiles";
+import { listAllProfiles, setUserRole } from "@/lib/data/profiles";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, Mail, Search, Shield, User, Users } from "lucide-react";

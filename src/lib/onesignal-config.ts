@@ -1,5 +1,5 @@
 import { Capacitor } from "@capacitor/core";
-import { saveOwnNotification } from "./supabase/notifications-client";
+import { saveOwnNotification } from "@/lib/data/notifications-client";
 
 export const ONESIGNAL_CONFIG = {
   APP_ID: "ab94a58e-b696-4f40-89ef-24597d45fe56",
