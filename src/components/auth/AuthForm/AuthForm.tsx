@@ -27,6 +27,7 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import { FormField } from "./FormField";
+import { ResetPasswordModal } from "./ResetPasswordModal";
 import { loginSchema, registerSchema } from "./validations";
 
 // Constantes y regex fuera del componente para mejor performance
@@ -1033,55 +1034,17 @@ export default function AuthForm() {
 
       {/* Modal de restablecimiento de contraseña */}
       {showResetPassword && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md border-0 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900">
-                Restablecer contraseña
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                Ingresa tu email y te enviaremos un enlace para restablecer tu
-                contraseña.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                id="resetEmail"
-                label="Correo electrónico"
-                type="email"
-                placeholder="tu@ejemplo.com"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                disabled={isResetting}
-                icon={Mail}
-              />
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowResetPassword(false);
-                    setResetEmail("");
-                    clearMessages();
-                  }}
-                  disabled={isResetting}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleResetPassword}
-                  disabled={isResetting || !resetEmail}
-                  className="flex-1 bg-primary hover:bg-primary/90"
-                >
-                  {isResetting && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Enviar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <ResetPasswordModal
+          resetEmail={resetEmail}
+          onEmailChange={setResetEmail}
+          isResetting={isResetting}
+          onSubmit={handleResetPassword}
+          onCancel={() => {
+            setShowResetPassword(false);
+            setResetEmail("");
+            clearMessages();
+          }}
+        />
       )}
     </div>
   );
